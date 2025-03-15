@@ -1,6 +1,4 @@
-====================================================================================================
-PSscripts.de  -  ANDREAS HEPP  –  easyOnboarding
-====================================================================================================
+# PSscripts.de  -  ANDREAS HEPP  –  easyOnboarding
 
 Version         : 1.0.0
 Letztes Update  : 23.02.2025
@@ -8,7 +6,7 @@ Autor           : ANDREAS HEPP
 Website         : www.psscripts.de
 
 
-Beschreibung:
+# Beschreibung:
 ---------------
 Dieses Skript dient dem Onboarding neuer Mitarbeiter in Active Directory.  
 Es liest eine Konfigurationsdatei (INI) ein, zeigt eine grafische Benutzeroberfläche (GUI) zur Dateneingabe an 
@@ -16,13 +14,13 @@ und legt anschließend AD‑Benutzer an oder aktualisiert diese.
 
 Zudem werden diverse Reports (HTML, PDF, TXT) generiert und ein Logfile erstellt.
 
-UPN-Erzeugung:
+# UPN-Erzeugung:
 ---------------
 Für den UPN wird zunächst geprüft, ob in der Company‑Sektion der INI der Schlüssel „ActiveDirectoryDomain“ definiert ist.  
 Falls vorhanden, wird dessen Wert (ggf. mit führendem „@“) als UPN‑Suffix verwendet.  
 Ist dieser Schlüssel nicht vorhanden, wird der im GUI ausgewählte Mail‑Suffix (oder alternativ der Schlüssel „MailDomain“) angehängt.
 
-DisplayName-Erzeugung:
+# DisplayName-Erzeugung:
 -----------------------
 Wird in der jeweiligen Company‑Sektion der INI der Schlüssel „NameFirma“ (oder alternativ „UserDisplayNameFirma“) gefunden,  
 so wird dessen Wert als Präfix verwendet und der DisplayName wird im Format  
@@ -30,13 +28,13 @@ so wird dessen Wert als Präfix verwendet und der DisplayName wird im Format
 gesetzt. Andernfalls wird lediglich Vorname und Nachname verwendet.  
 Zudem wird bei externen Mitarbeitern ein entsprechender Hinweis (z. B. "EXTERN | …") ergänzt.
 
-E-Mail-Feld:
+# E-Mail-Feld:
 ------------
 Beim Befüllen der E‑Mail-Adresse wird geprüft, ob der eingegebene Wert bereits ein „@“ enthält.  
 Falls nicht, wird – sofern in der Company‑Sektion ein MailDomain-Wert definiert ist – dieser angehängt,  
 ansonsten der im GUI ausgewählte Mail‑Suffix.
 
-Report-Erstellung:
+# Report-Erstellung:
 -------------------
 Das Skript erzeugt HTML-Reports, die dynamisch mit den folgenden Platzhaltern befüllt werden:
 
@@ -56,9 +54,7 @@ Das Skript erzeugt HTML-Reports, die dynamisch mit den folgenden Platzhaltern be
 - **{{Admin}}**: Der Name des Administrators, der das Skript ausführt
 - **{{ReportDate}}**: Das Erstellungsdatum des Reports
 
-Wichtige Hinweise:
+# Wichtige Hinweise:
 -------------------
 - Stellen Sie sicher, dass alle benötigten Module (z. B. ActiveDirectory) vor der Ausführung verfügbar sind.
 - Dazu bitte easyONBOARDING_INSTALL.exe als Administrator ausführen
-
-===========================================================================================
