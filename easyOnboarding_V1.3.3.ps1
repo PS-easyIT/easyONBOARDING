@@ -1,10 +1,16 @@
 <#
   Dieses Skript integriert Funktionen für Onboarding, AD-Gruppenerstellung und den INI-Editor in eine WPF-Oberfläche.
+  This script integrates functions for onboarding, AD group creation and the INI editor in a WPF interface.
+  
   Voraussetzungen: Administratorrechte und PowerShell 7 oder höher
-    - INI-Datei ("easyONBOARDINGConfig.ini")
-    - XAML-Datei ("MainGUI.xaml")  # Diese XAML wird aus dem Anhang geladen
+  Requirements: Administrative rights and PowerShell 7 or higher
+    - INI-Datei     ("easyONBOARDINGConfig.ini")
+    - XAML-Datei    ("MainGUI.xaml")
 #>
 
+# [Region 00 | SCRIPT INITIALIZATION]
+# [ENGLISH - Sets up error handling and basic script environment]
+# [GERMAN - Richtet Fehlerbehandlung und Skriptumgebung ein]
 #requires -Version 7.0
 
 $ErrorActionPreference = "Stop"
@@ -21,7 +27,9 @@ trap {
     exit 1
 }
 
-#region Admin- und Versionsprüfung
+#region [Region 01 | ADMIN AND VERSION CHECK]
+# [ENGLISH - Verifies administrator rights and PowerShell version before proceeding]
+# [GERMAN - Überprüft Administratorrechte und PowerShell-Version vor der Ausführung]
 $principal = New-Object Security.Principal.WindowsPrincipal([Security.Principal.WindowsIdentity]::GetCurrent())
 if (-not $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
     Write-Error "Dieses Skript muss als Administrator ausgeführt werden."
@@ -34,7 +42,9 @@ if ($PSVersionTable.PSVersion.Major -lt 7) {
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Definition
 #endregion
 
-#region INI-Datei laden
+#region [Region 02 | INI FILE LOADING]
+# [ENGLISH - Loads configuration data from the external INI file]
+# [GERMAN - Lädt Konfigurationsdaten aus der externen INI-Datei]
 function Get-IniContent {
     [CmdletBinding()]
     param(
@@ -43,7 +53,9 @@ function Get-IniContent {
         [string]$Path
     )
     
-    # Überprüfe, ob die INI-Datei existiert
+    # [2.1 | VALIDATE INI FILE]
+    # [ENGLISH - Checks if the INI file exists and is accessible]
+    # [GERMAN - Überprüft, ob die INI-Datei existiert und zugänglich ist]
     if (-not (Test-Path $Path)) {
         Throw "INI-Datei nicht gefunden: $Path"
     }
@@ -57,6 +69,9 @@ function Get-IniContent {
         Throw "Fehler beim Lesen der INI-Datei: $($_.Exception.Message)"
     }
     
+    # [2.2 | PARSE INI CONTENT]
+    # [ENGLISH - Processes the INI file line by line to extract sections and key-value pairs]
+    # [GERMAN - Verarbeitet die INI-Datei Zeile für Zeile, um Abschnitte und Schlüssel-Wert-Paare zu extrahieren]
     foreach ($line in $lines) {
         $line = $line.Trim()
         # Überspringe leere Zeilen und Kommentarzeilen (beginnend mit ; oder #)
@@ -87,10 +102,16 @@ catch {
 }
 #endregion
 
-#region Funktionsdefinitionen
+#region [Region 03 | FUNCTION DEFINITIONS]
+# [Contains all helper and core functionality functions]
+# [Enthält alle Helfer- und Kernfunktionalitäten]
 
-#region Logging-Funktion
+#region [Region 03.1 | LOGGING FUNCTIONS]
+# [Defines logging capabilities for different message levels]
+# [Definiert Protokollierungsfunktionen für verschiedene Nachrichtenebenen]
 function Write-LogMessage {
+    # [03.1.1 - Primary logging wrapper for consistent message formatting]
+    # [Primärer Logging-Wrapper für konsistente Nachrichtenformatierung]
     param(
         [string]$message,
         [string]$logLevel = "INFO"
@@ -99,6 +120,8 @@ function Write-LogMessage {
 }
 
 function Write-DebugMessage {
+    # [03.1.2 - Debug-specific logging with conditional execution]
+    # [Debug-spezifische Protokollierung mit bedingter Ausführung]
     param(
         [string]$Message
     )
@@ -109,8 +132,13 @@ function Write-DebugMessage {
 Write-Host "Logging-Funktion..."
 # Log-Level (Standard ist "INFO"): "WARN", "ERROR", "DEBUG".
 #endregion
-#region Write-Log
+
+#region [Region 03.2 | LOG FILE WRITER] 
+# [Core logging function that writes messages to log files]
+# [Kernfunktion zur Protokollierung von Nachrichten in Logdateien]
 function Write-Log {
+    # [03.2.1 - Low-level file logging implementation]
+    # [Implementierung der Protokollierung auf Dateisystem-Ebene]
     [CmdletBinding()]
     param(
         [Parameter(Mandatory=$true, ValueFromPipeline=$true)]
@@ -154,29 +182,36 @@ function Write-Log {
 }
 #endregion
 
-Write-DebugMessage "region INI,LOG,Module, usw."
+Write-DebugMessage "INI, LOG, Module, etc. regions initialized."
 
-#region AD-Module laden
-Write-DebugMessage "Module und Assemblies ... laden"
+#region [Region 04 | ACTIVE DIRECTORY MODULE]
+# [Loads the Active Directory PowerShell module required for user management]
+# [Lädt das Active Directory PowerShell-Modul, das für die Benutzerverwaltung erforderlich ist]
+Write-DebugMessage "Loading Active Directory module."
 try {
     Write-DebugMessage "AD-Module geladen"
     Import-Module ActiveDirectory -SkipEditionCheck -ErrorAction Stop
+    Write-DebugMessage "Active Directory module loaded successfully."
 } catch {
     Write-Log -Message "Modul ActiveDirectory konnte nicht geladen werden: $($_.Exception.Message)" -LogLevel "ERROR"
     Throw "Kritischer Fehler: ActiveDirectory-Modul fehlt!"
 }
 #endregion
 
-
-#region Assemblies für WPF laden
+#region [Region 05 | WPF ASSEMBLIES]
+# [Loads required WPF assemblies for the GUI interface]
+# [Lädt erforderliche WPF-Assemblies für die GUI-Schnittstelle]
+Write-DebugMessage "Loading WPF assemblies."
 Add-Type -AssemblyName PresentationFramework, PresentationCore, WindowsBase, System.Windows.Forms
-Write-DebugMessage "Assemblies geladen"
+Write-DebugMessage "WPF assemblies loaded successfully."
 #endregion
 
-Write-DebugMessage "XAML-Dateipfad ermitteln"
+Write-DebugMessage "Determining XAML file path."
 
-#region XAML-Dateipfad ermitteln & XAML-Datei Laden
-# XAML-Dateipfad ermitteln
+#region [Region 06 | XAML LOADING]
+# [Determines XAML file path and loads the GUI definition]
+# [Ermittelt den XAML-Dateipfad und lädt die GUI-Definition]
+Write-DebugMessage "Loading XAML file: $xamlPath"
 $xamlPath = Join-Path $ScriptDir "MainGUI.xaml"
 if (-not (Test-Path $xamlPath)) {
     Write-Error "Die XAML-Datei wurde nicht gefunden: $xamlPath"
@@ -189,7 +224,7 @@ try {
     if (-not $window) {
         Throw "XAML konnte nicht geladen werden."
     }
-    # Debug-Ausgabe: XAML erfolgreich geladen
+    Write-DebugMessage "XAML file loaded successfully."
     if ($global:Config.General.DebugMode -eq "1") {
         Write-Log "XAML-Datei erfolgreich geladen." "DEBUG"
     }
@@ -200,12 +235,19 @@ catch {
 }
 #endregion
 
-Write-DebugMessage "XAML-Datei geladen"
+Write-DebugMessage "XAML file loaded"
 
+#region [Region 07 | PASSWORD MANAGEMENT]
+# [Functions for setting and removing password change restrictions]
+# [Funktionen zum Festlegen und Entfernen von Passwortänderungsbeschränkungen]
 
-#region Set-CannotChangePassword
-Write-DebugMessage "Set-CannotChangePassword"
+#region [Region 07.1 | PREVENT PASSWORD CHANGE]
+# [Sets ACL restrictions to prevent users from changing their passwords]
+# [Setzt ACL-Einschränkungen, um Benutzer daran zu hindern, ihre Passwörter zu ändern]
+Write-DebugMessage "Defining Set-CannotChangePassword function."
 function Set-CannotChangePassword {
+    # [07.1.1 - Modifies ACL settings to deny password change permissions]
+    # [Ändert ACL-Einstellungen, um Passwortänderungsberechtigungen zu verweigern]
     param(
         [Parameter(Mandatory=$true)]
         [string]$SamAccountName
@@ -235,10 +277,15 @@ function Set-CannotChangePassword {
 }
 #endregion
 
-Write-DebugMessage "Remove-CannotChangePassword"  
+Write-DebugMessage "Defining Remove-CannotChangePassword function."
 
-#region Remove-CannotChangePassword
+#region [Region 07.2 | ALLOW PASSWORD CHANGE]
+# [Removes ACL restrictions to allow users to change their passwords]
+# [Entfernt ACL-Einschränkungen, um Benutzern das Ändern ihrer Passwörter zu ermöglichen]
+Write-DebugMessage "Removing CannotChangePassword for $SamAccountName."
 function Remove-CannotChangePassword {
+    # [07.2.1 - Removes deny rules from user ACL for password change permission]
+    # [Entfernt Deny-Regeln aus der Benutzer-ACL für Passwortänderungsberechtigungen]
     param(
         [Parameter(Mandatory=$true)]
         [string]$SamAccountName
@@ -268,10 +315,14 @@ function Remove-CannotChangePassword {
     Write-Log "Prevent Password Change wurde für $SamAccountName aufgehoben." "DEBUG"
 }
 #endregion
+#endregion
 
-Write-DebugMessage "Funktion zum Generieren der UPN"
+Write-DebugMessage "Defining UPN generation function."
 
-#region New‑UPN
+#region [Region 08 | UPN GENERATION]
+# [Creates user principal names based on templates and user data]
+# [Erstellt Benutzerprinzipalnamen basierend auf Vorlagen und Benutzerdaten]
+Write-DebugMessage "Generating UPN for user."
 function New-UPN {
     param(
         [pscustomobject]$userData,
@@ -344,7 +395,7 @@ function New-UPN {
         }
     }
 
-    Write-Host "Generierter UPN: $UPN"
+    Write-DebugMessage "Generated UPN: $UPN"
 
     # 8) Ergebnis zurückgeben
     return @{
@@ -355,8 +406,12 @@ function New-UPN {
 }
 #endregion
 
-Write-DebugMessage "Register-GUIEvent - GUI-Event-Handler-Registrierung"
-#region Register-GUIEvent: GUI-Event-Handler-Registrierung
+Write-DebugMessage "Registering GUI event handlers."
+
+#region [Region 09 | GUI EVENT HANDLER]
+# [Function to register and handle GUI button click events with error handling]
+# [Funktion zur Registrierung und Behandlung von GUI-Button-Klick-Ereignissen mit Fehlerbehandlung]
+Write-DebugMessage "Registering GUI event handler for $Control."
 function Register-GUIEvent {
     param (
         [Parameter(Mandatory=$true)]
@@ -378,8 +433,12 @@ function Register-GUIEvent {
 }
 #endregion
 
-Write-DebugMessage "Invoke-ADCommand - Fehlerbehandlung bei AD-Befehlen"
-#region Invoke-ADCommand: Konsolidierung der Fehlerbehandlung bei AD-Befehlen
+Write-DebugMessage "Defining AD command execution function."
+
+#region [Region 10 | AD COMMAND EXECUTION]
+# [Consolidates error handling for Active Directory commands]
+# [Konsolidiert die Fehlerbehandlung für Active Directory-Befehle]
+Write-DebugMessage "Executing AD command."
 function Invoke-ADCommand {
     param (
         [Parameter(Mandatory=$true)]
@@ -399,8 +458,12 @@ function Invoke-ADCommand {
 }
 #endregion
 
-Write-DebugMessage "Get-ConfigValue - sichere Abfrage von Konfigurationswerten"
-#region Get-ConfigValue: Neue Hilfsfunktion zur sicheren Abfrage von Konfigurationswerten
+Write-DebugMessage "Defining configuration value access function."
+
+#region [Region 11 | CONFIGURATION VALUE ACCESS]
+# [Helper function for safely accessing configuration values]
+# [Hilfsfunktion für den sicheren Zugriff auf Konfigurationswerte]
+Write-DebugMessage "Accessing configuration value: $Key."
 function Get-ConfigValue {
     param (
         [Parameter(Mandatory = $true)]
@@ -426,9 +489,15 @@ function Get-ConfigValue {
 }
 #endregion
 
-Write-DebugMessage "Funktion zum Ersetzen der Platzhalter"
-#region Funktion zum Ersetzen der Platzhalter - Resolve-TemplatePlaceholders
+Write-DebugMessage "Defining template processing functions."
+
+#region [Region 12 | TEMPLATE PROCESSING]
+# [Functions to replace placeholders in templates with user data]
+# [Funktionen zum Ersetzen von Platzhaltern in Vorlagen mit Benutzerdaten]
+Write-DebugMessage "Resolving template placeholders."
 function Resolve-TemplatePlaceholders {
+    # [12.1 - Generic placeholder replacement for string templates]
+    # [Generischer Platzhalterersatz für String-Vorlagen]
     [CmdletBinding()]
     param(
         [Parameter(Mandatory = $true)]
@@ -473,9 +542,12 @@ else {
 }
 #endregion
 
-Write-DebugMessage "region Load-ADGroups..."
+Write-DebugMessage "Loading AD groups."
 
-#region Load-ADGroups - Lade AD-Gruppen aus der INI...
+#region [Region 13 | AD GROUP LOADING]
+# [Loads AD groups from the INI file and binds them to the GUI]
+# [Lädt AD-Gruppen aus der INI-Datei und bindet sie an die GUI]
+Write-DebugMessage "Loading AD groups from INI."
 function Load-ADGroups 
 {
     try {
@@ -518,13 +590,21 @@ function Load-ADGroups
 Load-ADGroups
 #endregion
 
-Write-DebugMessage "DropDowns befüllen (OU, Location, License, MailSuffix, DisplayName Template)"
-#region DropDowns befüllen (OU, Location, License, MailSuffix, DisplayName Template)
+Write-DebugMessage "Populating dropdowns (OU, Location, License, MailSuffix, DisplayName Template)."
+
+#region [Region 14 | DROPDOWN POPULATION]
+# [Functions to populate various dropdown menus from configuration data]
+# [Funktionen zum Befüllen verschiedener Dropdown-Menüs aus Konfigurationsdaten]
 
 Write-DebugMessage "Dropdown: OU Refresh"
-#region DropDowns befüllen - OU Refresh
+
+#region [Region 14.1 | OU DROPDOWN]
+# [Populates the Organizational Unit dropdown with data from AD]
+# [Befüllt das Dropdown für Organisationseinheiten mit Daten aus AD]
 # --- OU Refresh ---
-# Hier wird nur die OU unterhalb des in der INI definierten DefaultOU abgerufen.
+# [14.1.1 - Fetches OUs from beneath the configured default OU]
+# [Holt OUs unterhalb der konfigurierten Standard-OU]
+Write-DebugMessage "Refreshing OU dropdown."
 $btnRefreshOU = $window.FindName("btnRefreshOU")
 if ($btnRefreshOU) {
     $btnRefreshOU.Add_Click({
@@ -552,7 +632,11 @@ if ($btnRefreshOU) {
 #endregion
 
 Write-DebugMessage "Dropdown: DisplayName Dropdown befüllen"
-#region DisplayName Template Dropdown befüllen – aus [DisplayNameUPNTemplates]
+
+#region [Region 14.2 | DISPLAY NAME TEMPLATES]
+# [Populates the display name template dropdown from INI configuration]
+# [Befüllt das Dropdown für Anzeigenamen-Vorlagen aus der INI-Konfiguration]
+Write-DebugMessage "Populating display name template dropdown."
 $comboBoxDisplayTemplate = $window.FindName("cmbDisplayTemplate")
 
 if ($comboBoxDisplayTemplate -and $global:Config.ContainsKey("DisplayNameUPNTemplates")) {
@@ -603,10 +687,15 @@ if ($comboBoxDisplayTemplate -and $global:Config.ContainsKey("DisplayNameUPNTemp
         $comboBoxDisplayTemplate.SelectedValue = $defaultDisplayNameFormat
     }
 }
+Write-DebugMessage "Display name template dropdown populated successfully."
 #endregion
 
 Write-DebugMessage "Dropdown: License Dropdown befüllen"
-#region License Dropdown befüllen
+
+#region [Region 14.3 | LICENSE OPTIONS]
+# [Populates the license dropdown with available license options]
+# [Befüllt das Dropdown für Lizenzoptionen mit verfügbaren Lizenzen]
+Write-DebugMessage "Populating license dropdown."
 $comboBoxLicense = $window.FindName("cmbLicense")
 if ($comboBoxLicense -and $global:Config.Contains("LicensesGroups")) {
     [System.Windows.Data.BindingOperations]::ClearBinding($comboBoxLicense, [System.Windows.Controls.ComboBox]::ItemsSourceProperty)
@@ -622,10 +711,15 @@ if ($comboBoxLicense -and $global:Config.Contains("LicensesGroups")) {
         $comboBoxLicense.SelectedValue = $LicenseListFromINI[0].Value
     }
 }
+Write-DebugMessage "License dropdown populated successfully."
 #endregion
 
 Write-DebugMessage "Dropdown: TLGroups Dropdown befüllen"
-#region TLGroups Dropdown befüllen – aus [TLGroups]
+
+#region [Region 14.4 | TEAM LEADER GROUPS]
+# [Populates the team leader group dropdown from configuration]
+# [Befüllt das Dropdown für Teamleiter-Gruppen aus der Konfiguration]
+Write-DebugMessage "Populating team leader group dropdown."
 $comboBoxTLGroup = $window.FindName("cmbTLGroup")
 if ($comboBoxTLGroup -and $global:Config.Contains("TLGroups")) {
     # Alte Bindings und Items löschen
@@ -648,10 +742,15 @@ if ($comboBoxTLGroup -and $global:Config.Contains("TLGroups")) {
         $comboBoxTLGroup.SelectedIndex = 0
     }
 }
+Write-DebugMessage "Team leader group dropdown populated successfully."
 #endregion
 
 Write-DebugMessage "Dropdown: MailSuffix Dropdown befüllen"
-#region MailSuffix Dropdown befüllen – aus [MailEndungen]
+
+#region [Region 14.5 | EMAIL DOMAIN SUFFIXES]
+# [Populates the email domain suffix dropdown from configuration]
+# [Befüllt das Dropdown für E-Mail-Domain-Suffixe aus der Konfiguration]
+Write-DebugMessage "Populating email domain suffix dropdown."
 $comboBoxSuffix = $window.FindName("cmbSuffix")
 if ($comboBoxSuffix -and $global:Config.Contains("MailEndungen")) {
     [System.Windows.Data.BindingOperations]::ClearBinding($comboBoxSuffix, [System.Windows.Controls.ComboBox]::ItemsSourceProperty)
@@ -668,10 +767,15 @@ if ($comboBoxSuffix -and $global:Config.Contains("MailEndungen")) {
     $defaultSuffix = $global:Config.Company["CompanyMailDomain"]
     $comboBoxSuffix.SelectedValue = $defaultSuffix
 }
+Write-DebugMessage "Email domain suffix dropdown populated successfully."
 #endregion
 
 Write-DebugMessage "Dropdown: Location Dropdown befüllen"
-#region Location Dropdown befüllen – aus [STANDORTE]
+
+#region [Region 14.6 | LOCATION OPTIONS]
+# [Populates the location dropdown with available office locations]
+# [Befüllt das Dropdown für Standorte mit verfügbaren Bürostandorten]
+Write-DebugMessage "Populating location dropdown."
 if ($global:Config.Contains("STANDORTE")) {
     $locationList = @()
     foreach ($key in $global:Config["STANDORTE"].Keys) {
@@ -693,15 +797,26 @@ if ($global:Config.Contains("STANDORTE")) {
             $cmbLocation.SelectedIndex = 0
         }
     }
+    Write-DebugMessage "Location dropdown populated successfully."
 }
 #endregion
 #endregion
 
-Write-DebugMessage "Funktionsdefinitionen"
+Write-DebugMessage "Defining utility functions."
 
-#region Funktionsdefinitionen
+#region [Region 15 | UTILITY FUNCTIONS]
+# [Miscellaneous utility functions for the application]
+# [Verschiedene Hilfsfunktionen für die Anwendung]
+
 Write-DebugMessage "Set-Logo"
+
+#region [Region 15.1 | LOGO MANAGEMENT]
+# [Function to handle logo uploads and management for reports]
+# [Funktion zur Verwaltung von Logo-Uploads für Berichte]
+Write-DebugMessage "Setting logo."
 function Set-Logo {
+    # [15.1.1 - Handles file selection and saving of logo images]
+    # [Behandelt Dateiauswahl und Speichern von Logo-Bildern]
     param (
         [hashtable]$brandingConfig
     )
@@ -736,41 +851,42 @@ function Set-Logo {
         [System.Windows.MessageBox]::Show("Fehler beim Hochladen des Logos: $($_.Exception.Message)", "Fehler", "OK", "Error")
     }
 }
+#endregion
 
-Write-DebugMessage "New-AdvancedPassword"
-# Funktion zur Passwortgenerierung mit erweiterter Sicherheit
+Write-DebugMessage "Defining advanced password generation function."
+
+#region [Region 15.2 | PASSWORD GENERATION]
+# [Advanced password generation with security requirements]
+# [Erweiterte Passwortgenerierung mit Sicherheitsanforderungen]
+Write-DebugMessage "Generating advanced password."
 function New-AdvancedPassword {
     [CmdletBinding()]
     param(
         [Parameter(Mandatory=$false)]
-        [ValidateRange(8,128)]
         [int]$Length = 12,
-        
+
+        [Parameter(Mandatory=$false)]
+        [int]$MinUpperCase = 2,
+
+        [Parameter(Mandatory=$false)]
+        [int]$MinDigits = 2,
+
+        [Parameter(Mandatory=$false)]
+        [bool]$AvoidAmbiguous = $false,
+
         [Parameter(Mandatory=$false)]
         [bool]$IncludeSpecial = $true,
-        
-        [Parameter(Mandatory=$false)]
-        [bool]$AvoidAmbiguous = $true,
-        
-        [Parameter(Mandatory=$false)]
-        [ValidateRange(1,10)]
-        [int]$MinUpperCase = 2,
-        
-        [Parameter(Mandatory=$false)]
-        [ValidateRange(1,10)]
-        [int]$MinDigits = 2,
-        
+
         [Parameter(Mandatory=$false)]
         [ValidateRange(1,10)]
         [int]$MinNonAlpha = 2
     )
-    
+
     if ($Length -lt ($MinUpperCase + $MinDigits)) {
         Throw "Error: Die Passwortlänge ($Length) ist zu kurz für die geforderten Mindestwerte (MinUpperCase + MinDigits = $($MinUpperCase + $MinDigits))."
     }
-    
+
     Write-DebugMessage "New-AdvancedPassword: Zeichenpools definieren"
-    # Zeichenpools definieren
     $lower = 'abcdefghijklmnopqrstuvwxyz'
     $upper = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
     $digits = '0123456789'
@@ -813,13 +929,18 @@ function New-AdvancedPassword {
         $nonAlphaCount = ($generatedPassword.ToCharArray() | Where-Object { $_ -notmatch '[A-Za-z]' }).Count
     } while ($nonAlphaCount -lt $MinNonAlpha)
     
+    Write-DebugMessage "Advanced password generated successfully."
     return $generatedPassword
 }
-Write-DebugMessage "Onboarding: Invoke-Onboarding"
-Write-DebugMessage "userData-Objekt gesendet an Invoke-Onboarding -> `n$($global:userData | Out-String)"
-# START PROCESS-ONBOARDING
-Write-Debug ("userData: " + ( $userData | Out-String ))
+#endregion
+
+#region [Region 16 | CORE ONBOARDING PROCESS]
+# [Main function that handles the complete user onboarding process]
+# [Hauptfunktion, die den gesamten Benutzer-Onboarding-Prozess verarbeitet]
+Write-DebugMessage "Starting onboarding process."
 function Invoke-Onboarding {
+    # [16.1 - Processes AD user creation and configuration in a single workflow]
+    # [Verarbeitet AD-Benutzererstellung und -konfiguration in einem einzigen Workflow]
     [CmdletBinding()]
     param(
         [Parameter(Mandatory = $true)]
@@ -842,23 +963,24 @@ function Invoke-Onboarding {
 
     Write-DebugMessage "Invoke-Onboarding: Start"
 
-    # --- 0) Load the ActiveDirectory module ---
+    # [16.1.1 - ActiveDirectory Module Verification]
+    # [Überprüft, ob das ActiveDirectory-Modul geladen ist, bevor mit Operationen fortgefahren wird]
     Write-DebugMessage "Invoke-Onboarding: Überprüfe, ob das ActiveDirectory-Modul bereits geladen ist"
     if (-not (Get-Module -Name ActiveDirectory)) {
         Throw "ActiveDirectory module is not loaded. Bitte sicherstellen, dass es installiert und vorab importiert wurde."
     }
 
-    # --- 1) Check mandatory fields: FirstName
+    # [16.1.2 - Check mandatory fields: FirstName]
     Write-DebugMessage "Invoke-Onboarding: Checking mandatory fields"
     if ([string]::IsNullOrWhiteSpace($userData.FirstName)) {
         Throw "First Name is required!"
     }
 
-    # --- 2) Password generation or fixed password ---
+    # [16.1.3 - Password generation or fixed password]
     Write-DebugMessage "Invoke-Onboarding: Determining main password"
     $mainPW = $null
     if ($userData.PasswordMode -eq 1) {
-        # Use advanced generation
+        # [16.1.3.1 - Use advanced generation]
         Write-DebugMessage "Invoke-Onboarding: Checking [PasswordFixGenerate] keys"
         foreach ($key in @("PasswordLaenge","IncludeSpecialChars","AvoidAmbiguousChars","MinNonAlpha","MinUpperCase","MinDigits")) {
             if (-not $Config.PasswordFixGenerate.Contains($key)) {
@@ -883,7 +1005,7 @@ function Invoke-Onboarding {
         }
     }
     else {
-        # Use fixPassword from INI
+        # [16.1.3.2 - Use fixPassword from INI]
         Write-DebugMessage "Invoke-Onboarding: Using fixPassword from INI"
         if (-not $Config.PasswordFixGenerate.Contains("fixPassword")) {
             Throw "Error: fixPassword is missing in PasswordFixGenerate!"
@@ -894,10 +1016,10 @@ function Invoke-Onboarding {
         }
     }
 
-    # Convert to secure
+    # [16.1.3.3 - Convert to secure]
     $SecurePW = ConvertTo-SecureString $mainPW -AsPlainText -Force
 
-    # --- 3) Generate additional (custom) passwords (5 total) ---
+    # [16.1.4 - Generate additional (custom) passwords (5 total)]
     Write-DebugMessage "Invoke-Onboarding: Generating additional custom passwords"
     $customPWLabels = if ($Config.Contains("CustomPWLabels")) { $Config["CustomPWLabels"] } else { @{} }
     $pwLabel1 = $customPWLabels["CustomPW1_Label"] ?? "Custom PW #1"
@@ -912,7 +1034,7 @@ function Invoke-Onboarding {
     $CustomPW4 = New-AdvancedPassword
     $CustomPW5 = New-AdvancedPassword
 
-    # --- 4) SamAccountName and UPN creation logic ---
+    # [16.1.5 - SamAccountName and UPN creation logic]
     Write-DebugMessage "Invoke-Onboarding: Creating SamAccountName and UPN"
     # Nutze ausschließlich den Rückgabewert der New-UPN-Funktion:
     $upnResult = New-UPN -userData $userData -Config $Config
@@ -920,14 +1042,14 @@ function Invoke-Onboarding {
     $UPN = $upnResult.UPN
     $companySection = $upnResult.CompanySection
 
-        # Debug-Ausgaben Z898:
-        Write-Host "DEBUG ZEILE 898: Überprüfung aller wichtigen Variablen"
-        Write-Host "SamAccountName: $SamAccountName"
-        Write-Host "UPNFormat: $UPNFormat"
-        Write-Host "MailSuffix: $MailSuffix"
-        Write-Host "ADGroupsSelected: $ADGroupsSelected"
-        Write-Host "License: $License"
-        Write-Host "userData: " $userData | ConvertTo-Json -Depth 3
+    # Debug-Ausgaben Z898:
+    Write-Host "DEBUG ZEILE 898: Überprüfung aller wichtigen Variablen"
+    Write-Host "SamAccountName: $SamAccountName"
+    Write-Host "UPNFormat: $UPNFormat"
+    Write-Host "MailSuffix: $MailSuffix"
+    Write-Host "ADGroupsSelected: $ADGroupsSelected"
+    Write-Host "License: $License"
+    Write-Host "userData: " $userData | ConvertTo-Json -Depth 3
     
     Write-DebugMessage "Invoke-Onboarding: Reading [Company] data from config using section '$companySection'"
     if (-not $Config.Contains($companySection)) {
@@ -935,7 +1057,7 @@ function Invoke-Onboarding {
     }
     $companyData = $Config[$companySection]   
 
-    # --- 5) Read company data from [Company*] in the INI ---
+    # [16.1.6 - Read company data from [Company*] in the INI]
     Write-DebugMessage "Invoke-Onboarding: Reading [Company] data from config"
     if (-not $Config.Contains($companySection)) {
         Throw "Error: Section '$companySection' is missing in the INI!"
@@ -943,7 +1065,7 @@ function Invoke-Onboarding {
     $companyData = $Config[$companySection]
     $suffix = ($companySection -replace "\D","")
 
-    # Basic address info from company
+    # [16.1.6.1 - Basic address info from company]
     $streetKey = "CompanyStrasse"
     $plzKey    = "CompanyPLZ"
     $ortKey    = "CompanyOrt"
@@ -951,7 +1073,7 @@ function Invoke-Onboarding {
     $Zip    = Get-ConfigValue -Section $companyData -Key "CompanyPLZ"
     $City   = Get-ConfigValue -Section $companyData -Key "CompanyOrt"
 
-    # If user did not specify any mailSuffix, fallback from [MailEndungen]/Domain1
+    # [16.1.6.2 - If user did not specify any mailSuffix, fallback from [MailEndungen]/Domain1]
     Write-DebugMessage "Invoke-Onboarding: Checking mail suffix from userData"
     # Falls der Benutzer einen MailSuffix eingegeben hat, verwende diesen – sonst den INI-Standardwert
     if (-not [string]::IsNullOrWhiteSpace($userData.MailSuffix)) {
@@ -968,7 +1090,7 @@ function Invoke-Onboarding {
     }
     $otherAttributes["mail"] = "$($userData.EmailAddress)$mailSuffix"
 
-    # Country
+    # [16.1.6.3 - Country]
     $countryKey = "CompanyCountry$suffix"
     if (-not $companyData.Contains($countryKey) -or -not $companyData[$countryKey]) {
         Throw "Error: '$countryKey' is missing in the INI!"
@@ -976,7 +1098,7 @@ function Invoke-Onboarding {
     $Country = $companyData[$countryKey]
     Write-DebugMessage "Country = $Country"
 
-    # Company Display
+    # [16.1.6.4 - Company Display]
     $companyNameKey = "CompanyNameFirma$suffix"
     if (-not $companyData.Contains($companyNameKey) -or -not $companyData[$companyNameKey]) {
         Throw "Error: '$companyNameKey' is missing in the INI!"
@@ -984,7 +1106,7 @@ function Invoke-Onboarding {
     $companyDisplay = $companyData[$companyNameKey]
     Write-DebugMessage "Company Display = $companyDisplay"
 
-    # --- 6) Integrate ADUserDefaults from INI (like mustChange, disabled, etc.)
+    # [16.1.7 - Integrate ADUserDefaults from INI (like mustChange, disabled, etc.)]
     Write-DebugMessage "Invoke-Onboarding: Checking [ADUserDefaults]"
     $adDefaults = $null
     if ($Config.Contains("ADUserDefaults")) {
@@ -994,13 +1116,13 @@ function Invoke-Onboarding {
         $adDefaults = @{}
     }
 
-    # OU from [General].DefaultOU
+    # [16.1.7.1 - OU from [General].DefaultOU]
     if (-not $Config.General.Contains("DefaultOU")) {
         Throw "Error: 'DefaultOU' is missing in [General]!"
     }
     $defaultOU = $Config.General["DefaultOU"]
 
-    # --- 7) Build AD user parameters
+    # [16.1.8 - Build AD user parameters]
     Write-DebugMessage "Invoke-Onboarding: Building userParams for AD"
     $userParams = [ordered]@{
         # Basisinformationen
@@ -1040,7 +1162,7 @@ function Invoke-Onboarding {
         Company             = $companyDisplay
     }
 
-    # Additional defaults from [ADUserDefaults] for home/profile/logonscript
+    # [16.1.8.1 - Additional defaults from [ADUserDefaults] for home/profile/logonscript]
     if ($adDefaults.Contains("HomeDirectory")) {
         $userParams["HomeDirectory"] = $adDefaults["HomeDirectory"] -replace "%username%", $SamAccountName
     }
@@ -1051,11 +1173,11 @@ function Invoke-Onboarding {
         $userParams["ScriptPath"] = $adDefaults["LogonScript"]
     }
 
-    # Collect additional attributes from the form
+    # [16.1.8.2 - Collect additional attributes from the form]
     Write-DebugMessage "Invoke-Onboarding: Building otherAttributes"
     $otherAttributes = @{}
 
-    # Bestimme den Mailsuffix: Falls vorhanden, verwende den vom Formular, ansonsten aus der INI aus [MailEndungen]/Domain1
+    # [16.1.8.3 - Bestimme den Mailsuffix: Falls vorhanden, verwende den vom Formular, ansonsten aus der INI aus [MailEndungen]/Domain1]
     if (-not [string]::IsNullOrWhiteSpace($userData.MailSuffix)) {
         $mailSuffix = $userData.MailSuffix.Trim()
     } else {
@@ -1069,16 +1191,16 @@ function Invoke-Onboarding {
         $mailSuffix = $Config["MailEndungen"]["Domain1"]
     }
 
-    # Stelle sicher, dass EmailAddress einen gültigen (nicht-null) Wert hat
+    # [16.1.8.4 - Stelle sicher, dass EmailAddress einen gültigen (nicht-null) Wert hat]
     $emailAddress = $userData.EmailAddress
     if ($emailAddress -eq $null) { 
         $emailAddress = "" 
     }
 
-    # Setze zunächst das "mail"-Attribut aus EmailAddress + mailSuffix
+    # [16.1.8.5 - Setze zunächst das "mail"-Attribut aus EmailAddress + mailSuffix]
     $otherAttributes["mail"] = "$emailAddress$mailSuffix"
 
-    # Falls EmailAddress vorhanden ist, aber kein "@" enthält, wird ein alternativer Suffix genutzt
+    # [16.1.8.6 - Falls EmailAddress vorhanden ist, aber kein "@" enthält, wird ein alternativer Suffix genutzt]
     if (-not [string]::IsNullOrWhiteSpace($userData.EmailAddress)) {
         if ($userData.EmailAddress -notmatch "@") {
             $otherAttributes["mail"] = $userData.EmailAddress + $mailSuffix
@@ -1087,7 +1209,7 @@ function Invoke-Onboarding {
             $otherAttributes["mail"] = $userData.EmailAddress
         }
     } else {
-        # Falls Email leer ist
+        # [16.1.8.7 - Falls Email leer ist]
         $otherAttributes["mail"] = "placeholder$mailSuffix"
     }
 
@@ -1098,16 +1220,16 @@ function Invoke-Onboarding {
     if ($userData.Position)       { $otherAttributes["title"] = $userData.Position }
     if ($userData.DepartmentField){ $otherAttributes["department"] = $userData.DepartmentField }
 
-    # If there's a Telefon1 in the config (company phone), add as ipPhone
-    if ($companyData.Contains("Telefon1") -and -not [string]::IsNullOrWhiteSpace($companyData["Telefon1"])) {
-        $otherAttributes["ipPhone"] = $companyData["Telefon1"].Trim()
+    # [16.1.8.8 - If there's a CompanyTelefon in the config (company phone), add as ipPhone]
+    if ($companyData.Contains("CompanyTelefon") -and -not [string]::IsNullOrWhiteSpace($companyData["CompanyTelefon"])) {
+        $otherAttributes["ipPhone"] = $companyData["CompanyTelefon"].Trim()
     }
 
     if ($otherAttributes.Count -gt 0) {
         $userParams["OtherAttributes"] = $otherAttributes
     }
 
-    # If there's an Ablaufdatum (termination), set accountExpirationDate
+    # [16.1.8.9 - If there's an Ablaufdatum (termination), set accountExpirationDate]
     if (-not [string]::IsNullOrWhiteSpace($userData.Ablaufdatum)) {
         try {
             $expirationDate = [DateTime]::Parse($userData.Ablaufdatum)
@@ -1118,7 +1240,7 @@ function Invoke-Onboarding {
         }
     }
 
-    # --- 8) Create or update AD user
+    # [16.1.9 - Create or update AD user]
     Write-DebugMessage "Invoke-Onboarding: Checking if user already exists in AD"
     $existingUser = $null
     try {
@@ -1132,7 +1254,7 @@ function Invoke-Onboarding {
         Write-DebugMessage "Invoke-Onboarding: Creating new user: $($userData.DisplayName)"
         Invoke-ADCommand -Command { New-ADUser @userParams -ErrorAction Stop } -ErrorContext "Erstellen des AD-Benutzers für $($userData.DisplayName)"
         
-        # Smartcard Logon-Einstellung
+        # [16.1.9.1 - Smartcard Logon-Einstellung]
         if ($userData.SmartcardLogonRequired) {
             Write-DebugMessage "Invoke-Onboarding: Setting SmartcardLogonRequired for $($userData.DisplayName)"
             try {
@@ -1144,7 +1266,7 @@ function Invoke-Onboarding {
             }
         }
         
-        # "CannotChangePassword" – Hinweis, dass diese Funktionalität noch nicht implementiert ist
+        # [16.1.9.2 - "CannotChangePassword" – Hinweis, dass diese Funktionalität noch nicht implementiert ist]
         if ($userData.CannotChangePassword) {
             Write-DebugMessage "Invoke-Onboarding: (Note) 'CannotChangePassword' via ACL not yet implemented."
         }
@@ -1173,6 +1295,7 @@ function Invoke-Onboarding {
         }
     }    
 
+    # [16.1.9.3 - Setting AD account password (Reset)]
     Write-DebugMessage "Invoke-Onboarding: Setting AD account password (Reset)"
     try {
         Set-ADAccountPassword -Identity $SamAccountName -Reset -NewPassword $SecurePW -ErrorAction SilentlyContinue
@@ -1181,13 +1304,13 @@ function Invoke-Onboarding {
         Write-Warning "Error setting password: $($_.Exception.Message)"
     }
 
-    # --- 9) AD Group assignment (including license, TL, AL) ---
+    # [16.1.10 - Handling AD group assignments]
     Write-DebugMessage "Invoke-Onboarding: Handling AD group assignments"
     if ($userData.External) {
         Write-DebugMessage "External user: skipping default AD group assignment."
     }
     else {
-        # 9a) Check any ADGroupsSelected from the GUI
+        # [16.1.10.1 - Check any ADGroupsSelected from the GUI]
         foreach ($grpKey in $userData.ADGroupsSelected) {
             if ($Config.ADGroups.ContainsKey($grpKey)) {
                 $groupName = $Config.ADGroups[$grpKey]
@@ -1203,7 +1326,7 @@ function Invoke-Onboarding {
             }
         }
 
-        # 9b) Team Leader (TL) or Department Head (AL)
+        # [16.1.10.2 - Team Leader (TL) or Department Head (AL)]
         if ($userData.TL -eq $true) {
             Write-DebugMessage "Invoke-Onboarding: TL is true - adding user to selected TLGroup"
             if (-not [string]::IsNullOrWhiteSpace($userData.TLGroup) -and $Config.TLGroups.Contains($userData.TLGroup)) {
@@ -1238,7 +1361,7 @@ function Invoke-Onboarding {
             }
         }            
 
-        # 9c) Add user to default groups from [UserCreationDefaults]
+        # [16.1.10.3 - Add user to default groups from [UserCreationDefaults]]
         if ($Config.Contains("UserCreationDefaults") -and $Config.UserCreationDefaults.Contains("InitialGroupMembership")) {
             Write-DebugMessage "Invoke-Onboarding: InitialGroupMembership"
             $defaultGroups = $Config.UserCreationDefaults["InitialGroupMembership"].Split(";") | ForEach-Object { $_.Trim() }
@@ -1255,7 +1378,7 @@ function Invoke-Onboarding {
             }
         }
 
-        # 9d) License
+        # [16.1.10.4 - License]
         if (-not [string]::IsNullOrWhiteSpace($userData.License) -and $userData.License -notmatch "^(?i:keine|none)$") {
             $licenseKey = "MS365_" + $userData.License.Trim().ToUpper()
             if ($Config.Contains("LicensesGroups") -and $Config.LicensesGroups.Contains($licenseKey)) {
@@ -1273,7 +1396,7 @@ function Invoke-Onboarding {
             }
         }
        
-        # 9e) MS365 AD Sync
+        # [16.1.10.5 - MS365 AD Sync]
         if ($Config.Contains("ActivateUserMS365ADSync") -and $Config.ActivateUserMS365ADSync["ADSync"] -eq "1") {
             $syncGroup = $Config.ActivateUserMS365ADSync["ADSyncADGroup"]
             if ($syncGroup) {
@@ -1288,7 +1411,7 @@ function Invoke-Onboarding {
         }
     }
 
-    # --- 10) Logging
+    # [16.1.11 - Logging]
     Write-DebugMessage "Invoke-Onboarding: Logging to file"
     try {
         Write-LogMessage -Message ("ONBOARDING PERFORMED BY: " + ([System.Security.Principal.WindowsIdentity]::GetCurrent().Name) +
@@ -1299,7 +1422,7 @@ function Invoke-Onboarding {
         Write-Warning "Error logging: $($_.Exception.Message)"
     }
 
-    # Hier Variablen für die Reports initialisieren
+    # [16.1.11.1 - Initialize variables for reports]
     $reportBranding = $global:Config["Branding-Report"]
     $reportPath = $reportBranding["ReportPath"]
     if (-not (Test-Path $reportPath)) {
@@ -1308,14 +1431,14 @@ function Invoke-Onboarding {
 
     $finalReportFooter = $reportBranding["ReportFooter"]
 
-    # --- 11) Create Reports (HTML + TXT) ---
+    # [16.1.12 - Create Reports (HTML + TXT)]
     Write-DebugMessage "Invoke-Onboarding: Creating HTML and/or TXT reports"
     try {
         if (-not (Test-Path $reportPath)) {
             New-Item -ItemType Directory -Path $reportPath -Force | Out-Null
         }
 
-        # 11a) Load the HTML template
+        # [16.1.12.1 - Load the HTML template]
         $htmlFile = Join-Path $reportPath "$SamAccountName.html"
         $htmlTemplatePath = $reportBranding["TemplatePath"]
         $htmlTemplate = ""
@@ -1328,7 +1451,7 @@ function Invoke-Onboarding {
             $htmlTemplate = Get-Content -Path $htmlTemplatePath -Raw
         }
 
-        # 11b) Possibly build Websites HTML block if you want to show links in HTML
+        # [16.1.12.2 - Possibly build Websites HTML block if you want to show links in HTML]
         $websitesHTML = ""
         if ($Config.Contains("Websites")) {
             $websitesHTML += "<ul>`r`n"
@@ -1353,7 +1476,7 @@ function Invoke-Onboarding {
             $websitesHTML += "</ul>`r`n"
         }
 
-        # 11c) Replace placeholders in the HTML
+        # [16.1.12.3 - Replace placeholders in the HTML]
         $logoTag = ""
         if ($userData.CustomLogo -and (Test-Path $userData.CustomLogo)) {
             $logoTag = "<img src='$($userData.CustomLogo)' alt='Logo' />"
@@ -1391,46 +1514,46 @@ function Invoke-Onboarding {
         Set-Content -Path $htmlFile -Value $htmlContent -Encoding UTF8
         Write-DebugMessage "HTML report created: $htmlFile"
 
-     # 11d) Create the TXT if userData.OutputTXT or if the INI says to
-    $shouldCreateTXT = $userData.OutputTXT -or ($Config.General["UserOnboardingCreateTXT"] -eq '1')
-    if ($shouldCreateTXT) {
-    # If you have a separate txtTemplate
-    $txtTemplatePath = Join-Path $PSScriptRoot "txtTemplate.txt"  # oder aus der Config, falls gewünscht
-    $txtFile = Join-Path $reportPath "$SamAccountName.txt"
+        # [16.1.12.4 - Create the TXT if userData.OutputTXT or if the INI says to]
+        $shouldCreateTXT = $userData.OutputTXT -or ($Config.General["UserOnboardingCreateTXT"] -eq '1')
+        if ($shouldCreateTXT) {
+            # [16.1.12.4.1 - If you have a separate txtTemplate]
+            $txtTemplatePath = Join-Path $PSScriptRoot "txtTemplate.txt"  # oder aus der Config, falls gewünscht
+            $txtFile = Join-Path $reportPath "$SamAccountName.txt"
 
-    [string]$txtContent = ""
-    if (Test-Path $txtTemplatePath) {
-        Write-DebugMessage "Reading txtTemplate from: $txtTemplatePath"
-        $txtContent = Get-Content -Path $txtTemplatePath -Raw
+            [string]$txtContent = ""
+            if (Test-Path $txtTemplatePath) {
+                Write-DebugMessage "Reading txtTemplate from: $txtTemplatePath"
+                $txtContent = Get-Content -Path $txtTemplatePath -Raw
 
-        # Ersetzen der Platzhalter im Template
-        $txtContent = $txtContent -replace '\$Config\.General\["DefaultOU"\]', $Config.General["DefaultOU"]
-        $txtContent = $txtContent -replace "\$SamAccountName", $SamAccountName
-        $txtContent = $txtContent -replace "\$UserPW", $mainPW
-        $txtContent = $txtContent -replace "\$userData\.AccountDisabled", ($userData.AccountDisabled)
-        $txtContent = $txtContent -replace "\$\(.*?\)", ""  # Entfernt eventuell verbleibende Platzhalter
+                # [16.1.12.4.2 - Replace placeholders in the template]
+                $txtContent = $txtContent -replace '\$Config\.General\["DefaultOU"\]', $Config.General["DefaultOU"]
+                $txtContent = $txtContent -replace "\$SamAccountName", $SamAccountName
+                $txtContent = $txtContent -replace "\$UserPW", $mainPW
+                $txtContent = $txtContent -replace "\$userData\.AccountDisabled", ($userData.AccountDisabled)
+                $txtContent = $txtContent -replace "\$\(.*?\)", ""  # Entfernt eventuell verbleibende Platzhalter
 
-        # Falls der Config-Block 'Websites' vorhanden ist, werden die Links angehängt
-        if ($Config.Contains("Websites")) {
-            $linksBlock = "`r`n--- LINKS from [Websites] ---`r`n"
-            foreach ($key in $Config.Websites.Keys) {
-                if ($key -match '^EmployeeLink\d+$') {
-                    $line = $Config.Websites[$key]
-                    $parts = $line -split '[\|\;]'
-                    if ($parts.Count -eq 3) {
-                        $title = $parts[0].Trim()
-                        $url   = $parts[1].Trim()
-                        $desc  = $parts[2].Trim()
-                        $linksBlock += "$title : $url  ($desc)`r`n"
+                # [16.1.12.4.3 - Append links if the Websites config block is present]
+                if ($Config.Contains("Websites")) {
+                    $linksBlock = "`r`n--- LINKS from [Websites] ---`r`n"
+                    foreach ($key in $Config.Websites.Keys) {
+                        if ($key -match '^EmployeeLink\d+$') {
+                            $line = $Config.Websites[$key]
+                            $parts = $line -split '[\|\;]'
+                            if ($parts.Count -eq 3) {
+                                $title = $parts[0].Trim()
+                                $url   = $parts[1].Trim()
+                                $desc  = $parts[2].Trim()
+                                $linksBlock += "$title : $url  ($desc)`r`n"
+                            }
+                        }
                     }
+                    $linksBlock += "`r`n$finalReportFooter`r`n"
+                    $txtContent += $linksBlock
                 }
             }
-            $linksBlock += "`r`n$finalReportFooter`r`n"
-            $txtContent += $linksBlock
-        }
-    }
             else {
-                # If no external txtTemplate file, build it inline
+                # [16.1.12.4.4 - If no external txtTemplate file, build it inline]
                 Write-DebugMessage "No external txtTemplate found - using inline approach"
                 $txtFile = Join-Path $reportPath "$SamAccountName.txt"
 
@@ -1476,7 +1599,7 @@ Useful Links:
 ----------------------------------------------------
 "@
 
-                # Add the websites from [Websites]
+                # [16.1.12.4.5 - Add the websites from [Websites]]
                 if ($Config.Contains("Websites")) {
                     foreach ($key in $Config.Websites.Keys) {
                         if ($key -match '^EmployeeLink\d+$') {
@@ -1504,7 +1627,8 @@ Useful Links:
     }
 
     Write-DebugMessage "Invoke-Onboarding: Returning final result object"
-    # Return a small object with final SamAccountName, UPN, and PW if needed
+    # [16.1.13 - Return a small object with final SamAccountName, UPN, and PW if needed]
+    Write-DebugMessage "Onboarding process completed successfully."
     return [ordered]@{
         SamAccountName = $SamAccountName
         UPN            = $UPN
@@ -1512,9 +1636,10 @@ Useful Links:
     }
 } 
 Write-Debug ("userData: " + ( $userData | Out-String ))
-#endregion PROCESS-ONBOARDING
 
-#region Set-DropDownValues
+#region [Region 17 | DROPDOWN UTILITY]
+# [Function to set values and options for dropdown controls]
+# [Funktion zum Setzen von Werten und Optionen für Dropdown-Steuerelemente]
 Write-DebugMessage "Set-DropDownValues"
 function Set-DropDownValues {
     [CmdletBinding()]
@@ -1617,9 +1742,14 @@ function Set-DropDownValues {
         Write-Error "Fehler beim Befüllen des Dropdowns '$DataType': $($_.Exception.Message)"
     }
 }
+#endregion
 
 Write-DebugMessage "Process-ADGroups"
-# Funktion für die AD-Gruppenerstellung (Platzhalter)
+
+#region [Region 18 | AD GROUP CREATION]
+# [Function for handling AD group creation (placeholder)]
+# [Funktion zur Erstellung von AD-Gruppen (Platzhalter)]
+Write-DebugMessage "Processing AD groups."
 function Process-ADGroups {
     param(
         [Parameter(Mandatory=$true)] $GroupData,
@@ -1629,7 +1759,14 @@ function Process-ADGroups {
     # Hier kann der Code zur Gruppenerstellung ergänzt und optimiert werden.
     return $true
 }
+#endregion
+
 Write-DebugMessage "Get-ADData"
+
+#region [Region 19 | AD DATA RETRIEVAL]
+# [Function to retrieve and process data from Active Directory]
+# [Funktion zum Abrufen und Verarbeiten von Daten aus Active Directory]
+Write-DebugMessage "Retrieving AD data."
 function Get-ADData {
     try {
         # Alle OUs abrufen und in ein sortiertes Array konvertieren
@@ -1677,9 +1814,14 @@ function Get-ADData {
         exit
     }
 }
+#endregion
 
 Write-DebugMessage "Open-INIEditor"
-# Funktion zum Öffnen des INI-Editors
+
+#region [Region 20 | INI EDITOR]
+# [Function to open the INI configuration editor]
+# [Funktion zum Öffnen des INI-Konfigurationseditors]
+Write-DebugMessage "Opening INI editor."
 function Open-INIEditor {
     try {
         if ($global:Config.General.DebugMode -eq "1") {
@@ -1693,15 +1835,21 @@ function Open-INIEditor {
         Throw "Fehler beim Öffnen des INI Editors: $_"
     }
 }
-#endregion Funktionsdefinitionen
-Write-DebugMessage "endregion Funktionsdefinitionen"
+#endregion
+#endregion
 
-Write-DebugMessage "region GUI"
-#region GUI
+Write-DebugMessage "Defining GUI implementation."
+
+#region [Region 21 | GUI IMPLEMENTATION]
+# [Handles the entire GUI implementation and event handlers]
+# [Behandelt die gesamte GUI-Implementierung und Event-Handler]
 
 Write-DebugMessage "GUI Sammle ausgewählte Gruppen aus dem AD-Gruppen-Panel"
 
-#GUI: Sammle ausgewählte Gruppen aus dem AD-Gruppen-Panel
+#region [Region 21.1 | AD GROUPS SELECTION]
+# [Collects selected groups from the AD groups panel]
+# [Sammelt ausgewählte Gruppen aus dem AD-Gruppen-Panel]
+Write-DebugMessage "Collecting selected AD groups from panel."
 $adGroupsPanel = $window.FindName("icADGroups")
 if ($adGroupsPanel) {
     # Sicherstellen, dass $global:userData existiert
@@ -1719,9 +1867,13 @@ if ($adGroupsPanel) {
         }
     }
 }
+#endregion
 
-Write-DebugMessage "GUI Logo-Upload aus der GUI abrufen"
-#GUI: Button für Logo-Upload aus der GUI abrufen
+Write-DebugMessage "Setting up logo upload button."
+
+#region [Region 21.2 | LOGO UPLOAD BUTTON]
+# [Sets up the logo upload button and its functionality]
+# [Richtet den Logo-Upload-Button und dessen Funktionalität ein]
 $btnUploadLogo = $window.FindName("btnUploadLogo")
 Register-GUIEvent -Control $btnUploadLogo -EventAction {
     if (-not $global:Config.Contains("Branding-Report")) {
@@ -1735,16 +1887,28 @@ Register-GUIEvent -Control $btnUploadLogo -EventAction {
 #GUI: START "easyONBOARDING BUTTON"
 Write-DebugMessage "GUI: TAB easyONBOARDING geladen"
 
-# --- Tab "easyONBOARDING" ---
+#region [Region 21.3 | ONBOARDING TAB]
+# [Implements the main onboarding tab functionality]
+# [Implementiert die Hauptfunktionalität des Onboarding-Tabs]
+Write-DebugMessage "Onboarding tab loaded."
 $onboardingTab = $window.FindName("Tab_Onboarding")
+# [21.3.1 - Validates the tab exists in the XAML interface]
+# [Überprüft, ob der Tab in der XAML-Oberfläche existiert]
 if (-not $onboardingTab) {
     Write-DebugMessage "ERROR: Onboarding-Tab fehlt!"
     Write-Error "Das Onboarding-Tab (x:Name='Tab_Onboarding') wurde in der XAML nicht gefunden."
     exit
 }
+#endregion
 
-Write-DebugMessage "btnStartOnboarding"
+Write-DebugMessage "Setting up onboarding button handler."
+
+#region [Region 21.4 | ONBOARDING BUTTON HANDLER]
+# [Implements the start onboarding button click handler]
+# [Implementiert den Klick-Handler für den Onboarding-Start-Button]
 $btnStartOnboarding = $onboardingTab.FindName("btnOnboard")
+# [21.4.1 - Sets up the primary function to execute when user initiates onboarding]
+# [Richtet die Hauptfunktion ein, die ausgeführt wird, wenn der Benutzer das Onboarding startet]
 if (-not $btnStartOnboarding) {
     Write-DebugMessage "ERROR: btnOnboard wurde NICHT gefunden!"
     exit
@@ -1884,11 +2048,15 @@ $btnStartOnboarding.Add_Click({
         [System.Windows.MessageBox]::Show("Fehler: $($_.Exception.Message)", "Fehler", 'OK', 'Error')
     }
 })
-
+#endregion
 
 # END "easyONBOARDING BUTTON"
 Write-DebugMessage "TAB easyONBOARDING - BUTTON - CREATE PDF"
-# Button "CREATE PDF"
+
+#region [Region 21.5 | PDF CREATION BUTTON]
+# [Implements the PDF creation button functionality]
+# [Implementiert die Funktionalität des PDF-Erstellungs-Buttons]
+Write-DebugMessage "Setting up PDF creation button."
 $btnPDF = $window.FindName("btnPDF")
 if ($btnPDF) {
     Write-DebugMessage "TAB easyONBOARDING - BUTTON ausgewählt - CREATE PDF"
@@ -1952,7 +2120,14 @@ if ($btnPDF) {
         }
     })
 }
+#endregion
+
 Write-DebugMessage "TAB easyONBOARDING - BUTTON Info"
+
+#region [Region 21.6 | INFO BUTTON]
+# [Implements the info button functionality]
+# [Implementiert die Funktionalität des Info-Buttons]
+Write-DebugMessage "Setting up info button."
 $btnInfo = $window.FindName("btnInfo")
 if ($btnInfo) {
     Write-DebugMessage "TAB easyONBOARDING - BUTTON ausgewählt: Info"
@@ -1966,7 +2141,14 @@ if ($btnInfo) {
         }
     })
 }
+#endregion
+
 Write-DebugMessage "TAB easyONBOARDING - BUTTON Close"
+
+#region [Region 21.7 | CLOSE BUTTON]
+# [Implements the close button functionality]
+# [Implementiert die Funktionalität des Schließen-Buttons]
+Write-DebugMessage "Setting up close button."
 $btnClose = $window.FindName("btnClose")
 if ($btnClose) {
     Write-DebugMessage "TAB easyONBOARDING - BUTTON ausgewählt: Close"
@@ -1974,8 +2156,14 @@ if ($btnClose) {
         $window.Close()
     })
 }
+#endregion
+
 Write-DebugMessage "GUI: TAB easyADUpdate geladen"
-# --- Tab "easyADUpdate" (Platzhalter) ---
+
+#region [Region 21.8 | AD UPDATE TAB]
+# [Implements the AD Update tab functionality (placeholder)]
+# [Implementiert die Funktionalität des AD-Update-Tabs (Platzhalter)]
+Write-DebugMessage "AD Update tab loaded."
 $adUpdateTab = $window.FindName("Tab_ADUpdate")
 if ($adUpdateTab) {
     $lblPlaceholder = $adUpdateTab.FindName("lblPlaceholder")
@@ -1983,8 +2171,14 @@ if ($adUpdateTab) {
         $lblPlaceholder.Text = "Funktionalität in Arbeit..."
     }
 }
+#endregion
+
 Write-DebugMessage "GUI: TAB easyADGroups geladen"
-# --- Tab "easyADGroups" ---
+
+#region [Region 21.9 | AD GROUPS TAB]
+# [Implements the AD Groups tab functionality]
+# [Implementiert die Funktionalität des AD-Gruppen-Tabs]
+Write-DebugMessage "AD Groups tab loaded."
 $adGroupsTab = $window.FindName("Tab_ADGroups")
 if ($adGroupsTab) {
     $btnCreateGroup = $adGroupsTab.FindName("buttonCreate")
@@ -2014,8 +2208,14 @@ if ($adGroupsTab) {
         })
     }
 }
+#endregion
+
 Write-DebugMessage "GUI: TAB Tab Settings geladen"
-# --- Tab "Settings" ---
+
+#region [Region 21.10 | SETTINGS TAB]
+# [Implements the Settings tab functionality]
+# [Implementiert die Funktionalität des Einstellungen-Tabs]
+Write-DebugMessage "Settings tab loaded."
 $settingsTab = $window.FindName("Tab_Settings")
 if ($settingsTab) {
     $btnOpenEditor = $settingsTab.FindName("btnOpenEditor")
@@ -2042,17 +2242,30 @@ if ($settingsTab) {
     }
 }
 #endregion
+#endregion
+
+Write-DebugMessage "Main GUI execution started."
+
+#region [Region 22 | MAIN GUI EXECUTION]
+# [Main code block that starts and handles the GUI dialog]
+# [Hauptcodeblock, der den GUI-Dialog startet und verarbeitet]
+
+# [99.22.0 | MAIN GUI INITIALIZATION]
+# ENGLISH - Debug message indicating the start of the main GUI execution
+# GERMAN - Debug-Nachricht, die den Beginn der Hauptausführung der GUI anzeigt
 Write-DebugMessage "GUI: Hauptausführung der GUI"
-#region Hauptausführung der GUI
-Write-DebugMessage "GUI: Starte GUI jetzt..."
+
+# [22.1 - Shows main window and handles any GUI initialization errors]
+# [Zeigt das Hauptfenster an und behandelt alle Fehler bei der GUI-Initialisierung]
 try {
     $result = $window.ShowDialog()
-    Write-Host "GUI erfolgreich gestartet, Ergebnis: $result"
+    Write-DebugMessage "GUI started successfully, result: $result"
 } catch {
-    Write-Host "ERROR: GUI konnte nicht gestartet werden!"
-    Write-Host "Fehlermeldung: $($_.Exception.Message)"
-    Write-Host "Fehlerdetails: $($_.InvocationInfo.PositionMessage)"
+    Write-DebugMessage "ERROR: GUI could not be started!"
+    Write-DebugMessage "Error message: $($_.Exception.Message)"
+    Write-DebugMessage "Error details: $($_.InvocationInfo.PositionMessage)"
     exit 1
 }
 #endregion
-Write-DebugMessage "endregion GUI"
+
+Write-DebugMessage "Main GUI execution completed."
