@@ -1,6 +1,6 @@
 # PSscripts.de  -  ANDREAS HEPP  –  easyOnboarding
 
-Version         : 1.0.0
+Version         : 1.0.1
 
 Letztes Update  : 23.02.2025
 
