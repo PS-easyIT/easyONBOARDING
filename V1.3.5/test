@@ -1,0 +1,479 @@
+#region [Region 21.8 | AD UPDATE TAB]
+# [Implements the AD Update tab functionality]
+# [Implementiert die Funktionalität des AD-Update-Tabs]
+Write-DebugMessage "AD Update tab loaded."
+
+# Find the AD Update tab
+$adUpdateTab = $window.FindName("Tab_ADUpdate")
+if ($adUpdateTab) {
+
+    try {
+        # Retrieve search and basic controls – names must match the XAML definitions
+        $txtSearchADUpdate   = $adUpdateTab.FindName("txtSearchADUpdate")
+        $btnSearchADUpdate   = $adUpdateTab.FindName("btnSearchADUpdate")
+        $lstUsersADUpdate    = $adUpdateTab.FindName("lstUsersADUpdate")
+        
+        # Korrektur: Der Button heißt in der XAML btnRefreshOU_Kopieren
+        $btnRefreshADUserList = $adUpdateTab.FindName("btnRefreshOU_Kopieren") # Korrigierter Name für den Refresh-Button
+        
+        # Action buttons
+        $btnADUserUpdate     = $adUpdateTab.FindName("btnADUserUpdate")
+        $btnADUserCancel     = $adUpdateTab.FindName("btnADUserCancel")
+        $btnAddGroupUpdate   = $adUpdateTab.FindName("btnAddGroupUpdate")
+        $btnRemoveGroupUpdate= $adUpdateTab.FindName("btnRemoveGroupUpdate")
+        
+        # Basic information controls
+        $txtFirstNameUpdate  = $adUpdateTab.FindName("txtFirstNameUpdate")
+        $txtLastNameUpdate   = $adUpdateTab.FindName("txtLastNameUpdate")
+        $txtDisplayNameUpdate= $adUpdateTab.FindName("txtDisplayNameUpdate")
+        $txtEmailUpdate      = $adUpdateTab.FindName("txtEmailUpdate")
+        $txtDepartmentUpdate = $adUpdateTab.FindName("txtDepartmentUpdate")
+        
+        # Contact information controls
+        $txtPhoneUpdate      = $adUpdateTab.FindName("txtPhoneUpdate")
+        $txtMobileUpdate     = $adUpdateTab.FindName("txtMobileUpdate")
+        $txtOfficeUpdate     = $adUpdateTab.FindName("txtOfficeUpdate")
+        
+        # Account options
+        $chkAccountEnabledUpdate      = $adUpdateTab.FindName("chkAccountEnabledUpdate")
+        $chkPasswordNeverExpiresUpdate= $adUpdateTab.FindName("chkPasswordNeverExpiresUpdate")
+        $chkMustChangePasswordUpdate  = $adUpdateTab.FindName("chkMustChangePasswordUpdate")
+        
+        # Extended properties controls
+        $txtManagerUpdate    = $adUpdateTab.FindName("txtManagerUpdate")
+        $txtJobTitleUpdate   = $adUpdateTab.FindName("txtJobTitleUpdate")
+        $txtLocationUpdate   = $adUpdateTab.FindName("txtLocationUpdate")
+        $txtEmployeeIDUpdate = $adUpdateTab.FindName("txtEmployeeIDUpdate")
+        
+        # Group management control
+        $lstGroupsUpdate     = $adUpdateTab.FindName("lstGroupsUpdate")
+        if ($lstGroupsUpdate) {
+            $lstGroupsUpdate.Items.Clear()
+        }
+    }
+    catch {
+        Write-DebugMessage "Error loading AD Update tab controls: $($_.Exception.Message)"
+        Write-LogMessage -Message "Failed to initialize AD Update tab controls: $($_.Exception.Message)" -LogLevel "ERROR"
+    }
+    
+    # Register search event
+    if ($btnSearchADUpdate -and $txtSearchADUpdate -and $lstUsersADUpdate) {
+        Write-DebugMessage "Registering event for btnSearchADUpdate in Tab_ADUpdate"
+        $btnSearchADUpdate.Add_Click({
+            $searchTerm = $txtSearchADUpdate.Text.Trim()
+            if ([string]::IsNullOrWhiteSpace($searchTerm)) {
+                [System.Windows.MessageBox]::Show("Bitte geben Sie ein Suchwort ein.", "Info", "OK", "Information")
+                return
+            }
+            Write-DebugMessage "Searching AD users for '$searchTerm'..."
+            try {
+                # Verbesserte Suche mit korrektem Filter
+                $filter = "((DisplayName -like '*$searchTerm*') -or (SamAccountName -like '*$searchTerm*') -or (mail -like '*$searchTerm*'))"
+                Write-DebugMessage "Using AD filter: $filter"
+                
+                $allMatches = Get-ADUser -Filter $filter -Properties DisplayName, SamAccountName, mail, EmailAddress -ErrorAction Stop
+
+                if ($null -eq $allMatches -or ($allMatches.Count -eq 0)) {
+                    Write-DebugMessage "No users found for search term: $searchTerm"
+                    [System.Windows.MessageBox]::Show("Keine Benutzer gefunden für: $searchTerm", "Keine Ergebnisse", "OK", "Information")
+                    return
+                }
+
+                # Erstellen eines Arrays von benutzerdefinierten Objekten für die ListView
+                $results = @()
+                foreach ($user in $allMatches) {
+                    $emailAddress = if ($user.mail) { $user.mail } elseif ($user.EmailAddress) { $user.EmailAddress } else { "" }
+                    $results += [PSCustomObject]@{
+                        DisplayName = $user.DisplayName
+                        SamAccountName = $user.SamAccountName
+                        Email = $emailAddress
+                    }
+                }
+                
+                # Debug-Ausgaben für die Diagnose
+                Write-DebugMessage "Found $($results.Count) users matching '$searchTerm'"
+                
+                # Zuerst ItemsSource auf null setzen und Items leeren
+                $lstUsersADUpdate.ItemsSource = $null
+                $lstUsersADUpdate.Items.Clear()
+                
+                # Manuelles Hinzufügen der Elemente zur ListView
+                foreach ($item in $results) {
+                    $lstUsersADUpdate.Items.Add($item)
+                }
+
+                if ($results.Count -eq 0) {
+                    [System.Windows.MessageBox]::Show("Keine Benutzer gefunden für: $searchTerm", "Keine Ergebnisse", "OK", "Information")
+                }
+                else {
+                    Write-DebugMessage "Successfully populated list with $($lstUsersADUpdate.Items.Count) items"
+                }
+            }
+            catch {
+                Write-DebugMessage "Fehler bei der Suche: $($_.Exception.Message)"
+                [System.Windows.MessageBox]::Show("Fehler bei der Suche: $($_.Exception.Message)", "Fehler", "OK", "Error")
+            }
+        })
+    }
+    else {
+        Write-DebugMessage "Required search controls missing in Tab_ADUpdate"
+    }
+
+    # Register Refresh User List event - Wir verwenden den korrigierten Buttonname
+    if ($btnRefreshADUserList -and $lstUsersADUpdate) {
+        Write-DebugMessage "Registering event for Refresh User List button in Tab_ADUpdate"
+        $btnRefreshADUserList.Add_Click({
+            Write-DebugMessage "Refreshing AD users list..."
+            try {
+                # Für große AD-Umgebungen begrenzen wir die Anzahl der geladenen Benutzer
+                # Wir filtern nach aktivierten Benutzern und sortiern nach Änderungsdatum
+                $filter = "Enabled -eq 'True'"
+                Write-DebugMessage "Loading active AD users with filter: $filter"
+                
+                # Lade bis zu 500 aktive Benutzer
+                $allUsers = Get-ADUser -Filter $filter -Properties DisplayName, SamAccountName, mail, EmailAddress, WhenChanged -ResultSetSize 500 |
+                            Sort-Object -Property WhenChanged -Descending
+
+                if ($null -eq $allUsers -or ($allUsers.Count -eq 0)) {
+                    Write-DebugMessage "No users found using the filter: $filter"
+                    [System.Windows.MessageBox]::Show("Keine Benutzer gefunden.", "Keine Ergebnisse", "OK", "Information")
+                    return
+                }
+
+                # Erstellen eines Arrays von benutzerdefinierten Objekten für die ListView
+                $results = @()
+                foreach ($user in $allUsers) {
+                    # E-Mail-Adresse aus mail oder EmailAddress-Attribut je nach Verfügbarkeit auslesen
+                    $emailAddress = if ($user.mail) { $user.mail } elseif ($user.EmailAddress) { $user.EmailAddress } else { "" }
+                    
+                    # Benutzerdefiniertes Objekt mit genau den Eigenschaften erstellen, die im XAML gebunden sind
+                    $results += [PSCustomObject]@{
+                        DisplayName = $user.DisplayName
+                        SamAccountName = $user.SamAccountName
+                        Email = $emailAddress
+                    }
+                }
+                
+                # Debug-Ausgabe für die Anzahl der geladenen Benutzer
+                Write-DebugMessage "Loaded $($results.Count) active AD users"
+                
+                # ListView aktualisieren
+                $lstUsersADUpdate.ItemsSource = $null
+                $lstUsersADUpdate.Items.Clear()
+                
+                # Manuelles Hinzufügen der Elemente zur ListView
+                foreach ($item in $results) {
+                    $lstUsersADUpdate.Items.Add($item)
+                }
+
+                [System.Windows.MessageBox]::Show("$($lstUsersADUpdate.Items.Count) Benutzer wurden geladen.", "Aktualisierung abgeschlossen", "OK", "Information")
+                Write-DebugMessage "Successfully populated list with $($lstUsersADUpdate.Items.Count) users"
+            }
+            catch {
+                Write-DebugMessage "Fehler beim Laden der Benutzerliste: $($_.Exception.Message)"
+                [System.Windows.MessageBox]::Show("Fehler beim Laden der Benutzerliste: $($_.Exception.Message)", "Fehler", "OK", "Error")
+            }
+        })
+    }
+
+    # Populate update fields when a user is selected
+    if ($lstUsersADUpdate) {
+        $lstUsersADUpdate.Add_SelectionChanged({
+            if ($null -ne $lstUsersADUpdate.SelectedItem) {
+                $selectedUser = $lstUsersADUpdate.SelectedItem
+                $samAccountName = $selectedUser.SamAccountName
+                if ([string]::IsNullOrWhiteSpace($samAccountName)) {
+                    Write-DebugMessage "Selected user has no SamAccountName"
+                    return
+                }
+                try {
+                    $adUser = Get-ADUser -Identity $samAccountName -Properties DisplayName, GivenName, Surname, EmailAddress, Department, Title, OfficePhone, Mobile, physicalDeliveryOfficeName, Enabled, PasswordNeverExpires, Manager, employeeID, MemberOf -ErrorAction Stop
+                    if ($adUser) {
+                        if ($txtFirstNameUpdate) { $txtFirstNameUpdate.Text = (if ($adUser.GivenName) { $adUser.GivenName } else { "" }) }
+                        if ($txtLastNameUpdate) { $txtLastNameUpdate.Text = (if ($adUser.Surname) { $adUser.Surname } else { "" }) }
+                        if ($txtDisplayNameUpdate) { $txtDisplayNameUpdate.Text = (if ($adUser.DisplayName) { $adUser.DisplayName } else { "" }) }
+                        if ($txtEmailUpdate) { $txtEmailUpdate.Text = (if ($adUser.EmailAddress) { $adUser.EmailAddress } else { "" }) }
+                        if ($txtDepartmentUpdate) { $txtDepartmentUpdate.Text = (if ($adUser.Department) { $adUser.Department } else { "" }) }
+                        if ($txtPhoneUpdate) { $txtPhoneUpdate.Text = (if ($adUser.OfficePhone) { $adUser.OfficePhone } else { "" }) }
+                        if ($txtMobileUpdate) { $txtMobileUpdate.Text = (if ($adUser.Mobile) { $adUser.Mobile } else { "" }) }
+                        if ($txtOfficeUpdate) { $txtOfficeUpdate.Text = (if ($adUser.physicalDeliveryOfficeName) { $adUser.physicalDeliveryOfficeName } else { "" }) }
+                        if ($txtJobTitleUpdate) { $txtJobTitleUpdate.Text = (if ($adUser.Title) { $adUser.Title } else { "" }) }
+                        if ($txtLocationUpdate) { $txtLocationUpdate.Text = (if ($adUser.physicalDeliveryOfficeName) { $adUser.physicalDeliveryOfficeName } else { "" }) }
+                        if ($txtEmployeeIDUpdate) { $txtEmployeeIDUpdate.Text = (if ($adUser.employeeID) { $adUser.employeeID } else { "" }) }
+                        
+                        if ($chkAccountEnabledUpdate) { $chkAccountEnabledUpdate.IsChecked = $adUser.Enabled }
+                        if ($chkPasswordNeverExpiresUpdate) { $chkPasswordNeverExpiresUpdate.IsChecked = $adUser.PasswordNeverExpires }
+                        if ($chkMustChangePasswordUpdate) { $chkMustChangePasswordUpdate.IsChecked = $false }
+                        
+                        if ($txtManagerUpdate) {
+                            if (-not [string]::IsNullOrEmpty($adUser.Manager)) {
+                                try {
+                                    $manager = Get-ADUser -Identity $adUser.Manager -Properties DisplayName -ErrorAction Stop
+                                    $txtManagerUpdate.Text = (if ($manager.DisplayName) { $manager.DisplayName } else { $manager.SamAccountName })
+                                } catch {
+                                    $txtManagerUpdate.Text = ""
+                                    Write-DebugMessage "Error retrieving manager: $($_.Exception.Message)"
+                                }
+                            } else {
+                                $txtManagerUpdate.Text = ""
+                            }
+                        }
+                        
+                        if ($lstGroupsUpdate) {
+                            $lstGroupsUpdate.Items.Clear()
+                            $memberOfGroups = @($adUser.MemberOf)
+                            if ($memberOfGroups.Count -gt 0) {
+                                foreach ($group in $memberOfGroups) {
+                                    try {
+                                        if (-not [string]::IsNullOrEmpty($group)) {
+                                            $groupObj = Get-ADGroup -Identity $group -Properties Name -ErrorAction Stop
+                                            if ($groupObj -and -not [string]::IsNullOrEmpty($groupObj.Name)) {
+                                                [void]$lstGroupsUpdate.Items.Add($groupObj.Name)
+                                            }
+                                        }
+                                    }
+                                    catch {
+                                        Write-DebugMessage "Error retrieving group details: $($_.Exception.Message)"
+                                    }
+                                }
+                            }
+                        }
+                        Write-DebugMessage "Fields populated for user: $samAccountName"
+                    }
+                    else {
+                        Write-DebugMessage "AD User object is null for user: $samAccountName"
+                        [System.Windows.MessageBox]::Show("Der ausgewählte Benutzer konnte nicht gefunden werden.", "Fehler", "OK", "Error")
+                    }
+                }
+                catch {
+                    Write-DebugMessage "Error loading user details: $($_.Exception.Message)"
+                    [System.Windows.MessageBox]::Show("Fehler beim Laden der Benutzerdetails: $($_.Exception.Message)", "Fehler", "OK", "Error")
+                }
+            }
+        })
+    }
+
+    # Update User button event
+    if ($btnADUserUpdate) {
+        Write-DebugMessage "Registering event handler for btnADUserUpdate"
+        $btnADUserUpdate.Add_Click({
+            try {
+                if (-not $lstUsersADUpdate -or -not $lstUsersADUpdate.SelectedItem) {
+                    [System.Windows.MessageBox]::Show("Bitte einen Benutzer aus der Liste auswählen.", "Fehlende Auswahl", "OK", "Warning")
+                    return
+                }
+                $userToUpdate = $lstUsersADUpdate.SelectedItem.SamAccountName
+                if ([string]::IsNullOrWhiteSpace($userToUpdate)) {
+                    [System.Windows.MessageBox]::Show("Ungültiger Benutzername ausgewählt.", "Fehler", "OK", "Warning")
+                    return
+                }
+                Write-DebugMessage "Updating user: $userToUpdate"
+                if (-not $txtDisplayNameUpdate -or [string]::IsNullOrWhiteSpace($txtDisplayNameUpdate.Text)) {
+                    [System.Windows.MessageBox]::Show("Der Anzeigename darf nicht leer sein.", "Validierung", "OK", "Warning")
+                    return
+                }
+                
+                # build parameters for Set-ADUser
+                $paramUpdate = @{ Identity = $userToUpdate }
+                if ($txtDisplayNameUpdate -and -not [string]::IsNullOrWhiteSpace($txtDisplayNameUpdate.Text)) {
+                    $paramUpdate["DisplayName"] = $txtDisplayNameUpdate.Text.Trim()
+                }
+                if ($chkAccountEnabledUpdate) {
+                    $paramUpdate["Enabled"] = $chkAccountEnabledUpdate.IsChecked
+                }
+                if ($chkPasswordNeverExpiresUpdate) {
+                    $paramUpdate["PasswordNeverExpires"] = $chkPasswordNeverExpiresUpdate.IsChecked
+                }
+                if ($txtFirstNameUpdate -and -not [string]::IsNullOrWhiteSpace($txtFirstNameUpdate.Text)) {
+                    $paramUpdate["GivenName"] = $txtFirstNameUpdate.Text.Trim()
+                }
+                if ($txtLastNameUpdate -and -not [string]::IsNullOrWhiteSpace($txtLastNameUpdate.Text)) {
+                    $paramUpdate["Surname"] = $txtLastNameUpdate.Text.Trim()
+                }
+                if ($txtEmailUpdate -and -not [string]::IsNullOrWhiteSpace($txtEmailUpdate.Text)) {
+                    $paramUpdate["EmailAddress"] = $txtEmailUpdate.Text.Trim()
+                }
+                if ($txtDepartmentUpdate -and -not [string]::IsNullOrWhiteSpace($txtDepartmentUpdate.Text)) {
+                    $paramUpdate["Department"] = $txtDepartmentUpdate.Text.Trim()
+                }
+                if ($txtPhoneUpdate -and -not [string]::IsNullOrWhiteSpace($txtPhoneUpdate.Text)) {
+                    $paramUpdate["OfficePhone"] = $txtPhoneUpdate.Text.Trim()
+                }
+                if ($txtMobileUpdate -and -not [string]::IsNullOrWhiteSpace($txtMobileUpdate.Text)) {
+                    $paramUpdate["MobilePhone"] = $txtMobileUpdate.Text.Trim()
+                }
+                if ($txtJobTitleUpdate -and -not [string]::IsNullOrWhiteSpace($txtJobTitleUpdate.Text)) {
+                    $paramUpdate["Title"] = $txtJobTitleUpdate.Text.Trim()
+                }
+                if ($txtManagerUpdate -and -not [string]::IsNullOrWhiteSpace($txtManagerUpdate.Text)) {
+                    try {
+                        $managerObj = Get-ADUser -Filter { (SamAccountName -eq $txtManagerUpdate.Text.Trim()) -or (DisplayName -eq $txtManagerUpdate.Text.Trim()) } -ErrorAction Stop
+                        if ($managerObj) {
+                            if ($managerObj -is [array]) { $managerObj = $managerObj[0] }
+                            $paramUpdate["Manager"] = $managerObj.DistinguishedName
+                        }
+                        else {
+                            [System.Windows.MessageBox]::Show("Der angegebene Manager konnte nicht gefunden werden: $($txtManagerUpdate.Text)", "Warnung", "OK", "Warning")
+                        }
+                    }
+                    catch {
+                        Write-DebugMessage "Manager lookup error: $($_.Exception.Message)"
+                        [System.Windows.MessageBox]::Show("Der angegebene Manager konnte nicht gefunden werden: $($txtManagerUpdate.Text)", "Warnung", "OK", "Warning")
+                    }
+                }
+                
+                if ($paramUpdate.Count -gt 1) {
+                    Set-ADUser @paramUpdate -ErrorAction Stop
+                    Write-DebugMessage "Updated user attributes: $($paramUpdate.Keys -join ', ')"
+                }
+                
+                # Update additional attributes using the -Replace parameter
+                $replaceHash = @{}
+                if ($txtOfficeUpdate -and -not [string]::IsNullOrWhiteSpace($txtOfficeUpdate.Text)) {
+                    $replaceHash["physicalDeliveryOfficeName"] = $txtOfficeUpdate.Text.Trim()
+                }
+                if ($txtLocationUpdate -and -not [string]::IsNullOrWhiteSpace($txtLocationUpdate.Text)) {
+                    $replaceHash["l"] = $txtLocationUpdate.Text.Trim()
+                }
+                if ($txtEmployeeIDUpdate -and -not [string]::IsNullOrWhiteSpace($txtEmployeeIDUpdate.Text)) {
+                    $replaceHash["employeeID"] = $txtEmployeeIDUpdate.Text.Trim()
+                }
+                if ($replaceHash.Count -gt 0) {
+                    Set-ADUser -Identity $userToUpdate -Replace $replaceHash -ErrorAction Stop
+                    Write-DebugMessage "Updated replace attributes: $($replaceHash.Keys -join ', ')"
+                }
+                if ($chkMustChangePasswordUpdate -ne $null) {
+                    Set-ADUser -Identity $userToUpdate -ChangePasswordAtLogon $chkMustChangePasswordUpdate.IsChecked -ErrorAction Stop
+                    Write-DebugMessage "Set ChangePasswordAtLogon to $($chkMustChangePasswordUpdate.IsChecked)"
+                }
+                [System.Windows.MessageBox]::Show("Der Benutzer '$userToUpdate' wurde erfolgreich aktualisiert.", "Erfolg", "OK", "Information")
+                Write-LogMessage -Message "AD-Update für $userToUpdate durch $($env:USERNAME)" -LogLevel "INFO"
+            }
+            catch {
+                Write-DebugMessage "AD User update error: $($_.Exception.Message)"
+                [System.Windows.MessageBox]::Show("Fehler beim Aktualisieren: $($_.Exception.Message)", "Fehler", "OK", "Error")
+            }
+        })
+    }
+
+    # Cancel button – reset form fields
+    if ($btnADUserCancel) {
+        Write-DebugMessage "Registering event handler for btnADUserCancel"
+        $btnADUserCancel.Add_Click({
+            Write-DebugMessage "Resetting update form"
+            $textFields = @("txtFirstNameUpdate","txtLastNameUpdate","txtDisplayNameUpdate","txtEmailUpdate",
+                              "txtPhoneUpdate","txtMobileUpdate","txtDepartmentUpdate","txtOfficeUpdate",
+                              "txtManagerUpdate","txtJobTitleUpdate","txtLocationUpdate","txtEmployeeIDUpdate")
+            foreach ($name in $textFields) {
+                $ctrl = $adUpdateTab.FindName($name)
+                if ($ctrl) { $ctrl.Text = "" }
+            }
+            if ($chkAccountEnabledUpdate) { $chkAccountEnabledUpdate.IsChecked = $false }
+            if ($chkPasswordNeverExpiresUpdate) { $chkPasswordNeverExpiresUpdate.IsChecked = $false }
+            if ($chkMustChangePasswordUpdate) { $chkMustChangePasswordUpdate.IsChecked = $false }
+            if ($lstUsersADUpdate) {
+                $lstUsersADUpdate.ItemsSource = $null
+                $lstUsersADUpdate.Items.Clear()
+                $lstUsersADUpdate.SelectedIndex = -1
+            }
+            if ($lstGroupsUpdate) { $lstGroupsUpdate.Items.Clear() }
+            [System.Windows.MessageBox]::Show("Formular zurückgesetzt.", "Zurückgesetzt", "OK", "Information")
+        })
+    }
+
+    # Add Group button functionality
+    if ($btnAddGroupUpdate) {
+        $btnAddGroupUpdate.Add_Click({
+            if (-not $lstUsersADUpdate -or -not $lstUsersADUpdate.SelectedItem) {
+                [System.Windows.MessageBox]::Show("Bitte wählen Sie zuerst einen Benutzer aus.", "Hinweis", "OK", "Information")
+                return
+            }
+            $selectedUser = $lstUsersADUpdate.SelectedItem.SamAccountName
+            if ([string]::IsNullOrWhiteSpace($selectedUser)) {
+                [System.Windows.MessageBox]::Show("Ungültiger Benutzername ausgewählt.", "Fehler", "OK", "Error")
+                return
+            }
+            # Use an input box (WPF-friendly via VB) to get the group name
+            $groupName = [Microsoft.VisualBasic.Interaction]::InputBox("Geben Sie den Namen der AD-Gruppe ein:", "Gruppe hinzufügen", "")
+            if (-not [string]::IsNullOrEmpty($groupName)) {
+                try {
+                    $group = Get-ADGroup -Identity $groupName -ErrorAction Stop
+                    if (-not $group) {
+                        throw "Gruppe '$groupName' konnte nicht gefunden werden."
+                    }
+                    $isMember = $false
+                    try {
+                        $members = Get-ADGroupMember -Identity $groupName -ErrorAction Stop
+                        if ($members -is [array]) {
+                            $isMember = ($members | Where-Object { $_.SamAccountName -eq $selectedUser }).Count -gt 0
+                        }
+                        else {
+                            $isMember = $members.SamAccountName -eq $selectedUser
+                        }
+                    }
+                    catch {
+                        Write-DebugMessage "Error checking group membership: $($_.Exception.Message)"
+                    }
+                    if ($isMember) {
+                        [System.Windows.MessageBox]::Show("Der Benutzer ist bereits Mitglied der Gruppe '$groupName'.", "Information", "OK", "Information")
+                        return
+                    }
+                    Add-ADGroupMember -Identity $groupName -Members $selectedUser -ErrorAction Stop
+                    if ($lstGroupsUpdate) { [void]$lstGroupsUpdate.Items.Add($group.Name) }
+                    [System.Windows.MessageBox]::Show("Benutzer wurde zur Gruppe '$groupName' hinzugefügt.", "Erfolg", "OK", "Information")
+                    Write-LogMessage -Message "Benutzer $selectedUser wurde zur Gruppe $groupName hinzugefügt von $($env:USERNAME)" -LogLevel "INFO"
+                }
+                catch {
+                    Write-DebugMessage "Error adding user to group: $($_.Exception.Message)"
+                    [System.Windows.MessageBox]::Show("Fehler beim Hinzufügen zur Gruppe: $($_.Exception.Message)", "Fehler", "OK", "Error")
+                }
+            }
+        })
+    }
+
+    # Remove Group button functionality
+    if ($btnRemoveGroupUpdate) {
+        $btnRemoveGroupUpdate.Add_Click({
+            if (-not $lstUsersADUpdate -or -not $lstUsersADUpdate.SelectedItem) {
+                [System.Windows.MessageBox]::Show("Bitte wählen Sie zuerst einen Benutzer aus.", "Hinweis", "OK", "Information")
+                return
+            }
+            if (-not $lstGroupsUpdate -or -not $lstGroupsUpdate.SelectedItem) {
+                [System.Windows.MessageBox]::Show("Bitte wählen Sie eine Gruppe aus der Liste aus.", "Hinweis", "OK", "Information")
+                return
+            }
+            $selectedUser = $lstUsersADUpdate.SelectedItem.SamAccountName
+            if ([string]::IsNullOrWhiteSpace($selectedUser)) {
+                [System.Windows.MessageBox]::Show("Ungültiger Benutzername ausgewählt.", "Fehler", "OK", "Error")
+                return
+            }
+            $selectedGroup = $lstGroupsUpdate.SelectedItem.ToString()
+            if ([string]::IsNullOrWhiteSpace($selectedGroup)) {
+                [System.Windows.MessageBox]::Show("Ungültiger Gruppenname ausgewählt.", "Fehler", "OK", "Error")
+                return
+            }
+            try {
+                $confirmation = [System.Windows.MessageBox]::Show(
+                    "Möchten Sie den Benutzer '$selectedUser' wirklich aus der Gruppe '$selectedGroup' entfernen?",
+                    "Bestätigung",
+                    "YesNo",
+                    "Question"
+                )
+                if ($confirmation -eq [System.Windows.MessageBoxResult]::Yes) {
+                    Remove-ADGroupMember -Identity $selectedGroup -Members $selectedUser -Confirm:$false -ErrorAction Stop
+                    if ($lstGroupsUpdate) { $lstGroupsUpdate.Items.Remove($selectedGroup) }
+                    [System.Windows.MessageBox]::Show("Benutzer wurde aus der Gruppe '$selectedGroup' entfernt.", "Erfolg", "OK", "Information")
+                    Write-LogMessage -Message "Benutzer $selectedUser wurde aus der Gruppe $selectedGroup entfernt von $($env:USERNAME)" -LogLevel "INFO"
+                }
+            }
+            catch {
+                Write-DebugMessage "Error removing user from group: $($_.Exception.Message)"
+                [System.Windows.MessageBox]::Show("Fehler beim Entfernen aus der Gruppe: $($_.Exception.Message)", "Fehler", "OK", "Error")
+            }
+        })
+    }
+}
+else {
+    Write-DebugMessage "AD Update tab (Tab_ADUpdate) not found in XAML."
+}
+#endregion

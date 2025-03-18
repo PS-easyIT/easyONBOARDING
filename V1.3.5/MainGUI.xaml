@@ -733,12 +733,18 @@
                             <TextBox
                                 x:Name="txtSearchADUpdate"
                                 Grid.ColumnSpan="2"
-                                Margin="77,0,111,0" />
+                                Margin="77,0,207,0" />
                             <Button
                                 x:Name="btnSearchADUpdate"
                                 Grid.Column="1"
-                                Margin="983,0,0,0"
+                                Margin="878,0,131,0"
                                 Content="Search" />
+                            <Button
+                                x:Name="btnRefreshOU_Kopieren"
+                                Grid.Column="1"
+                                Height="25"
+                                Margin="975,0,0,0"
+                                Content="Refresh User List" />
                         </Grid>
                     </GroupBox>
 
@@ -759,11 +765,11 @@
                                 <ListView.View>
                                     <GridView>
                                         <GridViewColumn
-                                            Width="175"
+                                            Width="165"
                                             DisplayMemberBinding="{Binding DisplayName}"
                                             Header="Display Name" />
                                         <GridViewColumn
-                                            Width="145"
+                                            Width="135"
                                             DisplayMemberBinding="{Binding SamAccountName}"
                                             Header="Username" />
                                         <GridViewColumn
@@ -1106,11 +1112,11 @@
                                 Binding="{Binding Key}"
                                 Header="Key" />
                             <DataGridTextColumn
-                                Width="335"
+                                Width="250"
                                 Binding="{Binding Value}"
                                 Header="Value" />
                             <DataGridTextColumn
-                                Width="350"
+                                Width="400"
                                 Binding="{Binding Comment}"
                                 Header="Comment"
                                 IsReadOnly="True" />

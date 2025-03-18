@@ -608,8 +608,8 @@ function New-ADUserAccount {
         if ([string]::IsNullOrWhiteSpace($UserData.Password)) {
             # Passwortlänge aus Config oder Standard 12 Zeichen
             $passwordLength = 12
-            if ($Config.Contains("General") -and $Config.General.Contains("DefaultPasswordLength")) {
-                $tempLength = [int]::TryParse($Config.General.DefaultPasswordLength, [ref]$passwordLength)
+            if ($Config.Contains("PasswordFixGenerate") -and $Config.PasswordFixGenerate.Contains("DefaultPasswordLength")) {
+                $tempLength = [int]::TryParse($Config.PasswordFixGenerate.DefaultPasswordLength, [ref]$passwordLength)
                 if (-not $tempLength) { $passwordLength = 12 }
             }
             
@@ -995,7 +995,7 @@ $btnRefreshOU = $window.FindName("btnRefreshOU")
 if ($btnRefreshOU) {
     $btnRefreshOU.Add_Click({
         try {
-            $defaultOUFromINI = $global:Config.General["DefaultOU"]
+            $defaultOUFromINI = $global:Config.ADUserDefaults["DefaultOU"]
             $OUList = Get-ADOrganizationalUnit -Filter * -SearchBase $defaultOUFromINI |
                 Select-Object -ExpandProperty DistinguishedName
                 Write-DebugMessage "Gefundene OUs: $($OUList.Count)"
@@ -1377,10 +1377,10 @@ function Invoke-Onboarding {
     $selectedOU = if (-not [string]::IsNullOrWhiteSpace($userData.OU)) {
         $userData.OU
     } else {
-        if (-not $Config.General.Contains("DefaultOU") -or [string]::IsNullOrWhiteSpace($Config.General["DefaultOU"])) {
+        if (-not $Config.ADUserDefaults.Contains("DefaultOU") -or [string]::IsNullOrWhiteSpace($Config.ADUserDefaults["DefaultOU"])) {
             Throw "Error: Keine OU angegeben und keine DefaultOU in der Konfiguration gefunden!"
         }
-        $Config.General["DefaultOU"]
+        $Config.ADUserDefaults["DefaultOU"]
     }
     Write-DebugMessage "Ausgewählte OU: $selectedOU"
 
@@ -1621,11 +1621,11 @@ function Invoke-Onboarding {
         $adDefaults = @{}
     }
 
-    # [16.1.7.1 - OU from [General].DefaultOU]
-    if (-not $Config.General.Contains("DefaultOU")) {
-        Throw "Error: 'DefaultOU' is missing in [General]!"
+    # [16.1.7.1 - OU from [ADUserDefaults].DefaultOU]
+    if (-not $Config.ADUserDefaults.Contains("DefaultOU")) {
+        Throw "Error: 'DefaultOU' is missing in [ADUserDefaults]!"
     }
-    $defaultOU = $Config.General["DefaultOU"]
+    $defaultOU = $Config.ADUserDefaults["DefaultOU"]
 
     # [16.1.8 - Build AD user parameters]
     Write-DebugMessage "Invoke-Onboarding: Building userParams for AD"
@@ -2169,8 +2169,8 @@ function Invoke-Onboarding {
 
                 # [16.1.12.4.2 - Replace placeholders in the template]
                 # Fix placeholder replacements to avoid parsing issues
-                $defaultOU = $Config.General["DefaultOU"]
-                $txtContent = $txtContent -replace '\$Config\.General\["DefaultOU"\]', $defaultOU
+                $defaultOU = $Config.ADUserDefaults["DefaultOU"]
+                $txtContent = $txtContent -replace '\$Config\.ADUserDefaults\["DefaultOU"\]', $defaultOU
                 $txtContent = $txtContent -replace "\`$SamAccountName", $SamAccountName
                 $txtContent = $txtContent -replace "\`$UserPW", $mainPW
                 $txtContent = $txtContent -replace "\`$userData\.AccountDisabled", $userData.AccountDisabled
@@ -2191,7 +2191,7 @@ Date: $(Get-Date -Format 'yyyy-MM-dd')
 
 Active Directory OU Path:
 ----------------------------------------------------
-$($Config.General["DefaultOU"])
+$($Config.ADUserDefaults["DefaultOU"])
 ====================================================
 
 Credentials
@@ -2748,8 +2748,8 @@ $btnStartOnboarding.Add_Click({
         
         $selectedOU = if ($comboBoxOU -and $comboBoxOU.SelectedValue) { 
             $comboBoxOU.SelectedValue.ToString() 
-        } elseif ($global:Config.Contains("General") -and $global:Config.General.Contains("DefaultOU")) { 
-            $global:Config.General["DefaultOU"] 
+        } elseif ($global:Config.Contains("ADUserDefaults") -and $global:Config.ADUserDefaults.Contains("DefaultOU")) { 
+            $global:Config.ADUserDefaults["DefaultOU"] 
         } else { "" }
 
         $selectedTLGroup = if ($comboBoxTLGroup -and $comboBoxTLGroup.SelectedValue) {
@@ -2962,6 +2962,9 @@ if ($adUpdateTab) {
         $btnSearchADUpdate   = $adUpdateTab.FindName("btnSearchADUpdate")
         $lstUsersADUpdate    = $adUpdateTab.FindName("lstUsersADUpdate")
         
+        # Korrektur: Der Button heißt in der XAML btnRefreshOU_Kopieren
+        $btnRefreshADUserList = $adUpdateTab.FindName("btnRefreshOU_Kopieren") # Korrigierter Name für den Refresh-Button
+        
         # Action buttons
         $btnADUserUpdate     = $adUpdateTab.FindName("btnADUserUpdate")
         $btnADUserCancel     = $adUpdateTab.FindName("btnADUserCancel")
@@ -2991,15 +2994,10 @@ if ($adUpdateTab) {
         $txtLocationUpdate   = $adUpdateTab.FindName("txtLocationUpdate")
         $txtEmployeeIDUpdate = $adUpdateTab.FindName("txtEmployeeIDUpdate")
         
-        # Group management – note that the ListBox in XAML should be named "lstGroupsUpdate"
+        # Group management control
         $lstGroupsUpdate     = $adUpdateTab.FindName("lstGroupsUpdate")
         if ($lstGroupsUpdate) {
             $lstGroupsUpdate.Items.Clear()
-            $userGroups = Get-ADUser -Identity $selectedUser.SamAccountName -Properties MemberOf | Select-Object -ExpandProperty MemberOf
-            foreach ($group in $userGroups) {
-            $groupName = (Get-ADGroup -Identity $group).Name
-            $lstGroupsUpdate.Items.Add($groupName)
-            }
         }
     }
     catch {
@@ -3018,25 +3016,46 @@ if ($adUpdateTab) {
             }
             Write-DebugMessage "Searching AD users for '$searchTerm'..."
             try {
-                $allMatches = Get-ADUser -Filter "((DisplayName -like '*$searchTerm*') -or (SamAccountName -like '*$searchTerm*') -or (mail -like '*$searchTerm*'))" `
-                                  -Properties DisplayName, SamAccountName, EmailAddress, Department, Title, physicalDeliveryOfficeName, OfficePhone, Mobile, Manager `
-                                  -ErrorAction Stop
+                # Verbesserte Suche mit korrektem Filter
+                $filter = "((DisplayName -like '*$searchTerm*') -or (SamAccountName -like '*$searchTerm*') -or (mail -like '*$searchTerm*'))"
+                Write-DebugMessage "Using AD filter: $filter"
+                
+                $allMatches = Get-ADUser -Filter $filter -Properties DisplayName, SamAccountName, mail, EmailAddress -ErrorAction Stop
 
-                if ($null -eq $allMatches) {
+                if ($null -eq $allMatches -or ($allMatches.Count -eq 0)) {
                     Write-DebugMessage "No users found for search term: $searchTerm"
                     [System.Windows.MessageBox]::Show("Keine Benutzer gefunden für: $searchTerm", "Keine Ergebnisse", "OK", "Information")
                     return
                 }
 
-                $results = @($allMatches) | Select-Object DisplayName, SamAccountName, @{Name='Email';Expression={$_.EmailAddress}}
+                # Erstellen eines Arrays von benutzerdefinierten Objekten für die ListView
+                $results = @()
+                foreach ($user in $allMatches) {
+                    $emailAddress = if ($user.mail) { $user.mail } elseif ($user.EmailAddress) { $user.EmailAddress } else { "" }
+                    $results += [PSCustomObject]@{
+                        DisplayName = $user.DisplayName
+                        SamAccountName = $user.SamAccountName
+                        Email = $emailAddress
+                    }
+                }
                 
+                # Debug-Ausgaben für die Diagnose
+                Write-DebugMessage "Found $($results.Count) users matching '$searchTerm'"
+                
+                # Zuerst ItemsSource auf null setzen und Items leeren
                 $lstUsersADUpdate.ItemsSource = $null
                 $lstUsersADUpdate.Items.Clear()
-                $lstUsersADUpdate.ItemsSource = $results
+                
+                # Manuelles Hinzufügen der Elemente zur ListView
+                foreach ($item in $results) {
+                    $lstUsersADUpdate.Items.Add($item)
+                }
 
-                Write-DebugMessage "Found $($results.Count) users matching '$searchTerm'"
                 if ($results.Count -eq 0) {
                     [System.Windows.MessageBox]::Show("Keine Benutzer gefunden für: $searchTerm", "Keine Ergebnisse", "OK", "Information")
+                }
+                else {
+                    Write-DebugMessage "Successfully populated list with $($lstUsersADUpdate.Items.Count) items"
                 }
             }
             catch {
@@ -3047,6 +3066,64 @@ if ($adUpdateTab) {
     }
     else {
         Write-DebugMessage "Required search controls missing in Tab_ADUpdate"
+    }
+
+    # Register Refresh User List event - Wir verwenden den korrigierten Buttonname
+    if ($btnRefreshADUserList -and $lstUsersADUpdate) {
+        Write-DebugMessage "Registering event for Refresh User List button in Tab_ADUpdate"
+        $btnRefreshADUserList.Add_Click({
+            Write-DebugMessage "Refreshing AD users list..."
+            try {
+                # Für große AD-Umgebungen begrenzen wir die Anzahl der geladenen Benutzer
+                # Wir filtern nach aktivierten Benutzern und sortiern nach Änderungsdatum
+                $filter = "Enabled -eq 'True'"
+                Write-DebugMessage "Loading active AD users with filter: $filter"
+
+                
+                # Lade bis zu 500 aktive Benutzer
+                $allUsers = Get-ADUser -Filter $filter -Properties DisplayName, SamAccountName, mail, EmailAddress, WhenChanged -ResultSetSize 500 |
+                            Sort-Object -Property WhenChanged -Descending
+
+                if ($null -eq $allUsers -or ($allUsers.Count -eq 0)) {
+                    Write-DebugMessage "No users found using the filter: $filter"
+                    [System.Windows.MessageBox]::Show("Keine Benutzer gefunden.", "Keine Ergebnisse", "OK", "Information")
+                    return
+                }
+
+                # Erstellen eines Arrays von benutzerdefinierten Objekten für die ListView
+                $results = @()
+                foreach ($user in $allUsers) {
+                    # E-Mail-Adresse aus mail oder EmailAddress-Attribut je nach Verfügbarkeit auslesen
+                    $emailAddress = if ($user.mail) { $user.mail } elseif ($user.EmailAddress) { $user.EmailAddress } else { "" }
+                    
+                    # Benutzerdefiniertes Objekt mit genau den Eigenschaften erstellen, die im XAML gebunden sind
+                    $results += [PSCustomObject]@{
+                        DisplayName = $user.DisplayName
+                        SamAccountName = $user.SamAccountName
+                        Email = $emailAddress
+                    }
+                }
+                
+                # Debug-Ausgabe für die Anzahl der geladenen Benutzer
+                Write-DebugMessage "Loaded $($results.Count) active AD users"
+                
+                # ListView aktualisieren
+                $lstUsersADUpdate.ItemsSource = $null
+                $lstUsersADUpdate.Items.Clear()
+                
+                # Manuelles Hinzufügen der Elemente zur ListView
+                foreach ($item in $results) {
+                    $lstUsersADUpdate.Items.Add($item)
+                }
+
+                [System.Windows.MessageBox]::Show("$($lstUsersADUpdate.Items.Count) Benutzer wurden geladen.", "Aktualisierung abgeschlossen", "OK", "Information")
+                Write-DebugMessage "Successfully populated list with $($lstUsersADUpdate.Items.Count) users"
+            }
+            catch {
+                Write-DebugMessage "Fehler beim Laden der Benutzerliste: $($_.Exception.Message)"
+                [System.Windows.MessageBox]::Show("Fehler beim Laden der Benutzerliste: $($_.Exception.Message)", "Fehler", "OK", "Error")
+            }
+        })
     }
 
     # Populate update fields when a user is selected
@@ -3062,17 +3139,17 @@ if ($adUpdateTab) {
                 try {
                     $adUser = Get-ADUser -Identity $samAccountName -Properties DisplayName, GivenName, Surname, EmailAddress, Department, Title, OfficePhone, Mobile, physicalDeliveryOfficeName, Enabled, PasswordNeverExpires, Manager, employeeID, MemberOf -ErrorAction Stop
                     if ($adUser) {
-                        if ($txtFirstNameUpdate) { $txtFirstNameUpdate.Text = (if ($adUser.GivenName) { $adUser.GivenName } else { "" }) }
-                        if ($txtLastNameUpdate) { $txtLastNameUpdate.Text = (if ($adUser.Surname) { $adUser.Surname } else { "" }) }
-                        if ($txtDisplayNameUpdate) { $txtDisplayNameUpdate.Text = (if ($adUser.DisplayName) { $adUser.DisplayName } else { "" }) }
-                        if ($txtEmailUpdate) { $txtEmailUpdate.Text = (if ($adUser.EmailAddress) { $adUser.EmailAddress } else { "" }) }
-                        if ($txtDepartmentUpdate) { $txtDepartmentUpdate.Text = (if ($adUser.Department) { $adUser.Department } else { "" }) }
-                        if ($txtPhoneUpdate) { $txtPhoneUpdate.Text = (if ($adUser.OfficePhone) { $adUser.OfficePhone } else { "" }) }
-                        if ($txtMobileUpdate) { $txtMobileUpdate.Text = (if ($adUser.Mobile) { $adUser.Mobile } else { "" }) }
-                        if ($txtOfficeUpdate) { $txtOfficeUpdate.Text = (if ($adUser.physicalDeliveryOfficeName) { $adUser.physicalDeliveryOfficeName } else { "" }) }
-                        if ($txtJobTitleUpdate) { $txtJobTitleUpdate.Text = (if ($adUser.Title) { $adUser.Title } else { "" }) }
-                        if ($txtLocationUpdate) { $txtLocationUpdate.Text = (if ($adUser.physicalDeliveryOfficeName) { $adUser.physicalDeliveryOfficeName } else { "" }) }
-                        if ($txtEmployeeIDUpdate) { $txtEmployeeIDUpdate.Text = (if ($adUser.employeeID) { $adUser.employeeID } else { "" }) }
+                        if ($txtFirstNameUpdate) { $txtFirstNameUpdate.Text = $(if ($adUser.GivenName) { $adUser.GivenName } else { "" }) }
+                        if ($txtLastNameUpdate) { $txtLastNameUpdate.Text = $(if ($adUser.Surname) { $adUser.Surname } else { "" }) }
+                        if ($txtDisplayNameUpdate) { $txtDisplayNameUpdate.Text = $(if ($adUser.DisplayName) { $adUser.DisplayName } else { "" }) }
+                        if ($txtEmailUpdate) { $txtEmailUpdate.Text = $(if ($adUser.EmailAddress) { $adUser.EmailAddress } else { "" }) }
+                        if ($txtDepartmentUpdate) { $txtDepartmentUpdate.Text = $(if ($adUser.Department) { $adUser.Department } else { "" }) }
+                        if ($txtPhoneUpdate) { $txtPhoneUpdate.Text = $(if ($adUser.OfficePhone) { $adUser.OfficePhone } else { "" }) }
+                        if ($txtMobileUpdate) { $txtMobileUpdate.Text = $(if ($adUser.Mobile) { $adUser.Mobile } else { "" }) }
+                        if ($txtOfficeUpdate) { $txtOfficeUpdate.Text = $(if ($adUser.physicalDeliveryOfficeName) { $adUser.physicalDeliveryOfficeName } else { "" }) }
+                        if ($txtJobTitleUpdate) { $txtJobTitleUpdate.Text = $(if ($adUser.Title) { $adUser.Title } else { "" }) }
+                        if ($txtLocationUpdate) { $txtLocationUpdate.Text = $(if ($adUser.physicalDeliveryOfficeName) { $adUser.physicalDeliveryOfficeName } else { "" }) }
+                        if ($txtEmployeeIDUpdate) { $txtEmployeeIDUpdate.Text = $(if ($adUser.employeeID) { $adUser.employeeID } else { "" }) }
                         
                         if ($chkAccountEnabledUpdate) { $chkAccountEnabledUpdate.IsChecked = $adUser.Enabled }
                         if ($chkPasswordNeverExpiresUpdate) { $chkPasswordNeverExpiresUpdate.IsChecked = $adUser.PasswordNeverExpires }
@@ -3082,7 +3159,7 @@ if ($adUpdateTab) {
                             if (-not [string]::IsNullOrEmpty($adUser.Manager)) {
                                 try {
                                     $manager = Get-ADUser -Identity $adUser.Manager -Properties DisplayName -ErrorAction Stop
-                                    $txtManagerUpdate.Text = (if ($manager.DisplayName) { $manager.DisplayName } else { $manager.SamAccountName })
+                                    $txtManagerUpdate.Text = $(if ($manager.DisplayName) { $manager.DisplayName } else { $manager.SamAccountName })
                                 } catch {
                                     $txtManagerUpdate.Text = ""
                                     Write-DebugMessage "Error retrieving manager: $($_.Exception.Message)"
