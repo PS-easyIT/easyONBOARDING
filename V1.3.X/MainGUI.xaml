@@ -852,12 +852,12 @@
                                 <Button
                                     x:Name="btnAddGroupUpdate"
                                     Grid.Row="1"
-                                    Margin="10,39,244,71"
+                                    Margin="10,39,250,71"
                                     Content="Add" />
                                 <Button
                                     x:Name="btnRemoveGroupUpdate"
                                     Grid.Row="1"
-                                    Margin="10,86,244,27"
+                                    Margin="10,86,250,27"
                                     Content="Remove" />
                             </Grid>
                         </GroupBox>
@@ -1115,8 +1115,41 @@
                 </Grid>
             </TabItem>
 
+            <!--  Placeholder Tab 1  -->
+            <TabItem x:Name="Tab_Placeholder1" Header="Placeholder 1" Margin="25,-2,-29,0">
+                <Grid Background="#FFE8E8E8">
+                    <TextBlock 
+                        HorizontalAlignment="Center" 
+                        VerticalAlignment="Center" 
+                        Text="Placeholder Tab 1 - Content will be defined later" 
+                        FontSize="18"/>
+                </Grid>
+            </TabItem>
+
+            <!--  Placeholder Tab 2  -->
+            <TabItem x:Name="Tab_Placeholder2" Header="Placeholder 2" Margin="28,-2,-32,0">
+                <Grid Background="#FFE8E8E8">
+                    <TextBlock 
+                        HorizontalAlignment="Center" 
+                        VerticalAlignment="Center" 
+                        Text="Placeholder Tab 2 - Content will be defined later" 
+                        FontSize="18"/>
+                </Grid>
+            </TabItem>
+
+            <!--  Placeholder Tab 3  -->
+            <TabItem x:Name="Tab_Placeholder3" Header="Placeholder 3" Margin="31,-2,-35,0">
+                <Grid Background="#FFE8E8E8">
+                    <TextBlock 
+                        HorizontalAlignment="Center" 
+                        VerticalAlignment="Center" 
+                        Text="Placeholder Tab 3 - Content will be defined later" 
+                        FontSize="18"/>
+                </Grid>
+            </TabItem>
+
             <!--  TAB 3: Settings  -->
-            <TabItem x:Name="Tab_INIEditor" Header="INIEditor" Margin="22,-2,-34,0">
+            <TabItem x:Name="Tab_INIEditor" Header="INIEditor" Margin="34,-2,-38,0">
                 <Grid Background="#FFE8E8E8">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="300" />
