@@ -1186,6 +1186,70 @@ if ($global:Config.Contains("STANDORTE")) {
     Write-DebugMessage "Location dropdown populated successfully."
 }
 #endregion
+
+#region [Region 14.2.1 | UPN TEMPLATE DISPLAY]
+# [Updates the UPN template display with the current template from INI]
+# [Aktualisiert die UPN-Template-Anzeige mit dem aktuellen Template aus der INI]
+Write-DebugMessage "Initializing UPN Template Display."
+function Update-UPNTemplateDisplay {
+    [CmdletBinding()]
+    param()
+    
+    try {
+        $txtUPNTemplateDisplay = $window.FindName("txtUPNTemplateDisplay")
+        if ($null -eq $txtUPNTemplateDisplay) {
+            Write-DebugMessage "UPN Template Display TextBlock not found in XAML"
+            return
+        }
+        
+        # Default UPN template format
+        $defaultUPNFormat = "FIRSTNAME.LASTNAME"
+        
+        # Read from INI if available
+        if ($global:Config.Contains("DisplayNameUPNTemplates") -and 
+            $global:Config.DisplayNameUPNTemplates.Contains("DefaultUserPrincipalNameFormat")) {
+            $upnTemplate = $global:Config.DisplayNameUPNTemplates.DefaultUserPrincipalNameFormat
+            if (-not [string]::IsNullOrWhiteSpace($upnTemplate)) {
+                $defaultUPNFormat = $upnTemplate.ToUpper()
+                Write-DebugMessage "Found UPN template in INI: $defaultUPNFormat"
+            }
+        }
+        
+        # Create viewmodel for binding
+        if (-not $global:viewModel) {
+            $global:viewModel = [PSCustomObject]@{
+                UPNTemplate = $defaultUPNFormat
+            }
+        }
+        else {
+            $global:viewModel.UPNTemplate = $defaultUPNFormat
+        }
+        
+        # Set DataContext for binding
+        $txtUPNTemplateDisplay.DataContext = $global:viewModel
+        
+        Write-DebugMessage "UPN Template Display initialized with: $defaultUPNFormat"
+    }
+    catch {
+        Write-DebugMessage "Error updating UPN Template Display: $($_.Exception.Message)"
+    }
+}
+
+# Call the function to initialize the UPN template display
+Update-UPNTemplateDisplay
+
+# Make sure UPN Template Display gets updated when dropdown selection changes
+$comboBoxDisplayTemplate = $window.FindName("cmbDisplayTemplate")
+if ($comboBoxDisplayTemplate) {
+    $comboBoxDisplayTemplate.Add_SelectionChanged({
+        $selectedTemplate = $comboBoxDisplayTemplate.SelectedValue
+        if ($global:viewModel -and -not [string]::IsNullOrWhiteSpace($selectedTemplate)) {
+            $global:viewModel.UPNTemplate = $selectedTemplate.ToUpper()
+            Write-DebugMessage "UPN Template updated to: $selectedTemplate"
+        }
+    })
+}
+#endregion
 #endregion
 
 Write-DebugMessage "Defining utility functions."
@@ -1402,7 +1466,7 @@ function Invoke-Onboarding {
     if ($userData.PasswordMode -eq 1) {
         # [16.1.3.1 - Use advanced generation]
         Write-DebugMessage "Invoke-Onboarding: Checking [PasswordFixGenerate] keys"
-        foreach ($key in @("PasswordLaenge","IncludeSpecialChars","AvoidAmbiguousChars","MinNonAlpha","MinUpperCase","MinDigits")) {
+        foreach ($key in @("DefaultPasswordLength","IncludeSpecialChars","AvoidAmbiguousChars","MinNonAlpha","MinUpperCase","MinDigits")) {
             if (-not $Config.PasswordFixGenerate.Contains($key)) {
                 Throw "Error: '$key' is missing in [PasswordFixGenerate]!"
             }
@@ -1413,7 +1477,7 @@ function Invoke-Onboarding {
 
         Write-DebugMessage "Invoke-Onboarding: Generating password with New-AdvancedPassword"
         $mainPW = New-AdvancedPassword `
-            -Length ([int]$Config.PasswordFixGenerate["PasswordLaenge"]) `
+            -Length ([int]$Config.PasswordFixGenerate["DefaultPasswordLength"]) `
             -IncludeSpecial $includeSpecial `
             -AvoidAmbiguous $avoidAmbiguous `
             -MinUpperCase ([int]$Config.PasswordFixGenerate["MinUpperCase"]) `
@@ -3436,7 +3500,7 @@ Write-DebugMessage "Settings tab loaded."
 $tabINIEditor = $window.FindName("Tab_INIEditor")
 if ($tabINIEditor) {
     # Define a function to load the INI sections and settings
-    function Load-INIEditorData {
+    function Import-INIEditorData {
         try {
             Write-DebugMessage "Loading INI sections and settings for the editor"
             
@@ -3462,6 +3526,41 @@ if ($tabINIEditor) {
             # Set the ListView ItemsSource
             $listViewINIEditor.ItemsSource = $sectionItems
             
+            # Ensure ListView displays section names
+            if ($listViewINIEditor.View -is [System.Windows.Controls.GridView]) {
+                # GridView already defined in XAML
+            } else {
+                # Create GridView programmatically
+                $gridView = New-Object System.Windows.Controls.GridView
+                $column = New-Object System.Windows.Controls.GridViewColumn
+                $column.Header = "Section"
+                $column.DisplayMemberBinding = New-Object System.Windows.Data.Binding("SectionName")
+                $gridView.Columns.Add($column)
+                $listViewINIEditor.View = $gridView
+            }
+            
+            # Ensure DataGrid has columns defined
+            if ($dataGridINIEditor.Columns.Count -eq 0) {
+                # Add columns programmatically
+                $keyColumn = New-Object System.Windows.Controls.DataGridTextColumn
+                $keyColumn.Header = "Key"
+                $keyColumn.Binding = New-Object System.Windows.Data.Binding("Key")
+                $keyColumn.Width = New-Object System.Windows.Controls.DataGridLength(1, [System.Windows.Controls.DataGridLengthUnitType]::Star)
+                $dataGridINIEditor.Columns.Add($keyColumn)
+                
+                $valueColumn = New-Object System.Windows.Controls.DataGridTextColumn
+                $valueColumn.Header = "Value"
+                $valueColumn.Binding = New-Object System.Windows.Data.Binding("Value") 
+                $valueColumn.Width = New-Object System.Windows.Controls.DataGridLength(2, [System.Windows.Controls.DataGridLengthUnitType]::Star)
+                $dataGridINIEditor.Columns.Add($valueColumn)
+                
+                $commentColumn = New-Object System.Windows.Controls.DataGridTextColumn
+                $commentColumn.Header = "Comment"
+                $commentColumn.Binding = New-Object System.Windows.Data.Binding("Comment")
+                $commentColumn.Width = New-Object System.Windows.Controls.DataGridLength(2, [System.Windows.Controls.DataGridLengthUnitType]::Star)
+                $dataGridINIEditor.Columns.Add($commentColumn)
+            }
+            
             Write-DebugMessage "Loaded $($sectionItems.Count) INI sections"
         }
         catch {
@@ -3471,7 +3570,7 @@ if ($tabINIEditor) {
     }
     
     # Function to load settings for a selected section
-    function Load-SectionSettings {
+    function Import-SectionSettings {
         param(
             [Parameter(Mandatory=$true)]
             [string]$SectionName
@@ -3492,6 +3591,8 @@ if ($tabINIEditor) {
                 Write-DebugMessage "Section $SectionName not found in Config"
                 return
             }
+            
+            Write-DebugMessage "Found section with $($sectionData.Count) keys"
             
             # Create a collection to store the key-value pairs
             $settingsItems = New-Object System.Collections.ObjectModel.ObservableCollection[PSObject]
@@ -3532,20 +3633,28 @@ if ($tabINIEditor) {
             
             # Add all key-value pairs from the section
             foreach ($key in $sectionData.Keys) {
+                $value = $sectionData[$key]
                 $comment = if ($commentsByKey.ContainsKey($key)) { $commentsByKey[$key] } else { "" }
+                
+                Write-DebugMessage "Adding key: '$key' with value: '$value'"
                 
                 $settingsItems.Add([PSCustomObject]@{
                     Key = $key
-                    Value = $sectionData[$key]
+                    Value = $value
                     Comment = $comment
                     OriginalKey = $key  # Store original key in case it's edited
                 })
             }
             
-            # Set the DataGrid ItemsSource
+            # Clear current data and set the new DataGrid ItemsSource
+            $dataGridINIEditor.ItemsSource = $null
+            $dataGridINIEditor.Items.Clear()
             $dataGridINIEditor.ItemsSource = $settingsItems
             
             Write-DebugMessage "Loaded $($settingsItems.Count) settings for section $SectionName"
+            
+            # Force UI update
+            $dataGridINIEditor.UpdateLayout()
         }
         catch {
             Write-DebugMessage "Error loading section settings: $($_.Exception.Message)"
@@ -3556,16 +3665,35 @@ if ($tabINIEditor) {
     # Function to save INI changes back to the file
     function Save-INIChanges {
         try {
-            Write-DebugMessage "Saving INI changes to file: $INIPath"
+            Write-DebugMessage "Starting Save-INIChanges..."
+            # Make sure INIPath is defined
+            if (-not (Get-Variable -Name INIPath -Scope Script -ErrorAction SilentlyContinue)) {
+                $script:INIPath = $global:INIPath
+                Write-DebugMessage "Set INI path from global: $script:INIPath"
+            }
+            
+            if (-not (Test-Path -Path $script:INIPath)) {
+                Write-DebugMessage "INI file not found: $script:INIPath"
+                throw "INI file not found at: $script:INIPath"
+            }
+            
+            # Create a backup before making changes
+            $backupPath = "$script:INIPath.backup"
+            Copy-Item -Path $script:INIPath -Destination $backupPath -Force -ErrorAction Stop
+            Write-DebugMessage "Created backup at: $backupPath"
             
             # Create a temporary string builder to build the INI content
             $iniContent = New-Object System.Text.StringBuilder
             
             # Read original INI to preserve comments and structure
-            $originalContent = Get-Content -Path $INIPath -ErrorAction Stop
+            Write-DebugMessage "Reading original INI content from: $script:INIPath"
+            $originalContent = Get-Content -Path $script:INIPath -ErrorAction Stop
             $currentSection = ""
             $inSection = $false
             $processedSections = @{}
+            $processedKeys = @{}
+            
+            Write-DebugMessage "Processing original content with ${$originalContent.Count} lines"
             
             # First pass: Preserve structure and update existing values
             foreach ($line in $originalContent) {
@@ -3574,6 +3702,13 @@ if ($tabINIEditor) {
                 # Check if it's a section header
                 if ($trimmedLine -match '^\[(.+)\]$') {
                     $currentSection = $matches[1].Trim()
+                    Write-DebugMessage "Found section: [$currentSection]"
+                    
+                    # Initialize tracking for this section if needed
+                    if (-not $processedKeys.ContainsKey($currentSection)) {
+                        $processedKeys[$currentSection] = @{}
+                    }
+                    
                     $inSection = $global:Config.Contains($currentSection)
                     $processedSections[$currentSection] = $true
                     
@@ -3589,17 +3724,24 @@ if ($tabINIEditor) {
                 }
                 
                 # Check if it's a key-value pair
-                if ($inSection -and $trimmedLine -match '^(.*?)=(.*)$') {
+                if ($trimmedLine -match '^(.*?)=(.*)$') {
                     $key = $matches[1].Trim()
                     
-                    # If key exists in our config, use the updated value
-                    if ($global:Config[$currentSection].Contains($key)) {
+                    # If we're in a tracked section and the key exists in our config, use the updated value
+                    if ($inSection -and $global:Config[$currentSection].Contains($key)) {
                         $value = $global:Config[$currentSection][$key]
                         [void]$iniContent.AppendLine("$key=$value")
+                        
+                        # Mark this key as processed
+                        $processedKeys[$currentSection][$key] = $true
+                        Write-DebugMessage "Updated key: [$currentSection] $key=$value"
                     }
                     else {
-                        # Key was removed, skip it
-                        Write-DebugMessage "Skipping removed key: [$currentSection] $key"
+                        if ($inSection) {
+                            Write-DebugMessage "Key no longer exists in config: [$currentSection] $key"
+                        }
+                        # Keep the original line for keys not in our config or not in tracked sections
+                        [void]$iniContent.AppendLine($line)
                     }
                 }
                 else {
@@ -3609,51 +3751,68 @@ if ($tabINIEditor) {
             }
             
             # Second pass: Add any new sections or keys that weren't in the original file
+            Write-DebugMessage "Adding new sections and keys..."
             foreach ($sectionName in $global:Config.Keys) {
+                # Add new section if it wasn't in the original file
                 if (-not $processedSections.ContainsKey($sectionName)) {
-                    # Add new section
+                    Write-DebugMessage "Adding new section: [$sectionName]"
                     [void]$iniContent.AppendLine("")
                     [void]$iniContent.AppendLine("[$sectionName]")
                     
-                    # Add all keys in this new section
-                    foreach ($key in $global:Config[$sectionName].Keys) {
+                    # Initialize tracking for this section
+                    if (-not $processedKeys.ContainsKey($sectionName)) {
+                        $processedKeys[$sectionName] = @{}
+                    }
+                }
+                
+                # Add any keys that weren't in the original file
+                foreach ($key in $global:Config[$sectionName].Keys) {
+                    if (-not ($processedKeys.ContainsKey($sectionName) -and $processedKeys[$sectionName].ContainsKey($key))) {
                         $value = $global:Config[$sectionName][$key]
                         [void]$iniContent.AppendLine("$key=$value")
+                        Write-DebugMessage "Added new key: [$sectionName] $key=$value"
                     }
                 }
             }
             
             # Save the content back to the file
-            Set-Content -Path $INIPath -Value $iniContent.ToString() -ErrorAction Stop
+            Write-DebugMessage "Saving new content to INI file..."
+            $finalContent = $iniContent.ToString()
+            [System.IO.File]::WriteAllText($script:INIPath, $finalContent, [System.Text.Encoding]::UTF8)
             
-            Write-DebugMessage "INI file saved successfully: $INIPath"
+            Write-DebugMessage "INI file saved successfully: $script:INIPath"
             Write-LogMessage -Message "INI-Datei wurde von $($env:USERNAME) bearbeitet" -LogLevel "INFO"
             
             return $true
         }
         catch {
             Write-DebugMessage "Error saving INI changes: $($_.Exception.Message)"
+            Write-DebugMessage "Stack trace: $($_.ScriptStackTrace)"
             Write-LogMessage -Message "Fehler beim Speichern der INI-Datei: $($_.Exception.Message)" -LogLevel "ERROR"
             return $false
         }
     }
-    
-    # Add event handler for section selection
+    # Register event handlers for the INI editor UI
     $listViewINIEditor = $tabINIEditor.FindName("listViewINIEditor")
+    $dataGridINIEditor = $tabINIEditor.FindName("dataGridINIEditor")
+    
     if ($listViewINIEditor) {
         $listViewINIEditor.Add_SelectionChanged({
             if ($null -ne $listViewINIEditor.SelectedItem) {
                 $selectedSection = $listViewINIEditor.SelectedItem.SectionName
-                Load-SectionSettings -SectionName $selectedSection
+                Write-DebugMessage "Section selected: $selectedSection"
+                Import-SectionSettings -SectionName $selectedSection
             }
         })
     }
-    
-    # Add event handler for the DataGrid cell edit
-    $dataGridINIEditor = $tabINIEditor.FindName("dataGridINIEditor")
+
+    # Setup DataGrid cell edit handling
     if ($dataGridINIEditor) {
+        # Make sure DataGrid is editable
+        $dataGridINIEditor.IsReadOnly = $false
+        
         $dataGridINIEditor.Add_CellEditEnding({
-            param($sender, $e)
+            param($eventSender, $e)
             
             try {
                 if ($e.EditAction -eq [System.Windows.Controls.DataGridEditAction]::Commit) {
@@ -3698,26 +3857,103 @@ if ($tabINIEditor) {
             }
         })
     }
-    
-    # Save Changes button event handler
-    $btnINIEditorSaveChanges = $tabINIEditor.FindName("btnINIEditorSaveChanges")
-    if ($btnINIEditorSaveChanges) {
-        $btnINIEditorSaveChanges.Add_Click({
+
+    # Add key button handler
+    $btnAddKey = $tabINIEditor.FindName("btnAddKey")
+    if ($btnAddKey) {
+        $btnAddKey.Add_Click({
+            try {
+                if ($null -eq $listViewINIEditor.SelectedItem) {
+                    [System.Windows.MessageBox]::Show("Bitte wählen Sie zuerst eine Sektion aus.", "Hinweis", "OK", "Information")
+                    return
+                }
+                
+                $sectionName = $listViewINIEditor.SelectedItem.SectionName
+                
+                # Prompt for new key and value
+                $keyName = [Microsoft.VisualBasic.Interaction]::InputBox("Geben Sie den Namen des neuen Schlüssels ein:", "Neuer Schlüssel", "")
+                if ([string]::IsNullOrWhiteSpace($keyName)) { return }
+                
+                $keyValue = [Microsoft.VisualBasic.Interaction]::InputBox("Geben Sie den Wert für '$keyName' ein:", "Neuer Wert", "")
+                
+                # Add to config
+                $global:Config[$sectionName][$keyName] = $keyValue
+                
+                # Refresh view
+                Import-SectionSettings -SectionName $sectionName
+                
+                Write-DebugMessage "Added new key '$keyName' with value '$keyValue' to section '$sectionName'"
+            }
+            catch {
+                Write-DebugMessage "Error adding new key: $($_.Exception.Message)"
+                [System.Windows.MessageBox]::Show("Fehler beim Hinzufügen: $($_.Exception.Message)", "Fehler", "OK", "Error")
+            }
+        })
+    }
+
+    # Remove key button handler
+    $btnRemoveKey = $tabINIEditor.FindName("btnRemoveKey")
+    if ($btnRemoveKey) {
+        $btnRemoveKey.Add_Click({
+            try {
+                if ($null -eq $dataGridINIEditor.SelectedItem) {
+                    [System.Windows.MessageBox]::Show("Bitte wählen Sie zuerst einen Schlüssel aus.", "Hinweis", "OK", "Information")
+                    return
+                }
+                
+                $selectedItem = $dataGridINIEditor.SelectedItem
+                $keyToRemove = $selectedItem.Key
+                $sectionName = $listViewINIEditor.SelectedItem.SectionName
+                
+                $confirmation = [System.Windows.MessageBox]::Show(
+                    "Möchten Sie den Schlüssel '$keyToRemove' wirklich löschen?",
+                    "Bestätigung",
+                    "YesNo",
+                    "Question"
+                )
+                
+                if ($confirmation -eq [System.Windows.MessageBoxResult]::Yes) {
+                    # Remove from config
+                    $global:Config[$sectionName].Remove($keyToRemove)
+                    
+                    # Refresh view
+                    Import-SectionSettings -SectionName $sectionName
+                    
+                    Write-DebugMessage "Removed key '$keyToRemove' from section '$sectionName'"
+                }
+            }
+            catch {
+                Write-DebugMessage "Error removing key: $($_.Exception.Message)"
+                [System.Windows.MessageBox]::Show("Fehler beim Löschen: $($_.Exception.Message)", "Fehler", "OK", "Error")
+            }
+        })
+    }
+
+    # Register the save button handler
+    $btnSaveINIChanges = $tabINIEditor.FindName("btnSaveINIChanges")
+    if ($btnSaveINIChanges) {
+        $btnSaveINIChanges.Add_Click({
             try {
                 $result = Save-INIChanges
                 if ($result) {
                     [System.Windows.MessageBox]::Show("INI-Datei wurde erfolgreich gespeichert.", "Erfolg", "OK", "Information")
                     # Reload the INI to reflect any changes in the UI
-                    $global:Config = Get-IniContent -Path $INIPath
-                    Load-INIEditorData
+                    $global:Config = Get-IniContent -Path $script:INIPath
+                    Import-INIEditorData
+                    
+                    # Update current selection if available
+                    if ($listViewINIEditor.SelectedItem -ne $null) {
+                        $selectedSection = $listViewINIEditor.SelectedItem.SectionName
+                        Import-SectionSettings -SectionName $selectedSection
+                    }
                 }
                 else {
                     [System.Windows.MessageBox]::Show("Es gab ein Problem beim Speichern der INI-Datei.", "Fehler", "OK", "Error")
                 }
             }
             catch {
-                Write-DebugMessage "Error saving INI changes: $($_.Exception.Message)"
-                [System.Windows.MessageBox]::Show("Fehler beim Speichern der INI-Datei: $($_.Exception.Message)", "Fehler", "OK", "Error")
+                Write-DebugMessage "Error in Save button handler: $($_.Exception.Message)"
+                [System.Windows.MessageBox]::Show("Fehler: $($_.Exception.Message)", "Fehler", "OK", "Error")
             }
         })
     }
@@ -3729,34 +3965,35 @@ if ($tabINIEditor) {
             [System.Windows.MessageBox]::Show(
                 "INI-Editor Hilfe:
                 
-1. Wählen Sie einen Abschnitt aus der Liste links.
-2. Bearbeiten Sie Schlüssel und Werte in der Tabelle rechts.
-3. Klicken Sie auf 'Save Changes', um Ihre Änderungen zu speichern.
+1. Wählen Sie eine Sektion aus der linken Liste
+2. Bearbeiten Sie die Werte direkt in der Tabelle
+3. Nutzen Sie die Buttons zum Hinzufügen oder Entfernen von Einträgen
+4. Speichern Sie Ihre Änderungen mit dem Speichern-Button
 
-Hinweis: Kommentare können nicht bearbeitet werden, sie werden beim Speichern beibehalten.
-
-INI-Datei: $INIPath", 
+INI-Datei: $script:INIPath", 
                 "INI-Editor Hilfe", "OK", "Information")
         })
     }
     
-    # Close button event handler
+    # Initialize the editor with data when the tab is first loaded
+    $tabINIEditor.Add_Loaded({
+        # Make sure we have the correct path to the INI file
+        if (-not (Get-Variable -Name INIPath -Scope Script -ErrorAction SilentlyContinue)) {
+            $script:INIPath = $global:INIPath
+        }
+        
+        Write-DebugMessage "INI Editor loaded with file path: $script:INIPath"
+        Import-INIEditorData
+    })
+    
     $btnINIEditorClose = $tabINIEditor.FindName("btnINIEditorClose")
     if ($btnINIEditorClose) {
         $btnINIEditorClose.Add_Click({
             $window.Close()
         })
     }
-    
-    # Initialize the editor with data when the tab is first loaded
-    $tabINIEditor.Add_Loaded({
-        Load-INIEditorData
-    })
 }
 #endregion
-#endregion
-
-Write-DebugMessage "Main GUI execution started."
 
 #region [Region 22 | MAIN GUI EXECUTION]
 # [Main code block that starts and handles the GUI dialog]
@@ -3789,9 +4026,93 @@ try {
             try {
                 $color = $global:Config["WPFGUI"]["ThemeColor"]
                 # Try to create a brush from the color string
-                $window.Background = [System.Windows.Media.Brushes]::$color
+                $themeColorBrush = New-Object System.Windows.Media.SolidColorBrush([System.Windows.Media.ColorConverter]::ConvertFromString($color))
+                $window.Background = $themeColorBrush
             } catch {
-                Write-DebugMessage "Invalid ThemeColor: $color"
+                Write-DebugMessage "Invalid ThemeColor: $color. Using named color."
+                try {
+                    $window.Background = [System.Windows.Media.Brushes]::$color
+                } catch {
+                    Write-DebugMessage "Named color also invalid. Using default."
+                }
+            }
+        }
+        
+        # Set BoxColor for appropriate controls (like GroupBox, TextBox, etc.)
+        if ($global:Config["WPFGUI"].Contains("BoxColor")) {
+            try {
+                $boxColor = $global:Config["WPFGUI"]["BoxColor"]
+                $boxBrush = New-Object System.Windows.Media.SolidColorBrush([System.Windows.Media.ColorConverter]::ConvertFromString($boxColor))
+                
+                # Function to recursively find and set background for appropriate controls
+                function Set-BoxBackground {
+                    param($parent)
+                    
+                    # Process all child elements recursively
+                    for ($i = 0; $i -lt [System.Windows.Media.VisualTreeHelper]::GetChildrenCount($parent); $i++) {
+                        $child = [System.Windows.Media.VisualTreeHelper]::GetChild($parent, $i)
+                        
+                        # Apply to specific control types
+                        if ($child -is [System.Windows.Controls.GroupBox] -or 
+                            $child -is [System.Windows.Controls.TextBox] -or 
+                            $child -is [System.Windows.Controls.ComboBox] -or
+                            $child -is [System.Windows.Controls.ListBox]) {
+                            $child.Background = $boxBrush
+                        }
+                        
+                        # Recursively process children
+                        if ([System.Windows.Media.VisualTreeHelper]::GetChildrenCount($child) -gt 0) {
+                            Set-BoxBackground -parent $child
+                        }
+                    }
+                }
+                
+                # Apply when window is loaded to ensure visual tree is constructed
+                $window.Add_Loaded({
+                    Set-BoxBackground -parent $window
+                })
+                
+            } catch {
+                Write-DebugMessage "Error applying BoxColor: $($_.Exception.Message)"
+            }
+        }
+        
+        # Set RahmenColor (border color) for appropriate controls
+        if ($global:Config["WPFGUI"].Contains("RahmenColor")) {
+            try {
+                $rahmenColor = $global:Config["WPFGUI"]["RahmenColor"]
+                $rahmenBrush = New-Object System.Windows.Media.SolidColorBrush([System.Windows.Media.ColorConverter]::ConvertFromString($rahmenColor))
+                
+                # Function to recursively find and set border color for appropriate controls
+                function Set-BorderColor {
+                    param($parent)
+                    
+                    # Process all child elements recursively
+                    for ($i = 0; $i -lt [System.Windows.Media.VisualTreeHelper]::GetChildrenCount($parent); $i++) {
+                        $child = [System.Windows.Media.VisualTreeHelper]::GetChild($parent, $i)
+                        
+                        # Apply to specific control types with BorderBrush property
+                        if ($child -is [System.Windows.Controls.Border] -or 
+                            $child -is [System.Windows.Controls.GroupBox] -or 
+                            $child -is [System.Windows.Controls.TextBox] -or 
+                            $child -is [System.Windows.Controls.ComboBox]) {
+                            $child.BorderBrush = $rahmenBrush
+                        }
+                        
+                        # Recursively process children
+                        if ([System.Windows.Media.VisualTreeHelper]::GetChildrenCount($child) -gt 0) {
+                            Set-BorderColor -parent $child
+                        }
+                    }
+                }
+                
+                # Apply when window is loaded to ensure visual tree is constructed
+                $window.Add_Loaded({
+                    Set-BorderColor -parent $window
+                })
+                
+            } catch {
+                Write-DebugMessage "Error applying RahmenColor: $($_.Exception.Message)"
             }
         }
         
@@ -3902,3 +4223,4 @@ try {
 #endregion
 
 Write-DebugMessage "Main GUI execution completed."
+``` 
