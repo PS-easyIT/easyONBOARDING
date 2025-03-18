@@ -33,7 +33,7 @@
       margin-bottom: 10px;
     }
     .header-image img {
-      max-height: 150px;
+      max-height: 60px;
       width: auto;
     }
     .header-info {
@@ -128,14 +128,12 @@
   <div class="container">
     <!-- HEADER -->
     <header>
+      <!-- LOGO -->
       <div class="header-image">
-        <img src="ReportHeader.jpg" alt="Header Image">
+        <img src="C:\easyIT\DATA\easyONBOARDING\ReportTemplates\Onboarding_Logo.png" alt="Firmenlogo">
       </div>
       <div class="header-info">
         <h1>{{ReportTitle}}</h1>
-      </div>
-      <div class="logo-tag">
-        {{LogoTag}}
       </div>
     </header>
 
