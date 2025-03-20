@@ -1,8 +1,8 @@
 # 🚀 easyOnboarding
 **easyOnboarding** is a PowerShell-based tool designed to simplify:
-✅ User onboarding
-✅ Active Directory (AD) group management
-✅ INI configuration file handling
+- User onboarding
+- Active Directory (AD) group management
+- INI configuration file handling
 
 It features an intuitive **WPF-based GUI** to streamline IT processes.
 
@@ -39,9 +39,9 @@ It features an intuitive **WPF-based GUI** to streamline IT processes.
 
 ## 📌 Überblick
 **easyOnboarding** ist ein PowerShell-basiertes Tool zur Vereinfachung von:
-✅ Benutzer-Onboarding
-✅ Active Directory ADUser Update (Benutzerdaten nachträglich einfach aktualisieren)
-✅ Bearbeitung der INI-Konfiguration
+- Benutzer-Onboarding
+- Active Directory ADUser Update (Benutzerdaten nachträglich einfach aktualisieren)
+- Bearbeitung der INI-Konfiguration
 
 Es bietet eine **WPF-basierte GUI**, um IT-Prozesse effizienter zu gestalten.
 
