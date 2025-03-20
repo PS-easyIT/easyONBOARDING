@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ReportTitle}}</title>
+  <style>
+    /* Global Styles */
+    body {
+      font-family: Arial, sans-serif;
+      font-size: 16px;
+      color: #333;
+      background-color: #fff;
+      margin: 0;
+      line-height: 1.6;
+    }
+    .container {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    /* Header */
+    header {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 20px;
+      background: #f5f5f5;
+      border-bottom: 2px solid #ccc;
+      margin-bottom: 20px;
+    }
+    .header-image {
+      margin-bottom: 10px;
+    }
+    .header-image img {
+      max-height: 60px;
+      width: auto;
+    }
+    .header-info {
+      text-align: center;
+    }
+    .header-info h1 {
+      margin: 0;
+      font-size: 26px;
+      color: #1E5F99;
+    }
+    .header-info p {
+      margin: 5px 0 0;
+      font-size: 18px;
+      color: #555;
+    }
+    .logo-tag {
+      margin-top: 10px;
+    }
+    /* Content */
+    .content {
+      padding: 20px;
+    }
+    .user-details {
+      margin-bottom: 30px;
+    }
+    .user-details h2 {
+      font-size: 22px;
+      color: #1E5F99;
+      border-bottom: 2px solid #1E5F99;
+      padding-bottom: 5px;
+      margin-bottom: 15px;
+    }
+    .user-details table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    .user-details th,
+    .user-details td {
+      padding: 10px;
+      border: 1px solid #ddd;
+      text-align: left;
+    }
+    .user-details th {
+      background-color: #f8f8f8;
+      width: 30%;
+    }
+    .passwords-section {
+      margin-top: 30px;
+    }
+    .passwords-section h2 {
+      font-size: 22px;
+      color: #1E5F99;
+      border-bottom: 2px solid #1E5F99;
+      padding-bottom: 5px;
+      margin-bottom: 15px;
+    }
+    .passwords-section table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    .passwords-section th,
+    .passwords-section td {
+      padding: 10px;
+      border: 1px solid #ddd;
+      text-align: left;
+    }
+    .passwords-section th {
+      background-color: #f8f8f8;
+      width: 30%;
+    }
+    .links-section {
+      margin-top: 30px;
+    }
+    .links-section h2 {
+      font-size: 22px;
+      color: #1E5F99;
+      border-bottom: 2px solid #1E5F99;
+      padding-bottom: 5px;
+      margin-bottom: 15px;
+    }
+    footer {
+      border-top: 2px solid #ccc;
+      text-align: center;
+      padding: 10px;
+      font-size: 14px;
+      color: #777;
+      margin-top: 30px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- HEADER -->
+    <header>
+      <!-- LOGO -->
+      <div class="header-image">
+        <img src="C:\easyIT\DATA\easyONBOARDING\ReportTemplates\Onboarding_Logo.png" alt="Firmenlogo">
+      </div>
+      <div class="header-info">
+        <h1>{{ReportTitle}}</h1>
+      </div>
+    </header>
+
+    <!-- CONTENT -->
+    <div class="content">
+      <!-- BENUTZERDETAILS -->
+      <section class="user-details">
+        <h2>Benutzerdetails</h2>
+        <table>
+          <tr>
+            <th>Vorname</th>
+            <td>{{Vorname}}</td>
+          </tr>
+          <tr>
+            <th>Nachname</th>
+            <td>{{Nachname}}</td>
+          </tr>
+          <tr style="height:20px;"><td colspan="2"></td></tr>
+          <tr>
+            <th>Anzeigename</th>
+            <td>{{DisplayName}}</td>
+          </tr>
+          <tr style="height:20px;"><td colspan="2"></td></tr>
+          <tr>
+            <th>Beschreibung</th>
+            <td>{{Description}}</td>
+          </tr>
+          <tr>
+            <th>Büro</th>
+            <td>{{Buero}}</td>
+          </tr>
+          <tr style="height:20px;"><td colspan="2"></td></tr>
+          <tr>
+            <th>Rufnummer</th>
+            <td>{{Rufnummer}}</td>
+          </tr>
+          <tr>
+            <th>Mobil</th>
+            <td>{{Mobil}}</td>
+          </tr>
+          <tr style="height:20px;"><td colspan="2"></td></tr>
+          <tr>
+            <th>Position</th>
+            <td>{{Position}}</td>
+          </tr>
+          <tr>
+            <th>Abteilung</th>
+            <td>{{Abteilung}}</td>
+          </tr>
+          <tr>
+            <th>Austritt</th>
+            <td>{{Ablaufdatum}}</td>
+          </tr>
+          <tr style="height:20px;"><td colspan="2"></td></tr>
+          <tr>
+            <th>LoginName</th>
+            <td>{{LoginName}}</td>
+          </tr>
+          <tr>
+            <th>Passwort</th>
+            <td>{{Passwort}}</td>
+          </tr>
+        </table>
+      </section>
+
+      <!-- ZUSÄTZLICHE PASSWÖRTER -->
+      <section class="passwords-section">
+        <h2>weitere Konten</h2>
+        <table>
+          <tr>
+            <th>{{CustomPWLabel1}}</th>
+            <td>{{CustomPW1}}</td>
+          </tr>
+          <tr>
+            <th>{{CustomPWLabel2}}</th>
+            <td>{{CustomPW2}}</td>
+          </tr>
+          <tr>
+            <th>{{CustomPWLabel3}}</th>
+            <td>{{CustomPW3}}</td>
+          </tr>
+          <tr>
+            <th>{{CustomPWLabel4}}</th>
+            <td>{{CustomPW4}}</td>
+          </tr>
+          <tr>
+            <th>{{CustomPWLabel5}}</th>
+            <td>{{CustomPW5}}</td>
+          </tr>
+        </table>
+      </section>
+
+      <!-- WEITERFÜHRENDE LINKS -->
+      <section class="links-section">
+        <h2>Weiterführende Links</h2>
+        {{WebsitesHTML}}
+      </section>
+    </div>
+
+    <!-- FOOTER -->
+    <footer>
+      <p>{{ReportFooter}}</p>
+      <p>Erstellt von: {{Admin}} | Datum: {{ReportDate}}</p>
+    </footer>
+  </div>
+</body>
+</html>
