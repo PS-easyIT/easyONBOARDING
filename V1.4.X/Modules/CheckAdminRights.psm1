@@ -1,24 +1,30 @@
-#region [Region 01 | ADMIN RIGHTS CHECK]
-# Verifies administrator rights and PowerShell version before proceeding
 function Test-Admin {
     $currentUser = New-Object Security.Principal.WindowsPrincipal([Security.Principal.WindowsIdentity]::GetCurrent())
     return $currentUser.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
 }
 
 function Start-AsAdmin {
-    $scriptPath = $MyInvocation.MyCommand.Definition
+    # Get the path of the calling script rather than this function
+    $scriptPath = if ($global:PSCommandPath) { $global:PSCommandPath } else { $global:MyInvocation.ScriptName }
+    
+    if (-not $scriptPath) {
+        Write-Warning "Could not determine the path of the parent script."
+        return $false
+    }
+    
     $psi = New-Object System.Diagnostics.ProcessStartInfo
     $psi.FileName = "pwsh.exe"
     $psi.Arguments = "-ExecutionPolicy Bypass -File `"$scriptPath`""
     $psi.Verb = "runas" # This triggers the UAC prompt
+    
     try {
         [System.Diagnostics.Process]::Start($psi) | Out-Null
+        return $true
     }
     catch {
         Write-Warning "Failed to restart as administrator: $($_.Exception.Message)"
         return $false
     }
-    return $true
 }
 
 # Check for admin privileges
@@ -28,11 +34,11 @@ if (-not (Test-Admin)) {
     $result = [System.Windows.MessageBox]::Show(
         "This script requires administrator privileges to run properly.`n`nDo you want to restart with elevated permissions?",
         "Administrator Rights Required",
-        "YesNo",
-        "Warning"
+        [System.Windows.MessageBoxButton]::YesNo,
+        [System.Windows.MessageBoxImage]::Warning
     )
     
-    if ($result -eq "Yes") {
+    if ($result -eq [System.Windows.MessageBoxResult]::Yes) {
         if (Start-AsAdmin) {
             # Exit this instance as we've started a new elevated instance
             exit
@@ -49,11 +55,15 @@ if ($PSVersionTable.PSVersion.Major -lt 7) {
     [System.Windows.MessageBox]::Show(
         "This script requires PowerShell 7 or higher.`n`nCurrent version: $($PSVersionTable.PSVersion)",
         "Version Error",
-        "OK",
-        "Error"
+        [System.Windows.MessageBoxButton]::OK,
+        [System.Windows.MessageBoxImage]::Error
     )
     exit
 }
 
-$ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Definition
+# Define and make the script directory available to importing scripts
+$script:ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 #endregion
+
+# Export specific functions and variables
+Export-ModuleMember -Function Test-Admin, Start-AsAdmin -Variable ScriptDir

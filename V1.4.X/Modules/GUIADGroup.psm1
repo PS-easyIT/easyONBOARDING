@@ -1,9 +1,15 @@
-#region [Region 13 | AD GROUP LOADING]
 # Loads AD groups from the INI file and binds them to the GUI
 Write-DebugMessage "Loading AD groups from INI."
 function Load-ADGroups {
     try {
         Write-DebugMessage "Loading AD groups from INI..."
+        
+        # Check if global config is null
+        if (-not $global:Config) {
+            Write-Error "Global configuration is null."
+            return
+        }
+        
         if (-not $global:Config.Contains("ADGroups")) {
             Write-Error "The [ADGroups] section is missing in the INI."
             return
@@ -128,7 +134,7 @@ function Get-SelectedADGroups {
     }
 }
 
-# Call the function after loading the XAML:
-Load-ADGroups
-#endregion
+# Export functions for use in other modules
+Export-ModuleMember -Function Load-ADGroups, Get-SelectedADGroups
+
 

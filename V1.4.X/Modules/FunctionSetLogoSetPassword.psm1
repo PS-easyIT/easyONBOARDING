@@ -1,14 +1,11 @@
-#region [Region 15 | UTILITY FUNCTIONS]
-# Miscellaneous utility functions for the application
-
 Write-DebugMessage "Set-Logo"
 
-#region [Region 15.1 | LOGO MANAGEMENT]
 # Function to handle logo uploads and management for reports
 Write-DebugMessage "Setting logo."
 function Set-Logo {
     # [15.1.1 - Handles file selection and saving of logo images]
     param (
+        [Parameter(Mandatory=$true)]
         [hashtable]$brandingConfig
     )
     try {
@@ -28,6 +25,7 @@ function Set-Logo {
             if (-not (Test-Path $TemplateLogo)) {
                 try {
                     New-Item -ItemType Directory -Path $TemplateLogo -Force -ErrorAction Stop | Out-Null
+                    Write-Log "Created directory: $TemplateLogo" "DEBUG"
                 } catch {
                     Throw "Could not create target directory for logo: $($_.Exception.Message)"
                 }
@@ -39,6 +37,7 @@ function Set-Logo {
             [System.Windows.MessageBox]::Show("The logo was successfully saved!`nLocation: $targetLogoTemplate", "Success", "OK", "Information")
         }
     } catch {
+        Write-Log "Error in Set-Logo: $($_.Exception.Message)" "ERROR"
         [System.Windows.MessageBox]::Show("Error uploading logo: $($_.Exception.Message)", "Error", "OK", "Error")
     }
 }
@@ -46,19 +45,21 @@ function Set-Logo {
 
 Write-DebugMessage "Defining advanced password generation function."
 
-#region [Region 15.2 | PASSWORD GENERATION]
 # Advanced password generation with security requirements
 Write-DebugMessage "Generating advanced password."
 function New-AdvancedPassword {
     [CmdletBinding()]
     param(
         [Parameter(Mandatory=$false)]
+        [ValidateRange(8, 100)]
         [int]$Length = 12,
 
         [Parameter(Mandatory=$false)]
+        [ValidateRange(1, 10)]
         [int]$MinUpperCase = 2,
 
         [Parameter(Mandatory=$false)]
+        [ValidateRange(1, 10)]
         [int]$MinDigits = 2,
 
         [Parameter(Mandatory=$false)]
@@ -72,8 +73,10 @@ function New-AdvancedPassword {
         [int]$MinNonAlpha = 2
     )
 
-    if ($Length -lt ($MinUpperCase + $MinDigits)) {
-        Throw "Error: The password length ($Length) is too short for the required minimum values (MinUpperCase + MinDigits = $($MinUpperCase + $MinDigits))."
+    # Validate that the password length is sufficient for the requirements
+    $minimumRequiredLength = $MinUpperCase + $MinDigits + $MinNonAlpha
+    if ($Length -lt $minimumRequiredLength) {
+        Throw "Error: The password length ($Length) is too short for the required minimum values (MinUpperCase + MinDigits + MinNonAlpha = $minimumRequiredLength)."
     }
 
     Write-DebugMessage "New-AdvancedPassword: Defining character pools"
@@ -92,10 +95,10 @@ function New-AdvancedPassword {
     }
     
     # Ensure that character pools are never empty
-    if (-not $upper -or $upper.Length -eq 0) { $upper = 'ABCDEFGHJKLMNPQRSTUVWXYZ' }
-    if (-not $lower -or $lower.Length -eq 0) { $lower = 'abcdefghijkmnopqrstuvwxyz' }
-    if (-not $digits -or $digits.Length -eq 0) { $digits = '23456789' }
-    if (-not $special -or $special.Length -eq 0) { $special = '!@#$%^&*()' }
+    if ([string]::IsNullOrEmpty($upper)) { $upper = 'ABCDEFGHJKLMNPQRSTUVWXYZ' }
+    if ([string]::IsNullOrEmpty($lower)) { $lower = 'abcdefghijkmnopqrstuvwxyz' }
+    if ([string]::IsNullOrEmpty($digits)) { $digits = '23456789' }
+    if ([string]::IsNullOrEmpty($special)) { $special = '!@#$%^&*()' }
     
     # Recalculate 'all' after ensuring pools are not empty
     $all = $lower + $upper + $digits
@@ -114,6 +117,14 @@ function New-AdvancedPassword {
         Write-DebugMessage "New-AdvancedPassword: Adding minimum number of digits"
         for ($i = 0; $i -lt $MinDigits; $i++) {
             [void]$passwordChars.Add($digits[(Get-Random -Minimum 0 -Maximum $digits.Length)].ToString())
+        }
+        
+        # Add special characters if needed to meet MinNonAlpha requirement
+        if ($IncludeSpecial -and ($MinNonAlpha -gt $MinDigits)) {
+            $specialCharsNeeded = $MinNonAlpha - $MinDigits
+            for ($i = 0; $i -lt $specialCharsNeeded; $i++) {
+                [void]$passwordChars.Add($special[(Get-Random -Minimum 0 -Maximum $special.Length)].ToString())
+            }
         }
         
         Write-DebugMessage "New-AdvancedPassword: Filling up to desired length"
@@ -135,4 +146,6 @@ function New-AdvancedPassword {
     Write-DebugMessage "Advanced password generated successfully."
     return $generatedPassword
 }
-#endregion
+
+# Export the module members
+Export-ModuleMember -Function Set-Logo, New-AdvancedPassword

@@ -12,9 +12,10 @@ function Invoke-ADCommand {
         & $Command
     }
     catch {
-        $errMsg = "Error in Invoke-ADCommand: $ErrorContext - $($_.Exception.Message)"
+        $errMsg = "Error in Invoke-ADCommand: $ErrorContext - $($_.Exception.Message) - $($_.Exception.StackTrace)"
         Write-Error $errMsg
         Throw $errMsg
     }
 }
 
+Export-ModuleMember -Function Invoke-ADCommand

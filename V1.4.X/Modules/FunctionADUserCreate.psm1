@@ -1,6 +1,6 @@
-#region [Region 09 | AD USER CREATION]
 # Creates Active Directory user accounts based on input data
 function New-ADUserAccount {
+    [CmdletBinding()]
     param (
         [Parameter(Mandatory=$true)]
         [pscustomobject]$UserData,
@@ -19,12 +19,17 @@ function New-ADUserAccount {
         Write-DebugMessage "Using Company section: $companySection"
         
         # 2) Check if all required information is available
-        if (-not $Config.Contains($companySection)) {
+        if (-not $Config.ContainsKey($companySection)) {
             throw "No configuration found for Company section '$companySection'."
         }
         
         $suffix = ($companySection -replace "\D","") 
         $adOUKey = "CompanyActiveDirectoryOU$suffix"
+        
+        if (-not $Config[$companySection].ContainsKey($adOUKey)) {
+            throw "No AD path (OU) found for Company section '$companySection'."
+        }
+        
         $adPath = $Config[$companySection][$adOUKey]
         
         if (-not $adPath) {
@@ -33,8 +38,8 @@ function New-ADUserAccount {
         
         # 3) Generate DisplayName according to configured template (from INI)
         $displayNameFormat = ""
-        if ($Config.Contains("DisplayNameUPNTemplates") -and 
-            $Config.DisplayNameUPNTemplates.Contains("DefaultDisplayNameFormat")) {
+        if ($Config.ContainsKey("DisplayNameUPNTemplates") -and 
+            $Config.DisplayNameUPNTemplates.ContainsKey("DefaultDisplayNameFormat")) {
             $displayNameFormat = $Config.DisplayNameUPNTemplates.DefaultDisplayNameFormat
         }
         
@@ -53,7 +58,7 @@ function New-ADUserAccount {
         # 4) Check if user already exists
         $userExists = $false
         try {
-            $existingUser = Get-ADUser -Identity $samAccountName
+            $existingUser = Get-ADUser -Identity $samAccountName -ErrorAction Stop
             if ($existingUser) {
                 $userExists = $true
                 Write-Log "User $samAccountName already exists." -LogLevel "WARN"
@@ -75,7 +80,7 @@ function New-ADUserAccount {
         if ([string]::IsNullOrWhiteSpace($UserData.Password)) {
             # Password length from Config or default 12 characters
             $passwordLength = 12
-            if ($Config.Contains("PasswordFixGenerate") -and $Config.PasswordFixGenerate.Contains("DefaultPasswordLength")) {
+            if ($Config.ContainsKey("PasswordFixGenerate") -and $Config.PasswordFixGenerate.ContainsKey("DefaultPasswordLength")) {
                 $tempLength = [int]::TryParse($Config.PasswordFixGenerate.DefaultPasswordLength, [ref]$passwordLength)
                 if (-not $tempLength) { $passwordLength = 12 }
             }
@@ -89,21 +94,25 @@ function New-ADUserAccount {
             $securePassword += $charPool.Substring($random.Next(0, 25), 1)  # Lowercase
             $securePassword += $charPool.Substring($random.Next(26, 50), 1) # Uppercase
             $securePassword += $charPool.Substring($random.Next(51, 59), 1) # Number
-            $securePassword += $charPool.Substring($random.Next(60, $charPool.Length-1), 1) # Special character
+            $securePassword += $charPool.Substring($random.Next(60, $charPool.Length), 1) # Special character
             
             # Fill up to desired length
             for ($i = 4; $i -lt $passwordLength; $i++) {
-                $securePassword += $charPool.Substring($random.Next(0, $charPool.Length-1), 1)
+                $securePassword += $charPool.Substring($random.Next(0, $charPool.Length), 1)
             }
             
             # Randomize character order
             $securePasswordArray = $securePassword.ToCharArray()
-            $randomizedPassword = ""
-            for ($i = $securePasswordArray.Count; $i -gt 0; $i--) {
-                $randomPosition = $random.Next(0, $i)
-                $randomizedPassword += $securePasswordArray[$randomPosition]
-                $securePasswordArray = $securePasswordArray[0..($randomPosition-1)] + $securePasswordArray[($randomPosition+1)..($securePasswordArray.Count-1)]
+            
+            # Use Fisher-Yates shuffle algorithm
+            for ($i = $securePasswordArray.Length - 1; $i -gt 0; $i--) {
+                $j = $random.Next(0, $i + 1)
+                $temp = $securePasswordArray[$i]
+                $securePasswordArray[$i] = $securePasswordArray[$j]
+                $securePasswordArray[$j] = $temp
             }
+            
+            $randomizedPassword = -join $securePasswordArray
             
             $UserData.Password = $randomizedPassword
             Write-DebugMessage "Generated password: $randomizedPassword"
@@ -111,16 +120,16 @@ function New-ADUserAccount {
         
         # 6) Collect more AD attributes
         $adUserParams = @{
-            SamAccountName = $samAccountName
-            UserPrincipalName = $userPrincipalName
-            Name = $displayName
-            DisplayName = $displayName
-            GivenName = $UserData.FirstName
-            Surname = $UserData.LastName
-            Path = $adPath
-            AccountPassword = (ConvertTo-SecureString -String $UserData.Password -AsPlainText -Force)
-            Enabled = $true
-            PasswordNeverExpires = $false
+            SamAccountName        = $samAccountName
+            UserPrincipalName   = $userPrincipalName
+            Name                = $displayName
+            DisplayName         = $displayName
+            GivenName           = $UserData.FirstName
+            Surname             = $UserData.LastName
+            Path                = $adPath
+            AccountPassword     = (ConvertTo-SecureString -String $UserData.Password -AsPlainText -Force)
+            Enabled             = $true
+            PasswordNeverExpires= $false
             ChangePasswordAtLogon = $true
         }
         
@@ -139,7 +148,17 @@ function New-ADUserAccount {
         
         # 7) Create user
         Write-DebugMessage "Creating AD user: $samAccountName"
-        $newUser = New-ADUser @adUserParams -PassThru
+        try {
+            $newUser = New-ADUser @adUserParams -PassThru -ErrorAction Stop
+        }
+        catch {
+            Write-Log "Error creating user: $($_.Exception.Message)" -LogLevel "ERROR"
+            return @{
+                Success = $false
+                Message = "Error creating user: $($_.Exception.Message)"
+                SamAccountName = $samAccountName
+            }
+        }
         
         # 8) Set optional attributes
         # If certain attributes need to be set separately...
@@ -152,20 +171,23 @@ function New-ADUserAccount {
         
         Write-Log "User $samAccountName was successfully created." -LogLevel "INFO"
         return @{
-            Success = $true
-            Message = "User was successfully created."
-            SamAccountName = $samAccountName
+            Success           = $true
+            Message           = "User was successfully created."
+            SamAccountName    = $samAccountName
             UserPrincipalName = $userPrincipalName
-            Password = $UserData.Password
+            Password          = $UserData.Password
         }
     }
     catch {
         Write-Log "Error creating user: $($_.Exception.Message)" -LogLevel "ERROR"
         return @{
-            Success = $false
-            Message = "Error creating user: $($_.Exception.Message)"
+            Success        = $false
+            Message        = "Error creating user: $($_.Exception.Message)"
             SamAccountName = $samAccountName
         }
     }
 }
-#endregion
+
+# Export the function for use in other modules or scripts
+Export-ModuleMember -Function New-ADUserAccount
+

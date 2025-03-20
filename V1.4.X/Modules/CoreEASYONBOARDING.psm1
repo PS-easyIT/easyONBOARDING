@@ -1,6 +1,6 @@
-#region [Region 16 | CORE ONBOARDING PROCESS]
-# Main function that handles the complete user onboarding process
-Write-DebugMessage "Starting onboarding process."
+# Module initialization
+# Removed standalone Write-DebugMessage call that would execute on module import
+
 function Invoke-Onboarding {
     # [16.1 - Processes AD user creation and configuration in a single workflow]
     [CmdletBinding()]
@@ -11,7 +11,12 @@ function Invoke-Onboarding {
         [Parameter(Mandatory = $true)]
         [hashtable]$Config
     )
-
+    
+    # Ensure Write-DebugMessage is available
+    if (-not (Get-Command -Name Write-DebugMessage -ErrorAction SilentlyContinue)) {
+        throw "Required function Write-DebugMessage is not available. Make sure UtilityFunctions module is imported."
+    }
+    
     Write-DebugMessage "Invoke-Onboarding: Start"
 
     # Debugging information
@@ -75,6 +80,12 @@ function Invoke-Onboarding {
         $avoidAmbiguous = ($Config.PasswordFixGenerate["AvoidAmbiguousChars"] -match "^(?i:true|1)$")
 
         Write-DebugMessage "Invoke-Onboarding: Generating password with New-AdvancedPassword"
+        
+        # Verify New-AdvancedPassword is available
+        if (-not (Get-Command -Name New-AdvancedPassword -ErrorAction SilentlyContinue)) {
+            throw "Required function New-AdvancedPassword is not available. Make sure the appropriate module is imported."
+        }
+        
         $mainPW = New-AdvancedPassword `
             -Length ([int]$Config.PasswordFixGenerate["DefaultPasswordLength"]) `
             -IncludeSpecial $includeSpecial `
@@ -120,6 +131,11 @@ function Invoke-Onboarding {
 
     # [16.1.5 - SamAccountName and UPN creation logic]
     Write-DebugMessage "Invoke-Onboarding: Creating SamAccountName and UPN"
+    # Verify New-UPN is available
+    if (-not (Get-Command -Name New-UPN -ErrorAction SilentlyContinue)) {
+        throw "Required function New-UPN is not available. Make sure the appropriate module is imported."
+    }
+    
     # Use only the return value of the New-UPN function:
     $upnResult = New-UPN -userData $userData -Config $Config
     $SamAccountName = $upnResult.SamAccountName
@@ -234,6 +250,12 @@ function Invoke-Onboarding {
     $streetKey = "CompanyStrasse"
     $plzKey    = "CompanyPLZ"
     $ortKey    = "CompanyOrt"
+    
+    # Verify Get-ConfigValue is available
+    if (-not (Get-Command -Name Get-ConfigValue -ErrorAction SilentlyContinue)) {
+        throw "Required function Get-ConfigValue is not available. Make sure the appropriate module is imported."
+    }
+    
     $Street = Get-ConfigValue -Section $companyData -Key "CompanyStrasse"
     $Zip    = Get-ConfigValue -Section $companyData -Key "CompanyPLZ"
     $City   = Get-ConfigValue -Section $companyData -Key "CompanyOrt"
@@ -343,6 +365,7 @@ function Invoke-Onboarding {
 
     # [16.1.8.2 - Collect additional attributes from the form]
     Write-DebugMessage "Invoke-Onboarding: Building otherAttributes"
+    # Fix: Clear previous otherAttributes to avoid duplicates
     $otherAttributes = @{ }
 
     # [16.1.8.3 - Determine the mail suffix: If available, use the one from the form, otherwise from the INI from [MailEndungen]/Domain1]
@@ -420,6 +443,11 @@ function Invoke-Onboarding {
 
     if (-not $existingUser) {
         Write-DebugMessage "Invoke-Onboarding: Creating new user: $($userData.DisplayName)"
+        # Verify Invoke-ADCommand is available
+        if (-not (Get-Command -Name Invoke-ADCommand -ErrorAction SilentlyContinue)) {
+            throw "Required function Invoke-ADCommand is not available. Make sure the appropriate module is imported."
+        }
+        
         Invoke-ADCommand -Command { New-ADUser @userParams -ErrorAction Stop } -ErrorContext "Creating AD user for $($userData.DisplayName)"
         
         # [16.1.9.1 - Smartcard Logon setting]
@@ -708,9 +736,15 @@ function Invoke-Onboarding {
     # [16.1.11 - Logging]
     Write-DebugMessage "Invoke-Onboarding: Logging to file"
     try {
-        Write-LogMessage -Message ("ONBOARDING PERFORMED BY: " + ([System.Security.Principal.WindowsIdentity]::GetCurrent().Name) +
-            ", SamAccountName: $SamAccountName, Display Name: '$($userData.DisplayName)', UPN: '$UPN', Location: '$($userData.Location)', Company: '$companyDisplay', License: '$($userData.License)', Password: '$mainPW', External: $($userData.External)") -Level Info
-        Write-DebugMessage "Log written"
+        # Verify Write-LogMessage is available
+        if (-not (Get-Command -Name Write-LogMessage -ErrorAction SilentlyContinue)) {
+            Write-Warning "Write-LogMessage function is not available. Logging will be skipped."
+        }
+        else {
+            Write-LogMessage -Message ("ONBOARDING PERFORMED BY: " + ([System.Security.Principal.WindowsIdentity]::GetCurrent().Name) +
+                ", SamAccountName: $SamAccountName, Display Name: '$($userData.DisplayName)', UPN: '$UPN', Location: '$($userData.Location)', Company: '$companyDisplay', License: '$($userData.License)', Password: '$mainPW', External: $($userData.External)") -Level Info
+            Write-DebugMessage "Log written"
+        }
     }
     catch {
         Write-Warning "Error logging: $($_.Exception.Message)"
@@ -924,6 +958,7 @@ Useful Links:
         UPN            = $UPN
         Password       = $mainPW
     }
-} 
-Write-Debug ("userData: " + ( $userData | Out-String ))
-#endregion
+}
+
+# Export the specific function rather than using wildcard export
+Export-ModuleMember -Function Invoke-Onboarding

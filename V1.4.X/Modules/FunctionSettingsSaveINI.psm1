@@ -1,3 +1,11 @@
+# Check if required functions exist, if not create stub functions
+if (-not (Get-Command -Name "Write-DebugMessage" -ErrorAction SilentlyContinue)) {
+    function Write-DebugMessage { param([string]$Message) Write-Verbose $Message }
+}
+if (-not (Get-Command -Name "Write-LogMessage" -ErrorAction SilentlyContinue)) {
+    function Write-LogMessage { param([string]$Message, [string]$LogLevel) Write-Verbose $Message }
+}
+
 function Save-INIChanges {
     param(
         [Parameter(Mandatory=$false)]
@@ -19,21 +27,33 @@ function Save-INIChanges {
         
         # Create a backup before making changes
         $backupPath = "$INIPath.backup"
-        Copy-Item -Path $INIPath -Destination $backupPath -Force -ErrorAction Stop
-        Write-DebugMessage "Created backup at: $backupPath"
+        try {
+            Copy-Item -Path $INIPath -Destination $backupPath -Force -ErrorAction Stop
+            Write-DebugMessage "Created backup at: $backupPath"
+        } catch {
+            Write-DebugMessage "Error creating backup: $($_.Exception.Message)"
+            Write-LogMessage -Message "Error creating INI backup file: $($_.Exception.Message)" -LogLevel "ERROR"
+            # Consider whether to continue if backup fails.  For now, continue.
+        }
         
         # Create a temporary string builder to build the INI content
         $iniContent = New-Object System.Text.StringBuilder
         
         # Read original INI to preserve comments and structure
         Write-DebugMessage "Reading original INI content from: $INIPath"
-        $originalContent = Get-Content -Path $INIPath -ErrorAction Stop
+        try {
+            $originalContent = Get-Content -Path $INIPath -ErrorAction Stop
+        } catch {
+            Write-DebugMessage "Error reading INI file: $($_.Exception.Message)"
+            Write-LogMessage -Message "Error reading INI file: $($_.Exception.Message)" -LogLevel "ERROR"
+            return $false # Or handle the error as appropriate
+        }
         $currentSection = ""
         $inSection = $false
         $processedSections = @{ }
         $processedKeys = @{ }
         
-        Write-DebugMessage "Processing original content with ${$originalContent.Count} lines"
+        Write-DebugMessage "Processing original content with $($originalContent.Count) lines"
         
         # First pass: Preserve structure and update existing values
         foreach ($line in $originalContent) {
@@ -49,7 +69,7 @@ function Save-INIChanges {
                     $processedKeys[$currentSection] = @{ }
                 }
                 
-                $inSection = $global:Config.Contains($currentSection)
+                $inSection = $global:Config.ContainsKey($currentSection)
                 $processedSections[$currentSection] = $true
                 
                 # Add the section header
@@ -66,15 +86,16 @@ function Save-INIChanges {
             # Check if it's a key-value pair
             if ($trimmedLine -match '^(.*?)=(.*)$') {
                 $key = $matches[1].Trim()
+                $value = $matches[2].Trim()
                 
                 # If we're in a tracked section and the key exists in our config, use the updated value
-                if ($inSection -and $global:Config[$currentSection].Contains($key)) {
-                    $value = $global:Config[$currentSection][$key]
-                    [void]$iniContent.AppendLine("$key=$value")
+                if ($inSection -and $global:Config[$currentSection].ContainsKey($key)) {
+                    $newValue = $global:Config[$currentSection][$key]
+                    [void]$iniContent.AppendLine("$key=$newValue")
                     
                     # Mark this key as processed
                     $processedKeys[$currentSection][$key] = $true
-                    Write-DebugMessage "Updated key: [$currentSection] $key=$value"
+                    Write-DebugMessage "Updated key: [$currentSection] $key=$newValue"
                 }
                 else {
                     if ($inSection) {
@@ -105,19 +126,30 @@ function Save-INIChanges {
            }
            
            # Add any keys that weren't in the original file
-           foreach ($key in $global:Config[$sectionName].Keys) {
-               if (-not ($processedKeys.ContainsKey($sectionName) -and $processedKeys[$sectionName].ContainsKey($key))) {
-                   $value = $global:Config[$sectionName][$key]
-                   [void]$iniContent.AppendLine("$key=$value")
-                   Write-DebugMessage "Added new key: [$sectionName] $key=$value"
-               }
+           if ($global:Config.ContainsKey($sectionName)) {
+                if (-not $processedKeys.ContainsKey($sectionName)) {
+                    $processedKeys[$sectionName] = @{} 
+                }
+                foreach ($key in $global:Config[$sectionName].Keys) {
+                    if (-not $processedKeys[$sectionName].ContainsKey($key)) {
+                        $value = $global:Config[$sectionName][$key]
+                        [void]$iniContent.AppendLine("$key=$value")
+                        Write-DebugMessage "Added new key: [$sectionName] $key=$value"
+                    }
+                }
            }
        }
        
        # Save the content back to the file
        Write-DebugMessage "Saving new content to INI file..."
-       $finalContent = $iniContent.ToString()
-       [System.IO.File]::WriteAllText($INIPath, $finalContent, [System.Text.Encoding]::UTF8)
+       try {
+            $finalContent = $iniContent.ToString()
+            [System.IO.File]::WriteAllText($INIPath, $finalContent, [System.Text.Encoding]::UTF8)
+       } catch {
+            Write-DebugMessage "Error writing to INI file: $($_.Exception.Message)"
+            Write-LogMessage -Message "Error writing to INI file: $($_.Exception.Message)" -LogLevel "ERROR"
+            return $false
+       }
        
        Write-DebugMessage "INI file saved successfully: $INIPath"
        Write-LogMessage -Message "INI file edited by $($env:USERNAME)" -LogLevel "INFO"
@@ -131,3 +163,6 @@ function Save-INIChanges {
        return $false
    }
 }
+
+# Export the function so it's available outside this module.
+Export-ModuleMember -Function Save-INIChanges

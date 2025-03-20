@@ -1,8 +1,6 @@
-#region [Region 03 | FUNCTION DEFINITIONS]
 # Contains all helper and core functionality functions
-
-#region [Region 03.1 | LOGGING FUNCTIONS]
 # Defines logging capabilities for different message levels
+
 function Write-LogMessage {
     # [03.1.1 - Primary logging wrapper for consistent message formatting]
     param(
@@ -30,20 +28,15 @@ function Write-DebugMessage {
             $global:Config.Logging.DebugMode -eq "1") {
             
             # Call Write-Log without capturing output to avoid pipeline return
-            Write-Log -Message $Message -LogLevel $LogLevel
+            Write-Log -Message $Message -LogLevel $LogLevel | Out-Null
             
             # Also output to console for immediate feedback during debugging
             Write-Host "[DEBUG] $Message" -ForegroundColor Cyan
         }
-        
-        # No return value to avoid unwanted pipeline output
     }
 }
-#endregion
 
 # Log level (default is "INFO"): "WARN", "ERROR", "DEBUG".
-
-#region [Region 03.2 | LOG FILE WRITER] 
 # Core logging function that writes messages to log files
 function Write-Log {
     # [03.2.1 - Low-level file logging implementation]
@@ -59,9 +52,27 @@ function Write-Log {
     )
     process {
         # log path determination using null-conditional and coalescing operators
-        $logFilePath = $global:Config?.Logging?.ExtraFile ?? 
-                      $global:Config?.Logging?.LogFile ?? 
-                      (Join-Path $ScriptDir "Logs")
+        if (-not (Get-Variable -Name ScriptDir -ErrorAction SilentlyContinue)) {
+            $script:ScriptDir = Split-Path -Parent $PSCommandPath
+        }
+        
+        # Use a default log path if the config is not available
+        $logFilePath = if ($null -ne $global:Config -and $null -ne $global:Config.Logging) {
+            if ($global:Config.Logging.ExtraFile) {
+                $global:Config.Logging.ExtraFile
+            } elseif ($global:Config.Logging.LogFile) {
+                $global:Config.Logging.LogFile
+            } else {
+                Join-Path $script:ScriptDir "Logs"
+            }
+        } else {
+            Join-Path $script:ScriptDir "Logs"
+        }
+
+        # Fallback to temp directory if everything else fails
+        if (-not $logFilePath) {
+            $logFilePath = $env:TEMP
+        }
         
         # Ensure the log directory exists
         if (-not (Test-Path $logFilePath)) {
@@ -112,8 +123,8 @@ function Write-Log {
             }
             # When DebugMode=0, no console output
         }
-        
-        # No return value to avoid unwanted pipeline output
     }
 }
-#endregion
+
+# Export all logging functions to make them available outside the module
+Export-ModuleMember -Function Write-LogMessage, Write-DebugMessage, Write-Log -Variable ScriptDir

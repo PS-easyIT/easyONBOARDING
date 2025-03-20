@@ -1,4 +1,6 @@
 function Import-INIEditorData {
+    [CmdletBinding()]
+    param()
     try {
         Write-DebugMessage "Loading INI sections and settings for the editor"
         
@@ -12,7 +14,7 @@ function Import-INIEditorData {
         }
         
         # Create a collection to store the sections
-        $sectionItems = New-Object System.Collections.ObjectModel.ObservableCollection[PSObject]
+        $sectionItems = [System.Collections.ObjectModel.ObservableCollection[PSObject]]::new()
         
         # Add all sections from the global Config
         foreach ($sectionName in $global:Config.Keys) {
@@ -29,10 +31,10 @@ function Import-INIEditorData {
             # GridView already defined in XAML
         } else {
             # Create GridView programmatically
-            $gridView = New-Object System.Windows.Controls.GridView
-            $column = New-Object System.Windows.Controls.GridViewColumn
+            $gridView = [System.Windows.Controls.GridView]::new()
+            $column = [System.Windows.Controls.GridViewColumn]::new()
             $column.Header = "Section"
-            $column.DisplayMemberBinding = New-Object System.Windows.Data.Binding("SectionName")
+            $column.DisplayMemberBinding = [System.Windows.Data.Binding]::new("SectionName")
             $gridView.Columns.Add($column)
             $listViewINIEditor.View = $gridView
         }
@@ -40,22 +42,22 @@ function Import-INIEditorData {
         # Ensure DataGrid has columns defined
         if ($dataGridINIEditor.Columns.Count -eq 0) {
             # Add columns programmatically
-            $keyColumn = New-Object System.Windows.Controls.DataGridTextColumn
+            $keyColumn = [System.Windows.Controls.DataGridTextColumn]::new()
             $keyColumn.Header = "Key"
-            $keyColumn.Binding = New-Object System.Windows.Data.Binding("Key")
-            $keyColumn.Width = New-Object System.Windows.Controls.DataGridLength(1, [System.Windows.Controls.DataGridLengthUnitType]::Star)
+            $keyColumn.Binding = [System.Windows.Data.Binding]::new("Key")
+            $keyColumn.Width = [System.Windows.Controls.DataGridLength]::new(1, [System.Windows.Controls.DataGridLengthUnitType]::Star)
             $dataGridINIEditor.Columns.Add($keyColumn)
             
-            $valueColumn = New-Object System.Windows.Controls.DataGridTextColumn
+            $valueColumn = [System.Windows.Controls.DataGridTextColumn]::new()
             $valueColumn.Header = "Value"
-            $valueColumn.Binding = New-Object System.Windows.Data.Binding("Value") 
-            $valueColumn.Width = New-Object System.Windows.Controls.DataGridLength(2, [System.Windows.Controls.DataGridLengthUnitType]::Star)
+            $valueColumn.Binding = [System.Windows.Data.Binding]::new("Value") 
+            $valueColumn.Width = [System.Windows.Controls.DataGridLength]::new(2, [System.Windows.Controls.DataGridLengthUnitType]::Star)
             $dataGridINIEditor.Columns.Add($valueColumn)
             
-            $commentColumn = New-Object System.Windows.Controls.DataGridTextColumn
+            $commentColumn = [System.Windows.Controls.DataGridTextColumn]::new()
             $commentColumn.Header = "Comment"
-            $commentColumn.Binding = New-Object System.Windows.Data.Binding("Comment")
-            $commentColumn.Width = New-Object System.Windows.Controls.DataGridLength(2, [System.Windows.Controls.DataGridLengthUnitType]::Star)
+            $commentColumn.Binding = [System.Windows.Data.Binding]::new("Comment")
+            $commentColumn.Width = [System.Windows.Controls.DataGridLength]::new(2, [System.Windows.Controls.DataGridLengthUnitType]::Star)
             $dataGridINIEditor.Columns.Add($commentColumn)
         }
         
@@ -68,6 +70,7 @@ function Import-INIEditorData {
 }
 
 function Import-SectionSettings {
+    [CmdletBinding()]
     param(
         [Parameter(Mandatory=$true)]
         [string]$SectionName,
@@ -97,7 +100,7 @@ function Import-SectionSettings {
         Write-DebugMessage "Found section with $($sectionData.Count) keys"
         
         # Create a collection to store the key-value pairs
-        $settingsItems = New-Object System.Collections.ObjectModel.ObservableCollection[PSObject]
+        $settingsItems = [System.Collections.ObjectModel.ObservableCollection[PSObject]]::new()
         
         # Extract comments from the original INI file if available
         $commentsByKey = @{ }
@@ -154,7 +157,7 @@ function Import-SectionSettings {
         
         # Clear current data and set the new DataGrid ItemsSource
         $DataGrid.ItemsSource = $null
-        $DataGrid.Items.Clear()
+        #$DataGrid.Items.Clear() #redundant
         $DataGrid.ItemsSource = $settingsItems
         
         Write-DebugMessage "Loaded $($settingsItems.Count) settings for section $SectionName"
@@ -167,4 +170,7 @@ function Import-SectionSettings {
         [System.Windows.MessageBox]::Show("Error loading settings for section '$SectionName': $($_.Exception.Message)", "Error", "OK", "Error")
     }
 }
+
+# Export the functions
+Export-ModuleMember -Function Import-INIEditorData, Import-SectionSettings
 

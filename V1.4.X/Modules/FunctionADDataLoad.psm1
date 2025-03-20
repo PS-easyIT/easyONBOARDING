@@ -1,12 +1,12 @@
 Write-DebugMessage "Get-ADData"
 
-#region [Region 19 | AD DATA RETRIEVAL]
 # Function to retrieve and process data from Active Directory
 Write-DebugMessage "Retrieving AD data."
 function Get-ADData {
+    [CmdletBinding()]
     param(
         [Parameter(Mandatory=$false)]
-        $Window
+        [System.Windows.Window]$Window
     )
     
     try {
@@ -42,7 +42,7 @@ function Get-ADData {
         Write-DebugMessage "Get-ADData: comboBoxOU and listBoxUsers"
         
         # Find the ComboBox and ListBox in the Window if provided
-        if ($Window) {
+        if ($PSBoundParameters.ContainsKey('Window') -and $Window) {
             $comboBoxOU = $Window.FindName("cmbOU") 
             $listBoxUsers = $Window.FindName("lstUsers")
             
@@ -73,9 +73,12 @@ function Get-ADData {
         }
     }
     catch {
-        Write-DebugMessage "Error in Get-ADData: $($_.Exception.Message)"
+        Write-Error "Error in Get-ADData: $($_.Exception.Message)"
+        Write-Log "Error in Get-ADData: $($_.Exception.Message)" "ERROR"
         [System.Windows.MessageBox]::Show("AD connection error: $($_.Exception.Message)")
         return $null
     }
 }
-#endregion
+
+# Export the function for use in other scripts
+Export-ModuleMember -Function Get-ADData
