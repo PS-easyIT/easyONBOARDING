@@ -1,0 +1,281 @@
+====================================================================================================
+ANDREAS HEPP – easyOnboarding (Version 0.6.1) unterliegt dem Urheberrecht!
+====================================================================================================
+ACHTUNG:
+Anpassung des Headers (Info-Texte, Logo) und des Footers (Domain) darf nur gegen Gebühr erfolgen!
+Weitere Funktionen oder Anpassungen möglich -> Eine Anfrage ist an "info@phinit.de" zu richten.
+====================================================================================================
+
+Version         : 1.2.5
+Letztes Update  : 23.02.2025
+Autor           : ANDREAS HEPP
+
+
+Beschreibung:
+---------------
+Dieses Skript dient dem Onboarding neuer Mitarbeiter in Active Directory.  
+Es liest eine Konfigurationsdatei (INI) ein, zeigt eine grafische Benutzeroberfläche (GUI) zur Dateneingabe an 
+und legt anschließend AD‑Benutzer an oder aktualisiert diese.  
+
+Zudem werden diverse Reports (HTML, PDF, TXT) generiert und ein Logfile erstellt.
+
+UPN-Erzeugung:
+---------------
+Für den UPN wird zunächst geprüft, ob in der Company‑Sektion der INI der Schlüssel „ActiveDirectoryDomain“ definiert ist.  
+Falls vorhanden, wird dessen Wert (ggf. mit führendem „@“) als UPN‑Suffix verwendet.  
+Ist dieser Schlüssel nicht vorhanden, wird der im GUI ausgewählte Mail‑Suffix (oder alternativ der Schlüssel „MailDomain“) angehängt.
+
+DisplayName-Erzeugung:
+-----------------------
+Wird in der jeweiligen Company‑Sektion der INI der Schlüssel „NameFirma“ (oder alternativ „UserDisplayNameFirma“) gefunden,  
+so wird dessen Wert als Präfix verwendet und der DisplayName wird im Format  
+"NameFirma | VORNAME NACHNAME"  
+gesetzt. Andernfalls wird lediglich Vorname und Nachname verwendet.  
+Zudem wird bei externen Mitarbeitern ein entsprechender Hinweis (z. B. "EXTERN | …") ergänzt.
+
+E-Mail-Feld:
+------------
+Beim Befüllen der E‑Mail-Adresse wird geprüft, ob der eingegebene Wert bereits ein „@“ enthält.  
+Falls nicht, wird – sofern in der Company‑Sektion ein MailDomain-Wert definiert ist – dieser angehängt,  
+ansonsten der im GUI ausgewählte Mail‑Suffix.
+
+Report-Erstellung:
+-------------------
+Das Skript erzeugt HTML-Reports, die dynamisch mit den folgenden Platzhaltern befüllt werden:
+
+- **{{ReportTitle}}**: Der Titel des Reports (z. B. „Onboarding Report für neue Mitarbeiter“)
+- **{{LogoTag}}**: HTML-Code für das Firmenlogo, basierend auf dem in der INI hinterlegten Pfad
+- **{{UserDetailsHTML}}**: Dynamisch generierter HTML-Code, der weitere Benutzerdetails in Tabellenform enthält
+- **{{WebsitesHTML}}**: HTML-Code für weiterführende Links (basierend auf den EmployeeLink-Einträgen in der INI)
+- **{{ReportFooter}}**: Der Footer-Text des Reports (z. B. Copyright-Hinweis)
+- **{{Vorname}}, {{Nachname}}, {{DisplayName}}**: Angaben zum Benutzer
+- **{{Extern}}**: Zeigt „Ja“ oder „Nein“ an, abhängig davon, ob der Benutzer als externer Mitarbeiter gekennzeichnet ist
+- **{{Description}}, {{Buero}}, {{Rufnummer}}, {{Mobil}}**: Weitere Kontaktdaten und Beschreibung
+- **{{Position}}, {{Abteilung}}**: Berufliche Informationen
+- **{{Ablaufdatum}}**: Das Ablaufdatum des Benutzerkontos (oder „nie“)
+- **{{Company}}**: Firmenname bzw. Domain, der als Präfix im DisplayName genutzt wird
+- **{{LoginName}}**: Der SamAccountName des Benutzers
+- **{{Passwort}}**: Das generierte bzw. eingetragene Passwort
+- **{{Admin}}**: Der Name des Administrators, der das Skript ausführt
+- **{{ReportDate}}**: Das Erstellungsdatum des Reports
+
+Wichtige Hinweise:
+-------------------
+- Das Skript unterliegt dem Urheberrecht. Anpassungen des Headers (Info‑Texte, Logo) und des Footers (Domain) dürfen nur gegen Gebühr erfolgen.
+- Für Änderungswünsche wenden Sie sich bitte an: info@phinit.de
+- Stellen Sie sicher, dass alle benötigten Module (z. B. ActiveDirectory) vor der Ausführung verfügbar sind.
+- Dazu bitte easyONBOARDING_INSTALL.exe als Administrator ausführen
+
+Weitere Informationen:
+-----------------------
+Für weitere Details, Updates und Best Practices besuchen Sie bitte:  
+    https://www.PSscripts.de
+
+
+Modul Erklärungen:
+-----------------------
+# CheckAdminRights - BESCHREIBUNG
+- Dieses Modul enthält Funktionen zur Überprüfung von Administratorrechten.
+- Falls das Skript nicht als Administrator ausgeführt wird, erscheint ein Dialog zur erneuten Ausführung mit erhöhten Rechten.
+- Prüft die PowerShell-Version zur Kompatibilität.
+
+    Export Funktionen:
+    - Export-ModuleMember -Function Test-Admin, Start-AsAdmin -Variable ScriptDir
+
+# CheckModulesAD - BESCHREIBUNG
+- Lädt das Active Directory Modul und überprüft, ob die erforderlichen Logging-Funktionen vorhanden sind.
+- Initialisiert das AD-Modul automatisch beim Import dieses Moduls.
+
+    Export Funktionen:
+    - Export-ModuleMember -Function Initialize-ADModule, Test-ADModuleAvailable, Import-ADModule, Test-ADConnection
+
+# CheckModulesAssemblies - BESCHREIBUNG
+- Lädt alle erforderlichen Assemblies für das System.
+- Registriert spezifische Typen für die GUI, inklusive WPF-Namespace.
+- Automatischer Start beim Laden des Moduls.
+
+    Export Funktionen:
+    - Export-ModuleMember -Function Test-Admin, Start-AsAdmin
+
+#CoreHelpers
+    Export Funktionen:
+    - Export-ModuleMember -Function Write-DebugOutput, Write-DebugMessage, Initialize-DebugSystem,
+        Write-LogMessage, Test-IsAdmin, Start-ElevatedProcess, Import-XamlWindow,
+        Import-RequiredModule, Find-UIElement, Register-GUIEvent
+
+
+# CoreEASYONBOARDING - BESCHREIBUNG
+- Hauptmodul für den Onboarding-Prozess neuer Benutzer.
+- Erstellt und konfiguriert Active Directory Benutzer in einem Workflow.
+- Überprüft, ob das Active Directory Modul geladen ist.
+
+    Export Funktionen:
+    - Export-ModuleMember -Function Invoke-Onboarding
+
+# FindVisualChild - BESCHREIBUNG
+- Sucht nach einem bestimmten visuellen Kindelement innerhalb eines WPF-Elements.
+- Falls nicht vorhanden, wird eine Stub-Funktion erstellt.
+
+    Export Funktionen:
+    - Export-ModuleMember -Function FindVisualChild
+
+# FunctionADCommand - BESCHREIBUNG
+- Kapselt Fehlerbehandlungen für Active Directory Befehle.
+
+    Export Funktionen:
+    - Export-ModuleMember -Function Invoke-ADCommand
+
+# FunctionADDataLoad - BESCHREIBUNG
+- Lädt und verarbeitet Daten aus Active Directory.
+- Ruft alle Organisationseinheiten (OUs) ab und gibt sie sortiert aus.
+- Ruft Benutzer (begrenzt auf 200) sortiert nach Anzeigename ab.
+- Debugging-Funktionen zur Ausgabe von OUs und Benutzern.
+
+    Export Funktionen:
+    - Export-ModuleMember -Function Get-ADData, Load-ADOrganizationalUnits, Load-TeamLeaderGroups
+
+# FunctionADUserCreate - BESCHREIBUNG
+- Erstellt Active Directory Benutzer basierend auf Eingabedaten.
+- Generiert UPNs und überprüft, ob alle notwendigen Informationen vorhanden sind.
+- Erstellt den Anzeigenamen basierend auf einer vordefinierten Vorlage.
+
+    Export Funktionen:
+    - Export-ModuleMember -Function New-ADUserAccount
+
+# FunctionDropDowns - BESCHREIBUNG
+- Setzt Werte und Optionen für Dropdowns.
+- Entfernt bestehende Bindungen und Einträge.
+- Stellt sicher, dass Dropdowns auf dem UI-Thread aktualisiert werden.
+
+    Export Funktionen:
+    - Export-ModuleMember -Function Initialize-DisplayNameTemplateDropdown, Initialize-LicenseDropdown, Initialize-EmailDomainSuffixDropdown, Initialize-AllDropdowns, Set-DropDownValues
+
+# FunctionLogDebug - BESCHREIBUNG
+- Enthält Kernfunktionen für Logging und Debugging.
+- Definiert Logging-Funktionen für verschiedene Nachrichtenebenen.
+- Bedingte Debugging-Ausgabe, falls DebugMode aktiviert ist.
+
+    Export Funktionen:
+    - Export-ModuleMember -Function Write-LogMessage, Write-DebugMessage, Write-Log -Variable ScriptDir
+
+
+# FunctionPassword - BESCHREIBUNG
+- Setzt und entfernt Passwörter mit bestimmten Sicherheitsbeschränkungen.
+- Ändert ACLs, um zu verhindern, dass Benutzer ihre eigenen Passwörter ändern.
+
+    Export Funktionen:
+    - Export-ModuleMember -Function Set-CannotChangePassword, Remove-CannotChangePassword
+
+
+# FunctionSetLogoSetPassword - BESCHREIBUNG
+- Verwaltet das Hochladen von Logos und die Generierung sicherer Passwörter.
+- Validiert, ob Passwörter den Sicherheitsanforderungen entsprechen.
+
+    Export Funktionen:
+    - Export-ModuleMember -Function Set-Logo, New-AdvancedPassword
+
+
+# FunctionSettingsImportINI - BESCHREIBUNG
+- Importiert INI-Konfigurationsdateien für die GUI.
+- Erstellt Sammlungen zur Speicherung von Abschnitten und setzt die ListView ItemsSource.
+
+    Export Funktionen:
+    - Export-ModuleMember -Function Import-INIEditorData, Import-SectionSettings
+
+# FunctionSettingsLoadINI - BESCHREIBUNG
+- Lädt eine INI-Datei in die GUI zur Bearbeitung.
+- Überprüft, ob die globale Konfiguration ($global:Config) definiert ist.
+
+    Export Funktionen:
+    - Export-ModuleMember -Function Open-INIEditor, Load-INISettings, Apply-INIDefaults
+
+# FunctionSettingsSaveINI - BESCHREIBUNG
+- Speichert Änderungen an INI-Konfigurationsdateien.
+- Erstellt Backups vor dem Speichern.
+
+    Export Funktionen:
+    - Export-ModuleMember -Function Save-INIChanges
+
+# FunctionUPNCreate - BESCHREIBUNG
+- Erstellt User Principal Names (UPN) aus Templates und Benutzerdaten.
+- Überprüft, ob alle erforderlichen Benutzerdaten vorhanden sind.
+
+    Export Funktionen:
+    - Export-ModuleMember -Function New-UPN
+
+# FunctionUPNTemplate - BESCHREIBUNG
+- Ersetzt Platzhalter in UPN-Templates durch echte Daten.
+
+    Export Funktionen:
+    - Export-ModuleMember -Function Initialize-UPNTemplateModule, Format-UPNFromTemplate, Get-UPNTemplates, Update-UPNTemplateDisplay
+
+# GUIADGroup - BESCHREIBUNG
+- Lädt und verwaltet AD-Gruppen in der GUI aus einer INI-Datei.
+
+    Export Funktionen:
+    - Export-ModuleMember -Function Load-ADGroups, Get-SelectedADGroups
+
+# GUIDropDowns - BESCHREIBUNG
+- Verwaltet Dropdown-Elemente und befüllt sie mit Konfigurationsdaten.
+- Registriert Event-Handler zur Aktualisierung.
+
+    Export Funktionen:
+    - Export-ModuleMember -Function Register-OUDropdownRefreshEvent, 
+                                Initialize-DisplayNameTemplateDropdown,
+                                Initialize-LicenseDropdown,
+                                Initialize-TeamLeaderGroupDropdown,
+                                Initialize-EmailDomainSuffixDropdown,
+                                Initialize-LocationDropdown,
+                                Initialize-AllDropdowns
+
+# GUIEventHandler - BESCHREIBUNG
+- Verwaltet GUI-Event-Handler für Benutzerinteraktionen.
+- Registriert Click-Events mit Fehlerbehandlung.
+
+    Export Funktionen:
+    - Export-ModuleMember -Function Register-GUIEvent, Register-GUIEvents, Find-UIElement
+
+# GUIUPNTemplateInfo - BESCHREIBUNG
+- Aktualisiert und zeigt UPN-Templates in der GUI an.
+- Lädt die aktuelle Konfiguration aus der INI-Datei.
+
+    Export Funktionen:
+    - Export-ModuleMember -Function Update-UPNTemplateDisplay, Register-UPNTemplateSelectionHandler, Show-UPNTemplateInfo, Update-UPNPreview
+
+
+# HelperConfig - BESCHREIBUNG
+- Stellt Helferfunktionen für Konfigurationsdaten bereit.
+- Überprüft das Vorhandensein von Konfigurationsabschnitten und Schlüsseln.
+
+    Export Funktionen:
+    - Export-ModuleMember -Function Get-ConfigValue, Test-ConfigSection, Get-IniContent, Set-IniContent
+
+# LoadConfigINI - BESCHREIBUNG
+- Lädt und verarbeitet Konfigurationsdaten aus einer INI-Datei.
+- Stellt sicher, dass die Reihenfolge der Sektionen erhalten bleibt.
+
+    Export Funktionen:
+    - Export-ModuleMember -Function Get-IniContent, Set-IniContent
+
+# LoadConfigXAML - BESCHREIBUNG
+- Lädt und verarbeitet XAML UI-Definitionen.
+- Überprüft, ob WPF-Assemblies geladen sind.
+
+    Export Funktionen:
+    - Export-ModuleMember -Function Import-XamlFromFile, Get-XamlNamedElements, Load-XamlInterface, Get-XamlFilePathCandidates, Import-XAMLGUI, Initialize-WPFAssemblies
+
+# ModuleStatusChecker - BESCHREIBUNG
+- Überprüft den Status von PowerShell-Modulen und deren Abhängigkeiten.
+- Listet alle PSM1-Dateien im Modulverzeichnis auf.
+
+    Export Funktionen:
+    - Export-ModuleMember -Function Get-ModuleStatus, Test-ModuleDependencies
+
+# WPFDebugHelper - BESCHREIBUNG
+- Stellt Debug-Hilfsfunktionen für WPF-Anwendungen bereit.
+- Erstellt ein einfaches Testfenster zur Fehlersuche.
+
+    Export Funktionen:
+    - Export-ModuleMember -Function Test-WPFLoading, Debug-XAMLFile, Fix-CommonXAMLIssues
+
+===========================================================================================
