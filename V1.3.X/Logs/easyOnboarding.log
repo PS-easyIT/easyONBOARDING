@@ -518,3 +518,23 @@ Password                       X28PlUr826@3o(Y
 
 2025-03-22 21:43:03 [DEBUG] GUI started successfully, result: False
 2025-03-22 21:43:03 [DEBUG] Main GUI execution completed.
+2025-03-22 22:39:07 [DEBUG] AD groups successfully loaded from INI.
+2025-03-22 22:40:49 [INFO] Imported user data from CSV file: Z:\OD_PowerShell\easyONBOARDING\V1.3.X\TestImportCSVFiles\onboarding_user_4.csv
+2025-03-22 22:40:56 [INFO] ONBOARDING PERFORMED BY: PHINIT\Administrator, SamAccountName: hnerger, Display Name: 'Hanna Nerger', UPN: 'hanna.nerger@phinit.local', Location: '', Company: 'PhinIT', License: 'KEINE', Password: 'qJYrf1q3rPnw3GM', External: False
+2025-03-22 22:42:13 [DEBUG] System.Collections.Specialized.OrderedDictionary successfully loaded: 
+Name                           Value
+----                           -----
+SamAccountName                 hnerger
+UPN                            hanna.nerger@phinit.local
+Password                       qJYrf1q3rPnw3GM
+
+
+2025-03-22 22:45:19 [INFO] Imported user data from CSV file: Z:\OD_PowerShell\easyONBOARDING\V1.3.X\TestImportCSVFiles\onboarding_user_4.csv
+2025-03-22 22:46:05 [INFO] ONBOARDING PERFORMED BY: PHINIT\Administrator, SamAccountName: hnerger, Display Name: 'PH | Hanna Nerger', UPN: 'hanna.nerger@phinit.local', Location: '', Company: 'PhinIT', License: 'KEINE', Password: 'yyg^RW2B(2q792G', External: False
+2025-03-22 22:46:18 [INFO] Imported user data from CSV file: Z:\OD_PowerShell\easyONBOARDING\V1.3.X\TestImportCSVFiles\onboarding_user_5.csv
+2025-03-22 22:46:27 [INFO] ONBOARDING PERFORMED BY: PHINIT\Administrator, SamAccountName: bbeer, Display Name: 'EXTERN | Bruni Beer', UPN: 'bruni.beer@phinit.local', Location: '', Company: 'PhinIT', License: 'KEINE', Password: '75tdAKarLP(SQAD', External: False
+2025-03-22 22:46:39 [INFO] Imported user data from CSV file: Z:\OD_PowerShell\easyONBOARDING\V1.3.X\TestImportCSVFiles\onboarding_user_1.csv
+2025-03-22 22:46:41 [INFO] ONBOARDING PERFORMED BY: PHINIT\Administrator, SamAccountName: eheß, Display Name: 'EXTERN | Ella Heß', UPN: 'ella.hess@phinit.local', Location: '', Company: 'PhinIT', License: 'KEINE', Password: '6!qj4Da1dATl10%', External: False
+2025-03-22 22:46:56 [INFO] Imported user data from CSV file: Z:\OD_PowerShell\easyONBOARDING\V1.3.X\TestImportCSVFiles\onboarding_user_2.csv
+2025-03-22 22:47:00 [INFO] ONBOARDING PERFORMED BY: PHINIT\Administrator, SamAccountName: mbinner, Display Name: 'Marga Binner', UPN: 'marga.binner@phinit.local', Location: '', Company: 'PhinIT', License: 'KEINE', Password: '3hwUHDc#GIHh31$', External: False
+2025-03-22 22:48:53 [INFO] INI file edited by Administrator
