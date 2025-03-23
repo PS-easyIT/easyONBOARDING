@@ -1,2 +1,2 @@
 FirstName,LastName,Description,OfficeRoom,PhoneNumber,MobileNumber,Position,DepartmentField,EmailAddress,Ablaufdatum,External,TL,AL,AccountDisabled
-Bruni,Beer,Automatisch generierter Testbenutzer,3.OG R145,+49(0)0902623826,+49(0)7153736409,Mechaniker,Buchhaltung,bruni.beer@firma.de,2026-12-07,False,True,True,False
+Bruni,Beer,Automatisch generierter Testbenutzer,3.OG R145,+49(0)0902623826,+49(0)7153736409,Mechaniker,Buchhaltung,bruni.beer,2026-12-07,False,True,True,False

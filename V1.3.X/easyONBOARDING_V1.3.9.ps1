@@ -595,6 +595,34 @@ function New-ADUserAccount {
             Write-DebugMessage "Generated password: $randomizedPassword"
         }
         
+        # Email domain suffix handling - get directly from the dropdown control
+        $mailSuffix = ""
+        if ($global:SelectedMailSuffix) {
+            $mailSuffix = $global:SelectedMailSuffix.Trim()
+            Write-DebugMessage "Using mail suffix from global variable: '$mailSuffix'"
+        } elseif (-not [string]::IsNullOrWhiteSpace($UserData.MailSuffix)) {
+            $mailSuffix = $UserData.MailSuffix.Trim()
+            Write-DebugMessage "Using mail suffix from UserData: '$mailSuffix'"
+        } else {
+            $comboBoxMailSuffix = $window.FindName("cmbSuffix")
+            if ($comboBoxMailSuffix -and $comboBoxMailSuffix.SelectedValue) {
+                $mailSuffix = $comboBoxMailSuffix.SelectedValue.ToString().Trim()
+                Write-DebugMessage "Using mail suffix directly from dropdown: '$mailSuffix'"
+            } else {
+                # Fallback to Company config
+                if ($Config[$companySection].Contains("CompanyMailDomain")) {
+                    $mailSuffix = $Config[$companySection]["CompanyMailDomain"]
+                    Write-DebugMessage "Using fallback mail suffix from [$companySection].CompanyMailDomain: '$mailSuffix'"
+                }
+            }
+        }
+        
+        # Ensure mail suffix starts with @
+        if (-not [string]::IsNullOrWhiteSpace($mailSuffix) -and -not $mailSuffix.StartsWith('@')) {
+            $mailSuffix = "@" + $mailSuffix
+            Write-DebugMessage "Added @ prefix to mail suffix: '$mailSuffix'"
+        }
+        
         # 6) Collect AD user parameters with all possible attributes
         $adUserParams = @{
             SamAccountName = $samAccountName
@@ -695,7 +723,13 @@ function New-ADUserAccount {
         
         # Contact information
         if (-not [string]::IsNullOrWhiteSpace($UserData.EmailAddress)) {
-            $adUserParams.EmailAddress = $UserData.EmailAddress
+            # Apply the mail suffix from the dropdown if it exists
+            $emailAddress = $UserData.EmailAddress
+            if (-not $emailAddress.Contains('@') -and -not [string]::IsNullOrWhiteSpace($mailSuffix)) {
+                $emailAddress = "$emailAddress$mailSuffix"
+            }
+            $adUserParams.EmailAddress = $emailAddress
+            Write-DebugMessage "Setting EmailAddress to: $emailAddress"
         }
         
         if (-not [string]::IsNullOrWhiteSpace($UserData.PhoneNumber)) {
@@ -763,6 +797,60 @@ function New-ADUserAccount {
             }
         }
         
+        # Add other attributes with mail information
+        $otherAttributes = @{}
+        
+        # Create the 'mail' attribute with the selected mail suffix
+        if (-not [string]::IsNullOrWhiteSpace($UserData.EmailAddress)) {
+            $email = $UserData.EmailAddress
+            if (-not $email.Contains('@') -and -not [string]::IsNullOrWhiteSpace($mailSuffix)) {
+                $email = "$email$mailSuffix"
+            }
+            $otherAttributes["mail"] = $email
+            Write-DebugMessage "Setting mail attribute to: $email"
+            
+            # If setProxyMailAddress is enabled, add proxyAddresses
+            if ($UserData.setProxyMailAddress) {
+                # Initialize proxyAddresses array
+                $proxyAddresses = @()
+                
+                # Add the primary SMTP address
+                $proxyAddresses += "SMTP:$email"
+                
+                # Add MS365 address if configured
+                if ($Config[$companySection].Contains("CompanyMS365Domain") -and 
+                    -not [string]::IsNullOrWhiteSpace($Config[$companySection]["CompanyMS365Domain"])) {
+                    
+                    $ms365Domain = $Config[$companySection]["CompanyMS365Domain"]
+                    if (-not $ms365Domain.StartsWith('@')) {
+                        $ms365Domain = "@$ms365Domain"
+                    }
+                    
+                    # Extract username part from email
+                    $username = ""
+                    if ($email -match '@') {
+                        $username = $email.Substring(0, $email.IndexOf('@'))
+                    } else {
+                        $username = $UserData.EmailAddress
+                    }
+                    
+                    $ms365Address = "$username$ms365Domain"
+                    $proxyAddresses += "smtp:$ms365Address"
+                    Write-DebugMessage "Added secondary MS365 proxy address: smtp:$ms365Address"
+                }
+                
+                if ($proxyAddresses.Count -gt 0) {
+                    $otherAttributes["proxyAddresses"] = $proxyAddresses
+                    Write-DebugMessage "Setting proxyAddresses attribute with $($proxyAddresses.Count) addresses"
+                }
+            }
+        }
+        
+        # Add otherAttributes to the user parameters if we have any
+        if ($otherAttributes.Count -gt 0) {
+            $adUserParams["OtherAttributes"] = $otherAttributes
+        }
+        
         # 7) Create the user account
         Write-DebugMessage "Creating AD user: $samAccountName with attributes: $(($adUserParams.Keys | Sort-Object) -join ', ')"
         try {
@@ -790,98 +878,15 @@ function New-ADUserAccount {
             }
         }
         
-        # 9) Add ProxyAddresses if setProxyMailAddress is selected (this must happen after user creation)
-        if ($UserData.ContainsKey('setProxyMailAddress') -and $UserData.setProxyMailAddress -eq $true) {
-            Write-DebugMessage "Setting up ProxyAddresses for user..."
-            
-            # Create an array to hold proxy addresses
-            $proxyAddresses = @()
-            
-            # 1. Primary email address (SMTP in uppercase indicates primary)
-            if (-not [string]::IsNullOrWhiteSpace($UserData.EmailAddress)) {
-                # Check if EmailAddress already has a domain
-                if ($UserData.EmailAddress -match '@') {
-                    $primaryMail = $UserData.EmailAddress
-                } else {
-                    # If no domain, append mail suffix if available
-                    if (-not [string]::IsNullOrWhiteSpace($UserData.MailSuffix)) {
-                        # Ensure suffix starts with @
-                        $suffix = $UserData.MailSuffix
-                        if (-not $suffix.StartsWith('@')) {
-                            $suffix = "@$suffix"
-                        }
-                        $primaryMail = "$($UserData.EmailAddress)$suffix"
-                    } else {
-                        # Fallback to company domain if defined
-                        if ($Config[$companySection].Contains("CompanyMailDomain")) {
-                            $domain = $Config[$companySection]["CompanyMailDomain"]
-                            if (-not $domain.StartsWith('@')) {
-                                $domain = "@$domain"
-                            }
-                            $primaryMail = "$($UserData.EmailAddress)$domain"
-                        } else {
-                            # Last resort - use UPN domain part
-                            $upnSplit = $userPrincipalName.Split('@')
-                            if ($upnSplit.Length -gt 1) {
-                                $primaryMail = "$($UserData.EmailAddress)@$($upnSplit[1])"
-                            } else {
-                                # If all else fails, use the UPN as email
-                                $primaryMail = $userPrincipalName
-                            }
-                        }
-                    }
-                }
-                
-                # Add primary address (SMTP in uppercase)
-                $proxyAddresses += "SMTP:$primaryMail"
-                Write-DebugMessage "Added primary email address: SMTP:$primaryMail"
-            }
-            
-            # 2. Add UPN-based alias (lowercase smtp)
-            $proxyAddresses += "smtp:$userPrincipalName"
-            Write-DebugMessage "Added UPN-based alias: smtp:$userPrincipalName"
-            
-            # 3. Add MS365 domain alias if configuration exists
-            if ($Config[$companySection].Contains("CompanyMS365Domain")) {
-                $ms365Domain = $Config[$companySection]["CompanyMS365Domain"]
-                if (-not $ms365Domain.StartsWith('@')) {
-                    $ms365Domain = "@$ms365Domain"
-                }
-                
-                # Extract username portion - either from primary email or use FirstName.LastName format
-                $username = ""
-                if (-not [string]::IsNullOrWhiteSpace($UserData.EmailAddress) -and $UserData.EmailAddress -match '@') {
-                    $username = $UserData.EmailAddress.Split('@')[0]
-                } elseif (-not [string]::IsNullOrWhiteSpace($UserData.EmailAddress)) {
-                    $username = $UserData.EmailAddress
-                } else {
-                    $username = "$($UserData.FirstName).$($UserData.LastName)".ToLower()
-                }
-                
-                $ms365Address = "$username$ms365Domain"
-                $proxyAddresses += "smtp:$ms365Address"
-                Write-DebugMessage "Added MS365 domain alias: smtp:$ms365Address"
-            }
-            
-            # Apply proxy addresses if any were added
-            if ($proxyAddresses.Count -gt 0) {
-                try {
-                    Set-ADUser -Identity $samAccountName -Add @{ProxyAddresses = $proxyAddresses}
-                    Write-DebugMessage "Added $($proxyAddresses.Count) proxy addresses to user"
-                }
-                catch {
-                    Write-DebugMessage "Failed to set proxy addresses: $($_.Exception.Message)"
-                }
-            }
-        }
-        
-        Write-Log "User $samAccountName was successfully created." -LogLevel "INFO"
+        # 9) Add the selected mail suffix to the return data for reference
+        Write-Log "User $samAccountName was successfully created with mail suffix: $mailSuffix" -LogLevel "INFO"
         return @{
             Success = $true
             Message = "User was successfully created."
             SamAccountName = $samAccountName
             UserPrincipalName = $userPrincipalName
             Password = $UserData.Password
+            MailSuffix = $mailSuffix
         }
     }
     catch {
@@ -892,6 +897,23 @@ function New-ADUserAccount {
             SamAccountName = $samAccountName
         }
     }
+}
+
+# Add this to ensure the email suffix dropdown selection is captured
+# Run this when the script initializes
+$comboBoxMailSuffix = $window.FindName("cmbSuffix")
+if ($comboBoxMailSuffix) {
+    # Initialize the global variable with the default selection
+    if ($comboBoxMailSuffix.SelectedValue) {
+        $global:SelectedMailSuffix = $comboBoxMailSuffix.SelectedValue.ToString()
+        Write-DebugMessage "Initialized mail suffix to: $global:SelectedMailSuffix"
+    }
+    
+    # Register the selection change event
+    $comboBoxMailSuffix.Add_SelectionChanged({
+        $global:SelectedMailSuffix = $comboBoxMailSuffix.SelectedValue
+        Write-DebugMessage "Mail suffix selection changed to: $global:SelectedMailSuffix"
+    })
 }
 
 Write-DebugMessage "Registering GUI event handlers."
@@ -1233,7 +1255,141 @@ function Load-ADGroups {
         Write-Log $errorMessage "ERROR"
     }
 }
+# Function to update logos based on the selected tab
+function Update-TabLogos {
+    param (
+        [Parameter(Mandatory = $true)]
+        [string]$selectedTabName,
+        
+        [Parameter(Mandatory = $true)]
+        $window
+    )
+    
+    Write-DebugMessage "Updating logos for tab: $selectedTabName"
+    
+    # Logo-Update basierend auf ausgewähltem Tab
+    switch ($selectedTabName) {
+        "Tab_Onboarding" {
+            Update-SingleLogo -window $window -logoControl "picLogo1" -configKey "HeaderLogo1"
+        }
+        "Tab_ADUpdate" {
+            Update-SingleLogo -window $window -logoControl "picLogo2" -configKey "HeaderLogo1"
+        }
+        "Tab_INIEditor" {
+            Update-SingleLogo -window $window -logoControl "picLogo3" -configKey "HeaderLogo1"
+        }
+    }
+}
 
+function Update-SingleLogo {
+    param (
+        [Parameter(Mandatory = $true)]
+        $window,
+        
+        [Parameter(Mandatory = $true)]
+        [string]$logoControl,
+        
+        [Parameter(Mandatory = $true)]
+        [string]$configKey
+    )
+    
+    $picLogo = $window.FindName($logoControl)
+    
+    if (-not $picLogo) {
+        Write-DebugMessage "Logo control '$logoControl' not found in window"
+        return
+    }
+    
+    if (-not $global:Config["WPFGUI"].Contains($configKey)) {
+        Write-DebugMessage "Config key '$configKey' not found in WPFGUI section"
+        return
+    }
+    
+    try {
+        $logoPath = $global:Config["WPFGUI"][$configKey]
+        Write-DebugMessage "Attempting to load logo from: $logoPath"
+        
+        if (Test-Path $logoPath) {
+            $logo = New-Object System.Windows.Media.Imaging.BitmapImage
+            $logo.BeginInit()
+            $logo.CacheOption = [System.Windows.Media.Imaging.BitmapCacheOption]::OnLoad
+            $logo.UriSource = New-Object System.Uri($logoPath, [System.UriKind]::Absolute)
+            $logo.EndInit()
+            $logo.Freeze() # Verbessert die Leistung
+            
+            # Set the image source
+            $picLogo.Source = $logo
+            Write-DebugMessage "Logo successfully set for $logoControl"
+            
+            # Add click event if URL is specified
+            if ($global:Config["WPFGUI"].Contains("HeaderLogoURL")) {
+                $picLogo.Cursor = [System.Windows.Input.Cursors]::Hand
+                $picLogo.Tag = $global:Config["WPFGUI"]["HeaderLogoURL"] # Speichern der URL in Tag
+                
+                # Entfernen Sie zuerst alle vorhandenen Event-Handler
+                $picLogo.RemoveHandler([System.Windows.Controls.Image]::MouseLeftButtonUpEvent, [System.Windows.Input.MouseButtonEventHandler]::new({param($sender,$e) Start-Process $sender.Tag}))
+                
+                # Fügen Sie den neuen Event-Handler hinzu
+                $picLogo.AddHandler([System.Windows.Controls.Image]::MouseLeftButtonUpEvent, [System.Windows.Input.MouseButtonEventHandler]::new({
+                    param($sender,$e)
+                    $url = $sender.Tag
+                    if (-not [string]::IsNullOrEmpty($url)) {
+                        try {
+                            Start-Process $url
+                        } catch {
+                            Write-DebugMessage "Error opening URL: $($_.Exception.Message)"
+                        }
+                    }
+                }))
+                Write-DebugMessage "Click event added for $logoControl"
+            }
+        } else {
+            Write-DebugMessage "Logo file not found: $logoPath"
+        }
+    } catch {
+        Write-DebugMessage "Error setting logo for $($_.Exception.Message)"
+    }
+}
+
+# Funktion zum Initialisieren der Logo-Anzeige nach dem Laden des Fensters
+function Initialize-LogoHandling {
+    param (
+        [Parameter(Mandatory = $true)]
+        $window
+    )
+
+    # Verzögerte Ausführung sicherstellen
+    $window.Dispatcher.InvokeAsync({
+        # Korrekter Name des TabControls aus XAML (MainTabControl statt tabControl)
+        $tabControl = $window.FindName("MainTabControl")
+        
+        if ($tabControl) {
+            Write-DebugMessage "MainTabControl found, setting up event handlers"
+            
+            # Aktualisiere das Logo für den ersten Tab sofort
+            $selectedTab = $tabControl.SelectedItem
+            if ($selectedTab) {
+                Update-TabLogos -selectedTabName $selectedTab.Name -window $window
+                Write-DebugMessage "Updated logos for initial tab: $($selectedTab.Name)"
+            } else {
+                Write-DebugMessage "No tab selected initially"
+            }
+            
+            # Handler für TabControl.SelectionChanged-Event
+            $tabControl.Add_SelectionChanged({
+                $selectedTab = $tabControl.SelectedItem
+                if ($selectedTab) {
+                    Update-TabLogos -selectedTabName $selectedTab.Name -window $window
+                    Write-DebugMessage "Tab changed to: $($selectedTab.Name)"
+                }
+            })
+            
+            Write-DebugMessage "Tab selection event handler registered"
+        } else {
+            Write-DebugMessage "ERROR: MainTabControl not found in window"
+        }
+    }, [System.Windows.Threading.DispatcherPriority]::Loaded)
+}
 # Function to collect selected AD groups
 function Get-SelectedADGroups {
     [CmdletBinding()]
@@ -1985,24 +2141,77 @@ function Invoke-Onboarding {
         }
     }
 
-    # [16.1.6.2 - If user did not specify any mailSuffix, fallback from [Company]/CompanyMailDomain]
+    # [16.1.6.2 - Set mail suffix from userData or use fallback]
     Write-DebugMessage "Invoke-Onboarding: Checking mail suffix from userData"
-    # If the user entered a MailSuffix, use it – otherwise use no MailAddress
-    if (-not [string]::IsNullOrWhiteSpace($userData.MailSuffix)) {
-        $mailSuffix = $userData.MailSuffix.Trim()
-        Write-DebugMessage "userData.MailSuffix= $($userData.MailSuffix)"
+
+    # Extra debugging for ComboBox selection
+    Write-DebugMessage "DEBUG: All userData properties: $($userData.PSObject.Properties.Name -join ', ')"
+    Write-DebugMessage "DEBUG: userData.MailSuffix exists: $($userData.PSObject.Properties.Name -contains 'MailSuffix')"
+    if ($userData.PSObject.Properties.Name -contains 'MailSuffix') {
+        Write-DebugMessage "DEBUG: userData.MailSuffix value: '$($userData.MailSuffix)'"
     }
+
+    $mailSuffix = $null
+
+    # Direct access to MailSuffix property with stronger validation
+    if ($userData.PSObject.Properties.Name -contains 'MailSuffix' -and 
+        $null -ne $userData.MailSuffix -and
+        -not [string]::IsNullOrWhiteSpace($userData.MailSuffix.ToString())) {
+        
+        $mailSuffix = $userData.MailSuffix.ToString().Trim()
+        Write-DebugMessage "Using mail suffix directly from userData.MailSuffix: '$mailSuffix'"
+    }
+    # If dropdown selection wasn't captured properly, try getting from global variable
+    elseif ($global:SelectedMailSuffix -and -not [string]::IsNullOrWhiteSpace($global:SelectedMailSuffix)) {
+        $mailSuffix = $global:SelectedMailSuffix.Trim()
+        Write-DebugMessage "Using mail suffix from global variable: '$mailSuffix'"
+    }
+    # Fallback to company configuration
     else {
-        Write-DebugMessage "No mail suffix specified, checking [Company].CompanyMailDomain"
-        if ($Config.Contains("Company") -and $Config["Company"].Contains("CompanyMailDomain")) {
+        Write-DebugMessage "No mail suffix in userData, checking company section: $companySection"
+        
+        # First check the selected company section
+        if ($companyData.Contains("CompanyMailDomain")) {
+            $mailSuffix = $companyData["CompanyMailDomain"]
+            Write-DebugMessage "Using mail suffix from [$companySection].CompanyMailDomain: '$mailSuffix'"
+        }
+        # Fall back to the default Company section if necessary
+        elseif ($Config.Contains("Company") -and $Config["Company"].Contains("CompanyMailDomain")) {
             $mailSuffix = $Config["Company"]["CompanyMailDomain"]
-            Write-DebugMessage "Using mail suffix from [Company].CompanyMailDomain: $mailSuffix"
+            Write-DebugMessage "Using mail suffix from [Company].CompanyMailDomain: '$mailSuffix'"
         }
         else {
             $mailSuffix = ""
-            Write-DebugMessage "No CompanyMailDomain found in [Company] section, proceeding with empty mail suffix"
+            Write-DebugMessage "No CompanyMailDomain found in configuration, proceeding with empty mail suffix"
         }
     }
+
+    # Add the following code right before the "Onboarding" button handling
+    # to capture combobox selection changes:
+    $comboBoxMailSuffix = $window.FindName("cmbSuffix")
+    if ($comboBoxMailSuffix) {
+        $comboBoxMailSuffix.Add_SelectionChanged({
+            $global:SelectedMailSuffix = $comboBoxMailSuffix.SelectedValue
+            Write-DebugMessage "Mail suffix selection changed to: $global:SelectedMailSuffix"
+        })
+    }
+
+    # Ensure mail suffix starts with @
+    if (-not [string]::IsNullOrWhiteSpace($mailSuffix) -and -not $mailSuffix.StartsWith('@')) {
+        $mailSuffix = "@" + $mailSuffix
+        Write-DebugMessage "Added @ prefix to mail suffix: '$mailSuffix'"
+    }
+
+    # Initialize empty email variable for later use
+    $email = if (-not [string]::IsNullOrWhiteSpace($userData.EmailAddress)) {
+        $userData.EmailAddress
+    } else {
+        ""
+    }
+    Write-DebugMessage "Final values - Email address: '$email', Mail suffix: '$mailSuffix'"
+
+    # Initialize an array to store proxy addresses
+    $proxyAddresses = [System.Collections.ArrayList]@()
 
     # Initialize an array to store proxy addresses
     $proxyAddresses = [System.Collections.ArrayList]@()
@@ -3532,16 +3741,29 @@ if ($btnProxyMail) {
             # Construct the primary SMTP address from the email address and mail suffix
             $smtpAddress = "SMTP:" + $emailAddress + $mailSuffix
 
-            # Get the CompanyMS365Domain from the config
+            # Get the domains from the config
             $companySection = $global:Config.Company
             $ms365Domain = $companySection["CompanyMS365Domain"]
+            $companyMailDomain = $companySection["CompanyMailDomain"]
 
-            # Construct the smtp alias address
-            $smtpAliasAddress = "smtp:" + $emailAddress + $ms365Domain
+            # Construct the smtp alias addresses
+            $smtpAliasAddress1 = "smtp:" + $emailAddress + $ms365Domain
+            $smtpAliasAddress2 = "smtp:" + $emailAddress + $companyMailDomain
+
+            # Create an array of proxy addresses
+            $proxyAddresses = @($smtpAddress, $smtpAliasAddress1, $smtpAliasAddress2)
 
             # Call the Set-ADUser function with the values from the GUI
-            Set-ADUser -Identity $username -Add @{proxyAddresses = $smtpAddress, $smtpAliasAddress}
-            [System.Windows.MessageBox]::Show("Proxy address set successfully for user: $($username)", "Success", "OK", "Information")
+            Set-ADUser -Identity $username -Add @{proxyAddresses = $proxyAddresses}
+            
+            [System.Windows.MessageBox]::Show(
+                "Proxy addresses set successfully for user: $username`n`n" + 
+                "Primary: $smtpAddress`n" +
+                "Alias 1: $smtpAliasAddress1`n" +
+                "Alias 2: $smtpAliasAddress2", 
+                "Success", "OK", "Information")
+            
+            Write-DebugMessage "Set proxy addresses for ${username}: Primary=${smtpAddress}, Alias1=${smtpAliasAddress1}, Alias2=${smtpAliasAddress2}"
         }
         catch {
             Write-DebugMessage "Error executing Set-ADUser: $($_.Exception.Message)"
@@ -3561,12 +3783,12 @@ $btnInfo = $window.FindName("btnInfo")
 if ($btnInfo) {
     Write-DebugMessage "TAB easyONBOARDING - BUTTON selected: Info"
     $btnInfo.Add_Click({
-        $infoFilePath = Join-Path $PSScriptRoot "easyIT.txt"
+        $infoFilePath = Join-Path $PSScriptRoot "easyONBOARDING.txt"
 
         if (Test-Path $infoFilePath) {
             Start-Process -FilePath $infoFilePath
         } else {
-            [System.Windows.MessageBox]::Show("The file easyIT.txt was not found!", "Error", 'OK', 'Error')
+            [System.Windows.MessageBox]::Show("The file easyONBOARDING.txt was not found!", "Error", 'OK', 'Error')
         }
     })
 }
@@ -5072,106 +5294,175 @@ try {
             }
         }
         
-        # Set header logo only in Tab_Onboarding
-        $selectedTab = $window.FindName("tabControl").SelectedItem.Name
-        if ($selectedTab -eq "Tab_Onboarding") {
-            $picLogo1 = $window.FindName("picLogo1")
-            if ($picLogo1 -and $global:Config["WPFGUI"].Contains("HeaderLogo1")) {
-            try {
-                $logoPath = $global:Config["WPFGUI"]["HeaderLogo1"]
-                if (Test-Path $logoPath) {
-                $logo = New-Object System.Windows.Media.Imaging.BitmapImage
-                $logo.BeginInit()
-                $logo.UriSource = New-Object System.Uri($logoPath, [System.UriKind]::Absolute)
-                $logo.EndInit()
-                $picLogo.Source = $logo
-
-                # Add click event if URL is specified
-                if ($global:Config["WPFGUI"].Contains("HeaderLogoURL")) {
-                    $picLogo1.Cursor = [System.Windows.Input.Cursors]::Hand
-                    $picLogo1.Add_MouseLeftButtonUp({
-                    $url = $global:Config["WPFGUI"]["HeaderLogoURL"]
-                    if (-not [string]::IsNullOrEmpty($url)) {
-                        Start-Process $url
-                    }
-                    })
-                }
-                }
-            } catch {
-                    Write-DebugMessage "Error setting header logo 1: $($_.Exception.Message)"
-                }
-            }
-        }
-                        # Set header logo only in Tab_ADUpdate
-                        $selectedTab = $window.FindName("tabControl").SelectedItem.Name
-                        if ($selectedTab -eq "Tab_ADUpdate") {
-                            $picLogo2 = $window.FindName("picLogo2")
-                            if ($picLogo2 -and $global:Config["WPFGUI"].Contains("HeaderLogo1")) {
-                            try {
-                                $logoPath = $global:Config["WPFGUI"]["HeaderLogo1"]
-                                if (Test-Path $logoPath) {
-                                $logo = New-Object System.Windows.Media.Imaging.BitmapImage
-                                $logo.BeginInit()
-                                $logo.UriSource = New-Object System.Uri($logoPath, [System.UriKind]::Absolute)
-                                $logo.EndInit()
-                                $picLogo2.Source = $logo
-    
-                                # Add click event if URL is specified
-                                if ($global:Config["WPFGUI"].Contains("HeaderLogoURL")) {
-                                    $picLogo2.Cursor = [System.Windows.Input.Cursors]::Hand
-                                    $picLogo2.Add_MouseLeftButtonUp({
-                                    $url = $global:Config["WPFGUI"]["HeaderLogoURL"]
-                                    if (-not [string]::IsNullOrEmpty($url)) {
-                                        Start-Process $url
-                                    }
-                                    })
-                                }
-                                }
-                            } catch {
-                                Write-DebugMessage "Error setting header logo 1: $($_.Exception.Message)"
-                            }
-                        }
-                    }
-                        # Set header logo only in Tab_IniEditor
-                        $selectedTab = $window.FindName("tabControl").SelectedItem.Name
-                        if ($selectedTab -eq "Tab_INIEditor") {
-                            $picLogo3 = $window.FindName("picLogo3")
-                            if ($picLogo3 -and $global:Config["WPFGUI"].Contains("HeaderLogo1")) {
-                            try {
-                                $logoPath = $global:Config["WPFGUI"]["HeaderLogo1"]
-                                if (Test-Path $logoPath) {
-                                $logo = New-Object System.Windows.Media.Imaging.BitmapImage
-                                $logo.BeginInit()
-                                $logo.UriSource = New-Object System.Uri($logoPath, [System.UriKind]::Absolute)
-                                $logo.EndInit()
-                                $picLogo3.Source = $logo
-    
-                                # Add click event if URL is specified
-                                if ($global:Config["WPFGUI"].Contains("HeaderLogoURL")) {
-                                    $picLogo3.Cursor = [System.Windows.Input.Cursors]::Hand
-                                    $picLogo3.Add_MouseLeftButtonUp({
-                                    $url = $global:Config["WPFGUI"]["HeaderLogoURL"]
-                                    if (-not [string]::IsNullOrEmpty($url)) {
-                                        Start-Process $url
-                                    }
-                                    })
-                                }
-                                }
-                            } catch {
-                                Write-DebugMessage "Error setting header logo 1: $($_.Exception.Message)"
-                            }
-            }
-        }
-            # Set footer text from configuration
-            $txtFooter = $window.FindName("txtFooter")
-            if ($txtFooter -and $global:Config.Contains("WPFGUI")) {
-                try {
-                    # Combine footer text with website if both are available
-                    $footerText = ""
+        # Create a function to load logos that will be called initially and when tabs change
+        function Update-TabLogos {
+            param(
+                [string]$selectedTabName
+            )
+            
+            Write-DebugMessage "Updating logos for selected tab: $selectedTabName"
+            
+            # Handle Tab_Onboarding
+            if ($selectedTabName -eq "Tab_Onboarding") {
+                $picLogo1 = $window.FindName("picLogo1")
+                $logoParent = if ($picLogo1) { $picLogo1.Parent } else { $null }
                 
-                if ($global:Config["WPFGUI"].Contains("FooterText")) {
-                    $footerText = $global:Config["WPFGUI"]["FooterText"]
+                if ($picLogo1 -and $global:Config["WPFGUI"].Contains("HeaderLogo1")) {
+                    try {
+                        $logoPath = $global:Config["WPFGUI"]["HeaderLogo1"]
+                        if (Test-Path $logoPath) {
+                            $logo = New-Object System.Windows.Media.Imaging.BitmapImage
+                            $logo.BeginInit()
+                            $logo.UriSource = New-Object System.Uri($logoPath, [System.UriKind]::Absolute)
+                            $logo.EndInit()
+                            
+                            # Set both the image source and the parent StackPanel background
+                            $picLogo1.Source = $logo
+                            
+                            # Also set the StackPanel background if possible
+                            if ($logoParent -is [System.Windows.Controls.StackPanel]) {
+                                $imgBrush = New-Object System.Windows.Media.ImageBrush($logo)
+                                $logoParent.Background = $imgBrush
+                            }
+                            
+                            # Add click event if URL is specified
+                            if ($global:Config["WPFGUI"].Contains("HeaderLogoURL")) {
+                                $picLogo1.Cursor = [System.Windows.Input.Cursors]::Hand
+                                $picLogo1.Add_MouseLeftButtonUp({
+                                    $url = $global:Config["WPFGUI"]["HeaderLogoURL"]
+                                    if (-not [string]::IsNullOrEmpty($url)) {
+                                        Start-Process $url
+                                    }
+                                })
+                            }
+                            Write-DebugMessage "Successfully set header logo for Tab_Onboarding"
+                        } else {
+                            Write-DebugMessage "Logo file not found: $logoPath"
+                        }
+                    } catch {
+                        Write-DebugMessage "Error setting header logo for Tab_Onboarding: $($_.Exception.Message)"
+                    }
                 }
+            }
+            
+            # Handle Tab_ADUpdate
+            elseif ($selectedTabName -eq "Tab_ADUpdate") {
+                $picLogo2 = $window.FindName("picLogo2")
+                $logoParent = if ($picLogo2) { $picLogo2.Parent } else { $null }
+                
+                if ($picLogo2 -and $global:Config["WPFGUI"].Contains("HeaderLogo1")) {
+                    try {
+                        $logoPath = $global:Config["WPFGUI"]["HeaderLogo1"]
+                        if (Test-Path $logoPath) {
+                            $logo = New-Object System.Windows.Media.Imaging.BitmapImage
+                            $logo.BeginInit()
+                            $logo.UriSource = New-Object System.Uri($logoPath, [System.UriKind]::Absolute)
+                            $logo.EndInit()
+                            
+                            # Set both the image source and the parent StackPanel background
+                            $picLogo2.Source = $logo
+                            
+                            # Also set the StackPanel background if possible
+                            if ($logoParent -is [System.Windows.Controls.StackPanel]) {
+                                $imgBrush = New-Object System.Windows.Media.ImageBrush($logo)
+                                $logoParent.Background = $imgBrush
+                            }
+                            
+                            # Add click event if URL is specified
+                            if ($global:Config["WPFGUI"].Contains("HeaderLogoURL")) {
+                                $picLogo2.Cursor = [System.Windows.Input.Cursors]::Hand
+                                $picLogo2.Add_MouseLeftButtonUp({
+                                    $url = $global:Config["WPFGUI"]["HeaderLogoURL"]
+                                    if (-not [string]::IsNullOrEmpty($url)) {
+                                        Start-Process $url
+                                    }
+                                })
+                            }
+                            Write-DebugMessage "Successfully set header logo for Tab_ADUpdate"
+                        } else {
+                            Write-DebugMessage "Logo file not found: $logoPath"
+                        }
+                    } catch {
+                        Write-DebugMessage "Error setting header logo for Tab_ADUpdate: $($_.Exception.Message)"
+                    }
+                }
+            }
+            
+            # Handle Tab_INIEditor
+            elseif ($selectedTabName -eq "Tab_INIEditor") {
+                $picLogo3 = $window.FindName("picLogo3")
+                $logoParent = if ($picLogo3) { $picLogo3.Parent } else { $null }
+                
+                if ($picLogo3 -and $global:Config["WPFGUI"].Contains("HeaderLogo1")) {
+                    try {
+                        $logoPath = $global:Config["WPFGUI"]["HeaderLogo1"]
+                        if (Test-Path $logoPath) {
+                            $logo = New-Object System.Windows.Media.Imaging.BitmapImage
+                            $logo.BeginInit()
+                            $logo.UriSource = New-Object System.Uri($logoPath, [System.UriKind]::Absolute)
+                            $logo.EndInit()
+                            
+                            # Set both the image source and the parent StackPanel background
+                            $picLogo3.Source = $logo
+                            
+                            # Also set the StackPanel background if possible
+                            if ($logoParent -is [System.Windows.Controls.StackPanel]) {
+                                $imgBrush = New-Object System.Windows.Media.ImageBrush($logo)
+                                $logoParent.Background = $imgBrush
+                            }
+                            
+                            # Add click event if URL is specified
+                            if ($global:Config["WPFGUI"].Contains("HeaderLogoURL")) {
+                                $picLogo3.Cursor = [System.Windows.Input.Cursors]::Hand
+                                $picLogo3.Add_MouseLeftButtonUp({
+                                    $url = $global:Config["WPFGUI"]["HeaderLogoURL"]
+                                    if (-not [string]::IsNullOrEmpty($url)) {
+                                        Start-Process $url
+                                    }
+                                })
+                            }
+                            Write-DebugMessage "Successfully set header logo for Tab_INIEditor"
+                        } else {
+                            Write-DebugMessage "Logo file not found: $logoPath"
+                        }
+                    } catch {
+                        Write-DebugMessage "Error setting header logo for Tab_INIEditor: $($_.Exception.Message)"
+                    }
+                }
+            }
+        }
+
+        # Load logos when the window loads
+        $window.Add_Loaded({
+            # Get the tab control and register for tab changes
+            $tabControl = $window.FindName("tabControl")
+            if ($tabControl) {
+                # Get the initially selected tab
+                $selectedTab = $tabControl.SelectedItem
+                if ($selectedTab) {
+                    Update-TabLogos -selectedTabName $selectedTab.Name
+                }
+                
+                # Register for selection changed events
+                $tabControl.Add_SelectionChanged({
+                    $selectedTab = $tabControl.SelectedItem
+                    if ($selectedTab) {
+                        Update-TabLogos -selectedTabName $selectedTab.Name
+                    }
+                })
+            }
+    })
+    
+    # Set footer text from configuration
+    $txtFooter = $window.FindName("txtFooter")
+    if ($txtFooter) {
+        try {
+            # Combine footer text with website if both are available
+            $footerText = ""
+            
+            if ($global:Config["WPFGUI"].Contains("FooterText")) {
+                $footerText = $global:Config["WPFGUI"]["FooterText"]
+            }
                 
                 if ($global:Config["WPFGUI"].Contains("FooterWebseite")) {
                     # If there's already text, add a separator
