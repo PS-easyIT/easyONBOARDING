@@ -10,7 +10,6 @@ param(
 # Add required .NET assemblies
 Add-Type -AssemblyName System.Windows.Forms
 Add-Type -AssemblyName System.Drawing
-Add-Type -AssemblyName PresentationFramework
 
 # -----------------------------------
 # Function: Display Installation Wizard (GUI)
@@ -18,119 +17,106 @@ Add-Type -AssemblyName PresentationFramework
 function Show-InstallerForm {
     $form = New-Object System.Windows.Forms.Form
     $form.Text = "Installation Wizard"
-    $form.Size = New-Object System.Drawing.Size(550,450)
+    $form.Size = New-Object System.Drawing.Size(500,400)
     $form.StartPosition = "CenterScreen"
     $form.FormBorderStyle = [System.Windows.Forms.FormBorderStyle]::FixedDialog
     $form.MaximizeBox = $false
-    $form.BackColor = [System.Drawing.Color]::FromArgb(243,243,243) # Windows 11 light theme background
 
     # Status Label (all messages are displayed here)
     $lblStatus = New-Object System.Windows.Forms.Label
-    $lblStatus.Location = New-Object System.Drawing.Point(25,25)
-    $lblStatus.Size = New-Object System.Drawing.Size(480,70)
+    $lblStatus.Location = New-Object System.Drawing.Point(20,20)
+    $lblStatus.Size = New-Object System.Drawing.Size(440,60)
     $lblStatus.Text = "Ready..."
-    $lblStatus.Font = New-Object System.Drawing.Font("Segoe UI",11)
-    $lblStatus.ForeColor = [System.Drawing.Color]::FromArgb(32,32,32) # Windows 11 default text color
+    $lblStatus.Font = New-Object System.Drawing.Font("Segoe UI",10)
     $form.Controls.Add($lblStatus)
 
     # ProgressBar
     $progressBar = New-Object System.Windows.Forms.ProgressBar
-    $progressBar.Location = New-Object System.Drawing.Point(25,105)
-    $progressBar.Size = New-Object System.Drawing.Size(480,28)
+    $progressBar.Location = New-Object System.Drawing.Point(20,90)
+    $progressBar.Size = New-Object System.Drawing.Size(440,25)
     $progressBar.Minimum = 0
     $progressBar.Maximum = 100
     $progressBar.Style = "Continuous"
-    $progressBar.BackColor = [System.Drawing.Color]::FromArgb(220,220,220)
     $form.Controls.Add($progressBar)
 
     # Checkbox: Automatically set execution policy to RemoteSigned
     $chkSetPolicy = New-Object System.Windows.Forms.CheckBox
-    $chkSetPolicy.Location = New-Object System.Drawing.Point(25,145)
-    $chkSetPolicy.Size = New-Object System.Drawing.Size(300,24)
+    $chkSetPolicy.Location = New-Object System.Drawing.Point(20,130)
+    $chkSetPolicy.Size = New-Object System.Drawing.Size(300,20)
     $chkSetPolicy.Text = "Automatically set to RemoteSigned"
     $chkSetPolicy.Checked = $true
-    $chkSetPolicy.Font = New-Object System.Drawing.Font("Segoe UI",10)
     $form.Controls.Add($chkSetPolicy)
     
     # Status label for Execution Policy
     $lblPolicyStatus = New-Object System.Windows.Forms.Label
-    $lblPolicyStatus.Location = New-Object System.Drawing.Point(380,145)
-    $lblPolicyStatus.Size = New-Object System.Drawing.Size(150,24)
+    $lblPolicyStatus.Location = New-Object System.Drawing.Point(330,130)
+    $lblPolicyStatus.Size = New-Object System.Drawing.Size(150,20)
     $lblPolicyStatus.Text = "CHECKING..."
-    $lblPolicyStatus.Font = New-Object System.Drawing.Font("Segoe UI",10,[System.Drawing.FontStyle]::Bold)
+    $lblPolicyStatus.Font = New-Object System.Drawing.Font("Segoe UI",9,[System.Drawing.FontStyle]::Bold)
     $form.Controls.Add($lblPolicyStatus)
 
     # Checkbox: Install PowerShell 7
     $chkInstallPS7 = New-Object System.Windows.Forms.CheckBox
-    $chkInstallPS7.Location = New-Object System.Drawing.Point(25,180)
-    $chkInstallPS7.Size = New-Object System.Drawing.Size(300,24)
+    $chkInstallPS7.Location = New-Object System.Drawing.Point(20,160)
+    $chkInstallPS7.Size = New-Object System.Drawing.Size(300,20)
     $chkInstallPS7.Text = "Install PowerShell 7"
     $chkInstallPS7.Checked = $true
-    $chkInstallPS7.Font = New-Object System.Drawing.Font("Segoe UI",10)
     $form.Controls.Add($chkInstallPS7)
     
     # Status label for PowerShell 7
     $lblPS7Status = New-Object System.Windows.Forms.Label
-    $lblPS7Status.Location = New-Object System.Drawing.Point(380,180)
-    $lblPS7Status.Size = New-Object System.Drawing.Size(150,24)
+    $lblPS7Status.Location = New-Object System.Drawing.Point(330,160)
+    $lblPS7Status.Size = New-Object System.Drawing.Size(150,20)
     $lblPS7Status.Text = "CHECKING..."
-    $lblPS7Status.Font = New-Object System.Drawing.Font("Segoe UI",10,[System.Drawing.FontStyle]::Bold)
+    $lblPS7Status.Font = New-Object System.Drawing.Font("Segoe UI",9,[System.Drawing.FontStyle]::Bold)
     $form.Controls.Add($lblPS7Status)
 
     # Checkbox: Install ActiveDirectory module
     $chkInstallADModule = New-Object System.Windows.Forms.CheckBox
-    $chkInstallADModule.Location = New-Object System.Drawing.Point(25,215)
-    $chkInstallADModule.Size = New-Object System.Drawing.Size(300,24)
+    $chkInstallADModule.Location = New-Object System.Drawing.Point(20,190)
+    $chkInstallADModule.Size = New-Object System.Drawing.Size(300,20)
     $chkInstallADModule.Text = "Install ActiveDirectory module"
     $chkInstallADModule.Checked = $true
-    $chkInstallADModule.Font = New-Object System.Drawing.Font("Segoe UI",10)
     $form.Controls.Add($chkInstallADModule)
     
     # Status label for ActiveDirectory module
     $lblADStatus = New-Object System.Windows.Forms.Label
-    $lblADStatus.Location = New-Object System.Drawing.Point(380,215)
-    $lblADStatus.Size = New-Object System.Drawing.Size(150,24)
+    $lblADStatus.Location = New-Object System.Drawing.Point(330,190)
+    $lblADStatus.Size = New-Object System.Drawing.Size(150,20)
     $lblADStatus.Text = "CHECKING..."
-    $lblADStatus.Font = New-Object System.Drawing.Font("Segoe UI",10,[System.Drawing.FontStyle]::Bold)
+    $lblADStatus.Font = New-Object System.Drawing.Font("Segoe UI",9,[System.Drawing.FontStyle]::Bold)
     $form.Controls.Add($lblADStatus)
 
     # Checkbox: Install wkhtmltopdf
     $chkInstallwkhtmltopdf = New-Object System.Windows.Forms.CheckBox
-    $chkInstallwkhtmltopdf.Location = New-Object System.Drawing.Point(25,250)
-    $chkInstallwkhtmltopdf.Size = New-Object System.Drawing.Size(300,24)
+    $chkInstallwkhtmltopdf.Location = New-Object System.Drawing.Point(20,220)
+    $chkInstallwkhtmltopdf.Size = New-Object System.Drawing.Size(300,20)
     $chkInstallwkhtmltopdf.Text = "Install wkhtmltopdf"
     $chkInstallwkhtmltopdf.Checked = $true
-    $chkInstallwkhtmltopdf.Font = New-Object System.Drawing.Font("Segoe UI",10)
     $form.Controls.Add($chkInstallwkhtmltopdf)
     
     # Status label for wkhtmltopdf
     $lblWkStatus = New-Object System.Windows.Forms.Label
-    $lblWkStatus.Location = New-Object System.Drawing.Point(380,250)
-    $lblWkStatus.Size = New-Object System.Drawing.Size(150,24)
+    $lblWkStatus.Location = New-Object System.Drawing.Point(330,220)
+    $lblWkStatus.Size = New-Object System.Drawing.Size(150,20)
     $lblWkStatus.Text = "CHECKING..."
-    $lblWkStatus.Font = New-Object System.Drawing.Font("Segoe UI",10,[System.Drawing.FontStyle]::Bold)
+    $lblWkStatus.Font = New-Object System.Drawing.Font("Segoe UI",9,[System.Drawing.FontStyle]::Bold)
     $form.Controls.Add($lblWkStatus)
 
-    # Button "Install" (Windows 11 style accent color)
+    # Button "Install" (light green)
     $btnInstall = New-Object System.Windows.Forms.Button
     $btnInstall.Text = "Install"
-    $btnInstall.Size = New-Object System.Drawing.Size(120,36)
-    $btnInstall.Location = New-Object System.Drawing.Point(120,330)
-    $btnInstall.BackColor = [System.Drawing.Color]::FromArgb(0,120,212) # Windows 11 accent blue
-    $btnInstall.ForeColor = [System.Drawing.Color]::White
-    $btnInstall.FlatStyle = [System.Windows.Forms.FlatStyle]::Flat
-    $btnInstall.Font = New-Object System.Drawing.Font("Segoe UI",11)
+    $btnInstall.Size = New-Object System.Drawing.Size(100,30)
+    $btnInstall.Location = New-Object System.Drawing.Point(100,300)
+    $btnInstall.BackColor = [System.Drawing.Color]::LightGreen
     $form.Controls.Add($btnInstall)
 
-    # Button "Close" (Windows 11 style)
+    # Button "Close" (light red)
     $btnClose = New-Object System.Windows.Forms.Button
     $btnClose.Text = "Close"
-    $btnClose.Size = New-Object System.Drawing.Size(120,36)
-    $btnClose.Location = New-Object System.Drawing.Point(300,330)
-    $btnClose.BackColor = [System.Drawing.Color]::FromArgb(233,233,233) # Windows 11 neutral button
-    $btnClose.ForeColor = [System.Drawing.Color]::Black
-    $btnClose.FlatStyle = [System.Windows.Forms.FlatStyle]::Flat
-    $btnClose.Font = New-Object System.Drawing.Font("Segoe UI",11)
+    $btnClose.Size = New-Object System.Drawing.Size(100,30)
+    $btnClose.Location = New-Object System.Drawing.Point(300,300)
+    $btnClose.BackColor = [System.Drawing.Color]::LightCoral
     $form.Controls.Add($btnClose)
     
     # Load Form event to immediately check installations
@@ -497,72 +483,38 @@ function Run-Installation {
                     $lbl.Text = "Installing wkhtmltopdf..."
                     [System.Windows.Forms.Application]::DoEvents()
                     
-                    # Run the installer with more specific parameters
-                    Start-Process -FilePath $setupPath -ArgumentList "/S /D=`"$env:ProgramFiles\wkhtmltopdf`"" -Wait -NoNewWindow
+                    # Install wkhtmltopdf (silent installation)
+                    Start-Process -FilePath $setupPath -ArgumentList "/S" -Wait -NoNewWindow
                     
-                    # Wait a bit longer to ensure installer completes all tasks
-                    Start-Sleep -Seconds 5
-                    
-                    # Refresh system environment path and check multiple times for installation
-                    $wkhtmltopdfInstalled = $false
-                    $installPath = $null
-                    
-                    # Check each possible path
+                    # Check if installation was successful
+                    Start-Sleep -Seconds 2
                     foreach ($path in $possiblePaths) {
                         if (Test-Path $path) {
                             $wkhtmltopdfInstalled = $true
-                            $script:wkhtmltopdfPath = $path  # Use script scope instead of global
+                            $global:wkhtmltopdfPath = $path
                             break
                         }
                     }
                     
-                    # If not found in standard paths, try a broader search
-                    if (-not $wkhtmltopdfInstalled) {
-                        try {
-                            $potentialPaths = Get-ChildItem -Path "${env:ProgramFiles}" -Recurse -ErrorAction SilentlyContinue |
-                                Where-Object { $_.Name -eq "wkhtmltopdf.exe" } | 
-                                Select-Object -ExpandProperty FullName
-                                
-                            if ($potentialPaths) {
-                                $script:wkhtmltopdfPath = $potentialPaths[0]
-                                $wkhtmltopdfInstalled = $true
-                            }
-                        }
-                        catch {
-                            # Silent catch - we'll handle the case if not found below
-                        }
-                    }
-                    
-                    # Update UI based on installation result
                     if ($wkhtmltopdfInstalled) {
-                        $lbl.Text = "wkhtmltopdf successfully installed at: $script:wkhtmltopdfPath"
+                        $lbl.Text = "wkhtmltopdf successfully installed at: $global:wkhtmltopdfPath"
                         $guiElements.WkStatusLabel.Text = "INSTALLED"
-                        $guiElements.WkStatusLabel.ForeColor = [System.Drawing.Color]::FromArgb(0,120,0)  # Windows 11 green
+                        $guiElements.WkStatusLabel.ForeColor = [System.Drawing.Color]::Green
                     } else {
                         $lbl.Text = "wkhtmltopdf installation completed but executable not found."
                         $guiElements.WkStatusLabel.Text = "NOT INSTALLED"
-                        $guiElements.WkStatusLabel.ForeColor = [System.Drawing.Color]::FromArgb(200,0,0)  # Windows 11 red
+                        $guiElements.WkStatusLabel.ForeColor = [System.Drawing.Color]::Red
                     }
                     
-                    # Clean up installation files
+                    # Clean up
                     if (Test-Path $setupPath) {
-                        try {
-                            Remove-Item $setupPath -Force -ErrorAction SilentlyContinue
-                        }
-                        catch {
-                            $lbl.Text = "$($lbl.Text) (Cleanup of temp files failed)"
-                        }
+                        Remove-Item $setupPath -Force
                     }
                 }
                 catch {
-                    $errorMsg = $_.Exception.Message
-                    $lbl.Text = "Error installing wkhtmltopdf: $errorMsg"
-                    $guiElements.WkStatusLabel.Text = "FAILED"
-                    $guiElements.WkStatusLabel.ForeColor = [System.Drawing.Color]::FromArgb(200,0,0)  # Windows 11 red
-                    
-                    # Log the error to make troubleshooting easier
-                    $logPath = Join-Path $env:TEMP "wkhtmltopdf_install_error.log"
-                    "$(Get-Date) - Installation Error: $errorMsg" | Out-File -FilePath $logPath -Append
+                    $lbl.Text = "Error installing wkhtmltopdf: $($_.Exception.Message)"
+                    $guiElements.WkStatusLabel.Text = "NOT INSTALLED"
+                    $guiElements.WkStatusLabel.ForeColor = [System.Drawing.Color]::Red
                 }
             }
             
@@ -576,6 +528,21 @@ function Run-Installation {
         $pb.Value = 100
         [System.Windows.Forms.Application]::DoEvents()
         Start-Sleep -Seconds 2
+
+        # Neue Funktion: Inhalte des aktuellen Ordners kopieren
+        $sourceDir = Get-Location
+        $destDir = "C:\easyIT\easyONBOARDING"
+        if (-not (Test-Path $destDir)) {
+            New-Item -Path $destDir -ItemType Directory -Force | Out-Null
+        }
+        Copy-Item -Path "$($sourceDir.Path)\*" -Destination $destDir -Recurse -Force
+
+        # Create shortcut on the desktop
+        $WScriptShell = New-Object -ComObject WScript.Shell
+        $Shortcut = $WScriptShell.CreateShortcut("$([Environment]::GetFolderPath("Desktop"))\easyONBOARDING.lnk")
+        $Shortcut.TargetPath = $destDir
+        $Shortcut.Save()
+
     }
     catch {
         $lbl.Text = "Error: $($_.Exception.Message)"

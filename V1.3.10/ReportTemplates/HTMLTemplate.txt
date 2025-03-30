@@ -1,0 +1,1063 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ReportTitle}}</title>
+  <style>
+    /* Global Styles optimiert für DIN A4 */
+    @page {
+      size: A4;
+      margin: 10mm 15mm;
+    }
+    
+    :root {
+      /* Hauptfarbpalette - abgeschwächte, druckfreundlichere Töne */
+      --primary-color: #2563eb;       /* Blau - Hauptfarbe */
+      --primary-light: #eff6ff;       /* Sehr helles Blau - druckschonender */
+      --primary-dark: #1e40af;        /* Dunkles Blau */
+      
+      /* Akzentfarben */
+      --accent-color: #10b981;        /* Grün - Erfolg/Fortschritt */
+      --accent-light: #ecfdf5;        /* Sehr helles Grün - druckschonender */
+      
+      /* Warnfarben */
+      --warning-color: #f59e0b;       /* Orange - Warnung/Aufmerksamkeit */
+      --warning-light: #fffbeb;       /* Sehr helles Orange - druckschonender */
+      
+      /* Gefahrenfarben */
+      --danger-color: #ef4444;        /* Rot - Gefahr/Wichtig */
+      --danger-light: #fef2f2;        /* Sehr helles Rot - druckschonender */
+      
+      /* Neutrale Farbtöne */
+      --neutral-color: #6366f1;       /* Lila - Alternative Hauptfarbe */
+      --neutral-light: #f5f3ff;       /* Sehr helles Lila - druckschonender */
+      
+      /* Grautöne */
+      --gray-50: #f8fafc;
+      --gray-100: #f1f5f9;
+      --gray-200: #e2e8f0;
+      --gray-300: #cbd5e1;
+      --gray-400: #94a3b8;
+      --gray-500: #64748b;
+      --gray-600: #475569;
+      --gray-700: #334155;
+      --gray-800: #1e293b;
+      --gray-900: #0f172a;
+      
+      /* Design-Eigenschaften */
+      --border-radius: 8px;
+      --border-radius-sm: 4px;
+      --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
+      --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
+      --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05);
+      
+      /* Abstände */
+      --spacing-xs: 4px;
+      --spacing-sm: 8px;
+      --spacing-md: 16px;
+      --spacing-lg: 24px;
+      --spacing-xl: 32px;
+    }
+
+    body {
+      font-family: 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+      font-size: 11pt;
+      color: var(--gray-800);
+      background-color: #ffffff;
+      margin: 0;
+      line-height: 1.6;
+      width: 210mm;
+      max-width: 100%;
+    }
+
+    .container {
+      width: 100%;
+      margin: 0 auto;
+      padding: 10mm 0;
+    }
+
+    /* Header */
+    header {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: var(--spacing-lg) var(--spacing-md);
+      background: linear-gradient(135deg, var(--primary-light) 0%, #ffffff 100%);
+      border-bottom: 2px solid var(--primary-color);
+      margin-bottom: var(--spacing-lg);
+      border-radius: var(--border-radius);
+    }
+
+    .header-image {
+      margin-bottom: var(--spacing-md);
+    }
+
+    .header-image img {
+      max-height: 180px;
+      width: auto;
+    }
+
+    .header-info {
+      text-align: center;
+    }
+
+    .header-info h1 {
+      margin: 0;
+      font-size: 22pt;
+      color: var(--primary-dark);
+      font-weight: 600;
+    }
+
+    .header-info p {
+      margin: var(--spacing-sm) 0 0;
+      font-size: 14pt;
+      color: var(--gray-600);
+    }
+
+    .logo-tag {
+      margin-top: var(--spacing-sm);
+      font-style: italic;
+      color: var(--gray-500);
+    }
+
+    /* Content */
+    .content {
+      padding: var(--spacing-sm);
+    }
+
+    /* Section Styles */
+    .section {
+      margin-bottom: var(--spacing-lg);
+      border: 1px solid var(--gray-200);
+      border-radius: var(--border-radius);
+      padding: var(--spacing-md);
+      box-shadow: var(--shadow-sm);
+      page-break-inside: avoid;
+      background-color: #ffffff;
+      transition: box-shadow 0.2s ease;
+    }
+
+    .section:hover {
+      box-shadow: var(--shadow-md);
+    }
+    
+    /* Spezielle Section-Styles - heller und druckschonender */
+    .welcome-section {
+      background-color: var(--primary-light);
+      border-left: 4px solid var(--primary-color);
+    }
+    
+    .login-section {
+      background-color: var(--neutral-light);
+      border-left: 4px solid var(--neutral-color);
+    }
+    
+    .first-steps {
+      background-color: var(--accent-light);
+      border-left: 4px solid var(--accent-color);
+    }
+    
+    .support-info {
+      background-color: var(--warning-light);
+      border-left: 4px solid var(--warning-color);
+    }
+    
+    .security-tips {
+      background-color: var(--danger-light);
+      border-left: 4px solid var(--danger-color);
+    }
+    
+    .it-infrastructure {
+      background-color: var(--primary-light);
+      border-left: 4px solid var(--primary-color);
+    }
+
+    /* Section-Titel */
+    .section-title {
+      font-size: 16pt;
+      color: var(--gray-800);
+      border-bottom: 2px solid var(--primary-color);
+      padding-bottom: var(--spacing-sm);
+      margin-bottom: var(--spacing-md);
+      display: flex;
+      align-items: center;
+      font-weight: 600;
+    }
+    
+    .welcome-section .section-title {
+      color: var(--primary-dark);
+      border-bottom-color: var(--primary-dark);
+    }
+    
+    .login-section .section-title {
+      color: var(--neutral-color);
+      border-bottom-color: var(--neutral-color);
+    }
+    
+    .first-steps .section-title {
+      color: var(--accent-color);
+      border-bottom-color: var(--accent-color);
+    }
+    
+    .security-tips .section-title {
+      color: var(--danger-color);
+      border-bottom-color: var(--danger-color);
+    }
+    
+    .support-info .section-title {
+      color: var(--warning-color);
+      border-bottom-color: var(--warning-color);
+    }
+
+    .section-title i {
+      margin-right: var(--spacing-sm);
+      font-size: 18pt;
+    }
+
+    /* Tabellen */
+    .section table {
+      width: 100%;
+      border-collapse: collapse;
+      table-layout: fixed;
+      margin-top: var(--spacing-sm);
+    }
+
+    .section th,
+    .section td {
+      padding: 10px 12px;
+      border: 1px solid var(--gray-200);
+      text-align: left;
+      word-wrap: break-word;
+      vertical-align: top;
+    }
+
+    .section th {
+      background-color: var(--gray-100);
+      width: 30%;
+      font-size: 10.5pt;
+      color: var(--gray-700);
+      font-weight: 600;
+    }
+
+    .section td {
+      font-size: 10.5pt;
+      background-color: white;
+    }
+    
+    /* Tabellen-Styles je nach Sektion - heller für besseren Druck */
+    .login-section th {
+      background-color: rgba(99, 102, 241, 0.1);
+      color: var(--neutral-color);
+    }
+    
+    .login-section td {
+      font-weight: 600;
+      color: var(--neutral-color);
+    }
+    
+    .support-info th {
+      background-color: rgba(245, 158, 11, 0.1);
+    }
+
+    .group-header {
+      background-color: var(--gray-200) !important;
+      font-weight: 600;
+      color: var(--gray-700);
+      text-transform: uppercase;
+      font-size: 9pt;
+      letter-spacing: 0.5px;
+    }
+    
+    /* Listen */
+    .steps-list {
+      padding-left: 25px;
+      margin: var(--spacing-md) 0;
+    }
+
+    .steps-list li {
+      margin-bottom: 10px;
+      position: relative;
+      padding-left: 5px;
+    }
+
+    .steps-list li::before {
+      content: "→";
+      position: absolute;
+      left: -20px;
+      color: var(--accent-color);
+      font-weight: bold;
+    }
+    
+    /* Kontaktkarten */
+    .contact-card {
+      display: flex;
+      margin-bottom: var(--spacing-sm);
+      padding: var(--spacing-sm);
+      border: 1px solid var(--gray-200);
+      border-radius: var(--border-radius);
+      background-color: #ffffff;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .contact-info {
+      flex-grow: 1;
+    }
+
+    .contact-title {
+      font-weight: 600;
+      margin-bottom: 6px;
+      color: var(--gray-800);
+      font-size: 11pt;
+    }
+    
+    /* QR-Codes */
+    .qr-container {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-around;
+      margin-top: var(--spacing-md);
+    }
+
+    .qr-item {
+      text-align: center;
+      margin: var(--spacing-sm);
+      width: 110px;
+      transition: transform 0.2s ease;
+    }
+
+    .qr-item:hover {
+      transform: translateY(-2px);
+    }
+
+    .qr-img {
+      width: 90px;
+      height: 90px;
+      background-color: white;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid var(--gray-200);
+      border-radius: var(--border-radius-sm);
+      overflow: hidden;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .qr-title {
+      margin-top: var(--spacing-sm);
+      font-size: 9pt;
+      color: var(--gray-600);
+      font-weight: 500;
+    }
+    
+    /* Sicherheits-Tipps */
+    .tip-item {
+      margin-bottom: 10px;
+      padding-left: 26px;
+      position: relative;
+    }
+
+    .tip-item:before {
+      content: "!";
+      position: absolute;
+      left: 5px;
+      width: 16px;
+      height: 16px;
+      background-color: var(--danger-color);
+      color: white;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: bold;
+    }
+
+    /* Footer */
+    footer {
+      border-top: 2px solid var(--primary-color);
+      text-align: center;
+      padding: var(--spacing-md);
+      font-size: 9pt;
+      color: var(--gray-600);
+      margin-top: var(--spacing-xl);
+      background-color: var(--gray-50);
+      border-radius: 0 0 var(--border-radius) var (--border-radius);
+    }
+    
+    /* Print Styles */
+    @media print {
+      .section {
+        break-inside: avoid;
+      }
+      .no-print {
+        display: none;
+      }
+      body {
+        width: 100%;
+      }
+      /* Verhindert dass Abschnitte auf zwei Seiten verteilt werden */
+      h2, h3, .contact-card, .group-header {
+        page-break-after: avoid;
+      }
+      .section {
+        page-break-inside: avoid;
+        box-shadow: none !important;
+      }
+      a {
+        text-decoration: none;
+        color: var(--gray-800);
+      }
+      /* Verbesserte Randabstände für den Druck */
+      .section {
+        margin-bottom: 15mm;
+      }
+      /* Optimierte Farben für Druck */
+      .badge {
+        border: 1px solid var(--gray-400);
+        color: var(--gray-800) !important;
+        background-color: transparent !important; 
+      }
+      .tip-item:before {
+        border: 1px solid var(--danger-color);
+        background-color: transparent;
+        color: var(--danger-color);
+      }
+      .welcome-section, .login-section, .first-steps, 
+      .support-info, .security-tips, .it-infrastructure {
+        background-color: white !important;
+      }
+    }
+    
+    /* Badges - Text auf Hintergrund optimiert für Druck */
+    .badge {
+      display: inline-block;
+      padding: 4px 8px;
+      border-radius: 12px;
+      font-size: 9pt;
+      font-weight: 600;
+      margin-left: 10px;
+      color: var(--gray-800);
+      background-color: var(--primary-light);
+      border: 1px solid var(--primary-color);
+    }
+
+    .badge-important {
+      background-color: var(--danger-light);
+      border-color: var(--danger-color);
+      color: var (--danger-color);
+    }
+    
+    .badge-warning {
+      background-color: var(--warning-light);
+      border-color: var(--warning-color);
+      color: var(--warning-color);
+    }
+    
+    .badge-info {
+      background-color: var(--neutral-light);
+      border-color: var(--neutral-color);
+      color: var(--neutral-color);
+    }
+    
+    .badge-success {
+      background-color: var(--accent-light);
+      border-color: var(--accent-color);
+      color: var(--accent-color);
+    }
+
+    /* Hinweise & Infokästen - heller und druckfreundlicher */
+    .hint {
+      background-color: var(--accent-light);
+      padding: var(--spacing-sm) var(--spacing-md);
+      border-radius: var(--border-radius-sm);
+      margin: var(--spacing-sm) 0;
+      border-left: 3px solid var(--accent-color);
+      font-size: 10pt;
+      color: var(--gray-700);
+    }
+    
+    .info-box {
+      background-color: var(--primary-light);
+      padding: var(--spacing-sm) var(--spacing-md);
+      border-radius: var(--border-radius-sm);
+      margin: var(--spacing-sm) 0;
+      border-left: 3px solid var(--primary-color);
+      color: var(--gray-700);
+    }
+    
+    .warning-box {
+      background-color: var(--warning-light);
+      padding: var(--spacing-sm) var(--spacing-md);
+      border-radius: var(--border-radius-sm);
+      margin: var(--spacing-sm) 0;
+      border-left: 3px solid var(--warning-color);
+      color: var(--gray-700);
+    }
+
+    /* Layout */
+    .two-columns {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      gap: var(--spacing-md);
+    }
+
+    .column {
+      flex: 1;
+      min-width: 45%;
+    }
+
+    /* Listen mit Icons */
+    .icon-list {
+      list-style: none;
+      padding-left: var(--spacing-sm);
+      margin: var(--spacing-md) 0;
+    }
+
+    .icon-list li {
+      padding-left: 28px;
+      position: relative;
+      margin-bottom: var(--spacing-sm);
+    }
+
+    .icon-list li:before {
+      content: "✓";
+      position: absolute;
+      left: 0;
+      color: var(--accent-color);
+      font-weight: bold;
+      font-size: 14px;
+    }
+    
+    .icon-list-warning li:before {
+      content: "⚠";
+      color: var(--warning-color);
+    }
+    
+    .icon-list-info li:before {
+      content: "ℹ";
+      color: var(--primary-color);
+    }
+
+    /* FAQ */
+    .faq-item {
+      margin-bottom: var(--spacing-md);
+    }
+
+    .faq-question {
+      font-weight: 600;
+      color: var(--primary-dark);
+      margin-bottom: 6px;
+    }
+
+    .faq-answer {
+      margin-left: 20px;
+      color: var(--gray-700);
+    }
+
+    /* Allgemeine Elemente */
+    h3 {
+      color: var(--gray-700);
+      font-size: 13pt;
+      margin: var(--spacing-md) 0 var(--spacing-sm) 0;
+      font-weight: 600;
+    }
+    
+    .welcome-section h3 {
+      color: var(--primary-dark);
+    }
+    
+    .login-section h3 {
+      color: var(--neutral-color);
+    }
+    
+    .first-steps h3 {
+      color: var(--accent-color);
+    }
+    
+    .security-tips h3 {
+      color: var(--danger-color);
+    }
+
+    a {
+      color: var(--primary-color);
+      text-decoration: none;
+      transition: color 0.2s ease;
+    }
+
+    a:hover {
+      color: var(--primary-dark);
+    }
+
+    p {
+      margin: var(--spacing-sm) 0;
+      line-height: 1.6;
+    }
+
+    ul, ol {
+      margin: var(--spacing-md) 0;
+      padding-left: var(--spacing-lg);
+    }
+
+    li {
+      margin-bottom: var(--spacing-sm);
+    }
+    
+    /* Zusätzliche Tabellen-Stile */
+    .alt-rows tr:nth-child(even) td {
+      background-color: var(--gray-50);
+    }
+    
+    .highlight-table {
+      box-shadow: var(--shadow-md);
+      border-radius: var(--border-radius);
+      overflow: hidden;
+    }
+    
+    .highlight-table th {
+      background-color: var(--primary-color);
+      color: white;
+    }
+    
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- HEADER -->
+    <header>
+      <!-- LOGO -->
+      <div class="header-image">
+        <img src="C:\easyIT\DATA\easyONBOARDING\assets\easyOnboardingHeaderWelcome4.png" alt="Firmenlogo">
+      </div>
+      <div class="header-info">
+        <p class="logo-tag">{{LogoTag}}</p>
+      </div>
+    </header>
+    
+    <!-- BEGRÜSSUNG -->
+    <section class="section welcome-section">
+      <p>Hallo {{Vorname}}, herzlich willkommen im Team der {{CompanyName}}!</p>
+      <p>Wir freuen uns, dass Du bei uns an Bord bist und Teil unseres Teams wirst. Dieses Dokument enthält alle wichtigen Informationen für deinen Start.</p>
+      <p>Für Deinen ersten Login nutze bitte das initiale Passwort. Direkt nach der ersten Anmeldung musst du dieses ändern. Bitte beachte dabei folgende Kriterien für Dein neues Passwort:</p>
+      <ul>
+      <li>Mindestlänge: 12 Zeichen</li>
+      <li>Mindestens eine Zahl</li>
+      <li>Mindestens ein Großbuchstabe</li>
+      <li>Mindestens ein Sonderzeichen</li>
+      </ul>
+      <p>Nachdem Du Dein Passwort geändert hast, kann es bis zu 30 Minuten dauern, bis die Synchronisierung mit Office 365 abgeschlossen ist. Wir bitten Dich um etwas Geduld.</p>
+    </section>
+    
+    <!-- CONTENT -->
+    <div class="content">
+      <!-- ANMELDEINFORMATIONEN -->
+      <section class="section login-section">
+        <h2 class="section-title">Anmeldeinformationen <span class="badge badge-info">Wichtig</span></h2>
+        <div class="hint">Diese Zugangsdaten benötigst du für die Anmeldung an deinem Computer und an unseren Systemen.</div>
+        <table>
+          <tr>
+            <th>Benutzername</th>
+            <td>{{LoginName}}</td>
+          </tr>
+          <tr>
+            <th>Passwort</th>
+            <td>{{Passwort}}</td>
+          </tr>
+          <tr>
+            <th>E-Mail-Adresse</th>
+            <td>{{MailAddress}}</td>
+          </tr>
+        </table>
+      </section>
+
+      <!-- ERSTE SCHRITTE -->
+      <section class="section first-steps">
+        <h2 class="section-title">Erste Schritte <span class="badge badge-success">Wichtig</span></h2>
+        <p>Hier sind einige wichtige erste Schritte, um loszulegen:</p>
+        <ol class="steps-list">
+          <li>Ändere sofort dein initiales Passwort</li>
+          <li>Richte dein E-Mail-Konto ein (Outlook öffnen)</li>
+          <li>Aktualisiere dein Profil im Microsoft 365 Portal</li>
+          <li>Besuche das Unternehmens-Intranet für weitere Informationen</li>
+          <li>Installiere dir die Microsoft Authenticator App für Zwei-Faktor-Authentifizierung</li>
+        </ol>
+        <div class="qr-container">
+          <div class="qr-item">
+            <a href="https://portal.office.com" target="_blank">
+              <div class="qr-img">
+                <img src="C:\easyIT\DATA\easyONBOARDING\assets\ms365logo.png" alt="Office 365 Portal" style="max-width: 96px; max-height: 96px;">
+              </div>
+              <div class="qr-title">M365 Portal</div>
+            </a>
+          </div>
+          <div class="qr-item">
+            <a href="https://yourcompany.confluence.com" target="_blank">
+              <div class="qr-img">
+                <img src="C:\easyIT\DATA\easyONBOARDING\assets\confluence.png" alt="Firmen-Intranet" style="max-width: 96px; max-height: 96px;">
+              </div>
+              <div class="qr-title">Intranet</div>
+            </a>
+          </div>
+          <div class="qr-item">
+            <a href="https://yourcompany.jira.com" target="_blank">
+              <div class="qr-img">
+                <img src="C:\easyIT\DATA\easyONBOARDING\assets\jira.png" alt="Projektmanagement" style="max-width: 96px; max-height: 96px;">
+              </div>
+              <div class="qr-title">Projekte</div>
+            </a>
+          </div>
+          <div class="qr-item">
+            <a href="https://yourcompany.helpdesk.com" target="_blank">
+              <div class="qr-img">
+                <img src="C:\easyIT\DATA\easyONBOARDING\assets\itusersupport.png" alt="IT-Support" style="max-width: 96px; max-height: 96px;">
+              </div>
+              <div class="qr-title">IT-Support</div>
+            </a>
+          </div>
+          <div class="qr-item">
+            <a href="https://license.yourcompany.com" target="_blank">
+              <div class="qr-img">
+                <img src="C:\easyIT\DATA\easyONBOARDING\assets\lizenz.png" alt="FAQ" style="max-width: 96px; max-height: 96px;">
+              </div>
+              <div class="qr-title">Lizenzen</div>
+            </a>
+          </div>
+        </div>
+      </section>
+
+
+      <!-- BENUTZERDETAILS -->
+      <section class="section">
+        <h2 class="section-title">Benutzerdetails</h2>
+        <table>
+          <!-- Persönliche Informationen -->
+          <tr class="group-header">
+            <td colspan="2">Persönliche Informationen</td>
+          </tr>
+          <tr>
+            <th>Vorname</th>
+            <td>{{Vorname}}</td>
+          </tr>
+          <tr>
+            <th>Nachname</th>
+            <td>{{Nachname}}</td>
+          </tr>
+          <tr>
+            <th>Anzeigename</th>
+            <td>{{DisplayName}}</td>
+          </tr>
+          
+          <!-- Kontaktinformationen -->
+          <tr class="group-header">
+            <td colspan="2">Kontaktinformationen</td>
+          </tr>
+          <tr>
+            <th>Rufnummer</th>
+            <td>{{Buero}}</td>
+          </tr>
+          <tr>
+            <th>Durchwahl</th>
+            <td>{{Rufnummer}}</td>
+          </tr>
+          <tr>
+            <th>Mobil</th>
+            <td>{{Mobil}}</td>
+          </tr>
+          
+          <!-- Organisatorische Informationen -->
+          <tr class="group-header">
+            <td colspan="2">Organisatorische Informationen</td>
+          </tr>
+          <tr>
+            <th>Position</th>
+            <td>{{Position}}</td>
+          </tr>
+          <tr>
+            <th>Abteilung</th>
+            <td>{{Abteilung}}</td>
+          </tr>
+        </table>
+      </section>
+
+      <!-- SICHERHEITSHINWEISE -->
+      <section class="section security-tips">
+        <h2 class="section-title">Sicherheitshinweise <span class="badge badge-important">Wichtig</span></h2>
+        <p>Für die Sicherheit unseres Unternehmens bitten wir dich, folgende Vorgaben zu beachten:</p>
+        <div class="tip-item">Teile deine Zugangsdaten niemals mit Dritten</div>
+        <div class="tip-item">Verwende für jede Anwendung ein einzigartiges Passwort</div>
+        <div class="tip-item">Sperre deinen Computer, wenn du deinen Arbeitsplatz verlässt [Windows] + [L]</div>
+        <div class="tip-item">Sei vorsichtig beim Öffnen von E-Mail-Anhängen</div>
+        <div class="tip-item">Melde verdächtige E-Mails oder Aktivitäten sofort dem IT-Support</div>
+        <div class="tip-item">Unternehmensunterlagen dürfen nicht an private E-Mail-Adressen versendet werden</div>
+      </section>
+
+      <!-- E-MAIL DETAILS -->
+      <section class="section">
+        <h2 class="section-title">E-Mail Details</h2>
+        <table>
+          <tr>
+            <th>E-Mail-Adresse</th>
+            <td>{{MailAddress}}</td>
+          </tr>
+          <tr>
+            <th>MS365 Lizenz</th>
+            <td>{{License}}</td>
+          </tr>
+        </table>
+      </section>
+
+      <!-- FIRMEN DETAILS -->
+      <section class="section">
+        <h2 class="section-title">Firmeninformationen</h2>
+        <table>
+          <tr>
+            <th>Firmenname</th>
+            <td>{{CompanyName}}</td>
+          </tr>
+          <tr>
+            <th>Straße</th>
+            <td>{{CompanyStreet}}</td>
+          </tr>
+          <tr>
+            <th>PLZ</th>
+            <td>{{CompanyZIP}}</td>
+          </tr>
+          <tr>
+            <th>Ort</th>
+            <td>{{CompanyCity}}</td>
+          </tr>
+          <tr>
+            <th>Domain</th>
+            <td>{{CompanyDomain}}</td>
+          </tr>
+          <tr>
+            <th>Telefon</th>
+            <td>{{CompanyPhone}}</td>
+          </tr>
+        </table>
+      </section>
+
+      <!-- ZUSÄTZLICHE KONTEN -->
+      <section class="section">
+        <h2 class="section-title">Weitere Konten</h2>
+        <table>
+          <tr>
+            <th>{{CustomPWLabel1}}</th>
+            <td>{{CustomPW1}}</td>
+          </tr>
+          <tr>
+            <th>{{CustomPWLabel2}}</th>
+            <td>{{CustomPW2}}</td>
+          </tr>
+          <tr>
+            <th>{{CustomPWLabel3}}</th>
+            <td>{{CustomPW3}}</td>
+          </tr>
+          <tr>
+            <th>{{CustomPWLabel4}}</th>
+            <td>{{CustomPW4}}</td>
+          </tr>
+          <tr>
+            <th>{{CustomPWLabel5}}</th>
+            <td>{{CustomPW5}}</td>
+          </tr>
+        </table>
+      </section>
+
+    <!-- HR-ANSPRECHPARTNER -->
+    <section class="section">
+      <h2 class="section-title">HR-Kontaktdaten</h2>
+      <p>Für alle Fragen rund um Verträge, Urlaubsregelungen und persönliche Anliegen steht dir unsere Personalabteilung gerne zur Verfügung:</p>
+      <table>
+      <tr>
+      <th>TELEFON</th>
+      <td>{{HRPhone}}</td>
+      </tr>
+      <tr>
+      <th>E-MAIL</th>
+      <td>{{HREmail}}</td>
+      </tr>
+      </table>
+    </section>
+
+      <!-- IT-INFRASTRUKTUR -->
+      <section class="section it-infrastructure">
+        <h2 class="section-title">IT-Infrastruktur & Systeme</h2>
+        <div class="two-columns">
+          <!-- WLAN Column -->
+          <div class="column">
+        <h3 style="margin-top: 0px;">Netzwerk</h3>
+        <p>Verbinde dich mit unserem Firmennetzwerk drahtlos - auch Privat:</p>
+        <table style="background-color: var(--gray-100); width: 100%;">
+          <tr>
+            <th>WLAN-Name</th>
+            <td>{{CompanySSID}}</td>
+          </tr>
+          <tr>
+            <th>BYOD-WLAN</th>
+            <td>{{CompanySSIDbyod}}</td>
+          </tr>
+          <tr>
+            <th>Gäste-WLAN</th>
+            <td>{{CompanySSIDGuest}}</td>
+          </tr>
+        </table>
+        <div class="vpn-guide" style="background-color: var(--warning-light); padding: 16px; margin-top: 15px; border-radius: var(--border-radius); border-left: 4px solid var(--warning-color);">
+          <h3 style="margin-top: 0; color: var(--gray-800); font-weight: 600;">WLAN-Konfiguration</h3>
+          <p style="margin-bottom: 12px;">Für die Verbindung mit dem Firmennetzwerk:</p>
+          <ul class="steps-list" style="margin-top: 10px; margin-bottom: 10px;">
+            <li>Nutze deinen Windows-Login-Namen als Benutzername</li>
+            <li>Verwende dein Windows-Passwort für die Anmeldung</li>
+            <li>Authentifizierungsmethode: WPA2-Enterprise</li>
+          </ul>
+          <div class="hint" style="margin-top: 12px; margin-bottom: 0;">Nach einer Passwortänderung wird auch das WLAN-Passwort automatisch aktualisiert.</div>
+        </div>
+          </div>
+          
+          <!-- VPN Column -->
+          <div class="column">
+        <h3 style="margin-top: 0px;">VPN-Zugang</h3>
+        <p>Für die Arbeit außerhalb des Büros benötigst du eine VPN-Verbindung:</p>
+        <table style="background-color: var(--gray-100); width: 100%;">
+          <tr>
+            <th>VPN-URL</th>
+            <td>{{CompanyVPNDomain}}</td>
+          </tr>
+          <tr>
+            <th>Anmeldung</th>
+            <td>{{CompanyVPNUser}}</td>
+          </tr>
+          <tr>
+            <th>Passwort</th>
+            <td>{{CompanyVPNPassword}}</td>
+          </tr>
+        </table>
+        <div class="vpn-guide" style="background-color: var(--warning-light); padding: 16px; margin-top: 15px; border-radius: var(--border-radius); border-left: 4px solid var(--warning-color);">
+          <h3 style="margin-top: 0; color: var(--gray-800); font-weight: 600;">VPN-Konfiguration</h3>
+          <p style="margin-bottom: 12px;">So richtest Du die VPN-Verbindung ein:</p>
+          <ol class="steps-list" style="margin-top: 10px; margin-bottom: 10px;">
+            <li>Melde Dich im VPN-Benutzerportal an: <a href="{{CompanyVPNDomain}}" target="_blank">{{CompanyVPNDomain}}</a></li>
+            <li>Navigiere zum Bereich „VPN" im Hauptmenü</li>
+            <li>Klicke unter „VPN-Konfiguration" auf „Konfiguration für Windows, macOS, Linux herunterladen"</li>
+            <li>Installiere und starte den heruntergeladenen VPN-Client</li>
+          </ol>
+          <div class="hint" style="margin-top: 12px; margin-bottom: 0;">Bei Fragen zur VPN-Einrichtung oder Problemen bei der Verbindung kontaktiere bitte den IT-Support.</div>
+        </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="section it-infrastructure">
+        <h2 class="section-title">Cloud & 2FA</h2>
+        <div class="two-columns">
+          <div class="column">
+      <h3 style="margin-top: 0px;">Cloud-Speicher</h3>
+      Firmendateien werden über Microsoft OneDrive und SharePoint gespeichert und synchronisiert.
+      <ul class="icon-list">
+        <li>OneDrive ist für persönliche Arbeitsdateien</li>
+        <li>SharePoint-Bibliotheken für Team- und Abteilungsdateien</li>
+      </ul>
+        </div>
+        <div class="column">
+      <h3 style="margin-top: 0px;">Zwei-Faktor-Authentifizierung (2FA)</h3>
+      <p>Für die sichere Anmeldung bei Apps nutzen wir die Zwei-Faktor-Authentifizierung:</p>
+        <ul class="icon-list">
+        <li>Nutze die Microsoft Authenticator App für zusätzliche Sicherheit</li>
+        <li>Aktiviere Benachrichtigungen für schnelle Bestätigungen</li>
+        <li>Bei Verlust des Geräts, melde dich umgehend beim IT-Support</li>
+        </ul>
+          </div>
+        </div>
+      </section>
+
+      <!-- SUPPORT-INFORMATIONEN -->
+      <section class="section" style="background-color: var(--gray-100);">
+        <h2 class="section-title">IT-Unterstützung & Hilfe</h2>
+        <p>Bei technischen Fragen oder Problemen steht dir unser IT-Support zur Verfügung:</p>
+        <div class="contact-card">
+          <div class="contact-info">
+        <div class="contact-title">IT-Helpdesk</div>
+        <table>
+          <tr>
+        <th>TELEFON</th>
+        <td>{{CompanyHelpdeskTel}}</td>
+          </tr>
+          <tr>
+        <th>E-MAIL</th>
+        <td>{{CompanyHelpdeskMail}}</td>
+          </tr>
+          <tr>
+        <th>ANSPRECHPARTNER</th>
+        <td>{{CompanyITMitarbeiter}}</td>
+          </tr>
+          <tr>
+        <th>ERREICHBAR</th>
+        <td>Mo-Fr ab 08:15 Uhr</td>
+          </tr>
+        </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- TECHNISCHE AUSSTATTUNG & INVENTAR -->
+      <section class="section it-infrastructure">
+        <h2 class="section-title">Ausstattung & Inventar</h2>
+        
+        <!-- Collaboration Räume -->
+        <div class="collaboration-rooms">
+          <h3 style="margin-top: 0; color: var(--primary-dark);">Collaboration Räume</h3>
+          <p>In unseren modernen Kollaborationsräumen stehen dir folgende Möglichkeiten zur Verfügung:</p>
+          <ul class="icon-list">
+            <li>Präsentationen über Plug & Play (USB-C)</li>
+            <li>Hybride Meetings mit integrierter Videokonferenztechnik</li>
+            <li>Raumbuchung direkt über den Outlook-Kalender</li>
+          </ul>
+        </div>
+        
+        <!-- Hardware Ausstattung -->
+        <h3>Persönliche technische Ausstattung</h3>
+        <p>Im Rahmen deines Arbeitsbeginns stellen wir dir folgende technische Ausstattung zur Verfügung:</p>
+        <table style="background-color: var(--gray-50); border-radius: var(--border-radius); box-shadow: var(--shadow-sm);">
+          <tr>
+            <th style="width: 35%;">Notebook-Modell</th>
+            <td>DELL Notebook</td>
+          </tr>
+          <tr>
+            <th>Dockingstation</th>
+            <td>DELL Dockingstation mit USB-C, LAN, DisplayPort, HDMI</td>
+          </tr>
+          <tr>
+            <th>Zusätzliche Hardware</th>
+            <td>Monitor(e), Maus, Tastatur, Headset, Webcam</td>
+          </tr>
+          <tr>
+            <th>Betriebssystem</th>
+            <td>Windows 11</td>
+          </tr>
+          <tr>
+            <th>Softwareverteilung</th>
+            <td>Die Software wird automatisch über OPSI bereitgestellt</td>
+          </tr>
+        </table>
+
+        <!-- Software Hinweis -->
+        <div class="hint" style="margin-top: 20px; display: flex; align-items: flex-start; border-left: 4px solid var(--accent-color);">
+          <div style="flex: 1;">
+            <strong style="color: var(--accent-color);">Software-Bedarf:</strong> 
+            Solltest du zusätzliche Software benötigen, kannst du diese über das <strong>Self-Service-Portal</strong> im OPSI-Client nachinstallieren oder dich an den IT-Support wenden.
+          </div>
+        </div>
+      </section></div>
+
+    <!-- FOOTER -->
+    <footer>
+      <p>{{ReportFooter}}</p>
+      <p>Erstellt von: {{Admin}}</p>
+      <p>Datum: {{ReportDate}}</p>
+      <p>Bei Fragen wende dich bitte an die IT-Abteilung | easyONBOARDING - Template Version 1.4 - Andreas Hepp</p>
+    </footer>
+  </div>
+</body>
+</html>

@@ -390,7 +390,7 @@ function New-UPN {
         Throw "Error: Domain information missing in the INI! Neither '$domainKey' nor '$fallbackDomainKey' found or valid. Available keys: $availableKeys"
     }
 
-    # 6) Always use UPN template from INI (no GUI dropdown) - with optimized NULL check
+    # 6) Always use UPN template from INI - with optimized NULL check
     $upnTemplate = "FIRSTNAME.LASTNAME" # Safe default value
     
     # PowerShell 7 ?:-operator for NULL check and improved readability
@@ -1259,136 +1259,52 @@ function Load-ADGroups {
 function Update-TabLogos {
     param (
         [Parameter(Mandatory = $true)]
-        [string]$selectedTabName,
+        [object]$selectedTab,
         
         [Parameter(Mandatory = $true)]
         $window
     )
     
-    Write-DebugMessage "Updating logos for tab: $selectedTabName"
+    # Get the tab name from the Name property
+    $tabName = $selectedTab.Name
     
-    # Logo-Update basierend auf ausgewähltem Tab
-    switch ($selectedTabName) {
+    Write-DebugMessage "Updating content logos for tab: $tabName"
+    
+    # Logo update based on selected tab - these are the content logos, not the tab icons
+    switch ($tabName) {
         "Tab_Onboarding" {
-            Update-SingleLogo -window $window -logoControl "picLogo1" -configKey "HeaderLogo1"
+            # Check if section and key exist first
+            if ($global:Config.Contains("WPFGUILogos") -and $global:Config["WPFGUILogos"].Contains("OnboardingLogo")) {
+                Update-SingleLogo -window $window -logoControl "picLogo1" -configPath $global:Config["WPFGUILogos"]["OnboardingLogo"]
+            }
         }
         "Tab_ADUpdate" {
-            Update-SingleLogo -window $window -logoControl "picLogo2" -configKey "HeaderLogo1"
+            if ($global:Config.Contains("WPFGUILogos") -and $global:Config["WPFGUILogos"].Contains("ADUpdateLogo")) {
+                Update-SingleLogo -window $window -logoControl "picLogo2" -configPath $global:Config["WPFGUILogos"]["ADUpdateLogo"]
+            }
         }
-        "Tab_INIEditor" {
-            Update-SingleLogo -window $window -logoControl "picLogo3" -configKey "HeaderLogo1"
-        }
-    }
-}
-
-function Update-SingleLogo {
-    param (
-        [Parameter(Mandatory = $true)]
-        $window,
-        
-        [Parameter(Mandatory = $true)]
-        [string]$logoControl,
-        
-        [Parameter(Mandatory = $true)]
-        [string]$configKey
-    )
-    
-    $picLogo = $window.FindName($logoControl)
-    
-    if (-not $picLogo) {
-        Write-DebugMessage "Logo control '$logoControl' not found in window"
-        return
-    }
-    
-    if (-not $global:Config["WPFGUI"].Contains($configKey)) {
-        Write-DebugMessage "Config key '$configKey' not found in WPFGUI section"
-        return
-    }
-    
-    try {
-        $logoPath = $global:Config["WPFGUI"][$configKey]
-        Write-DebugMessage "Attempting to load logo from: $logoPath"
-        
-        if (Test-Path $logoPath) {
-            $logo = New-Object System.Windows.Media.Imaging.BitmapImage
-            $logo.BeginInit()
-            $logo.CacheOption = [System.Windows.Media.Imaging.BitmapCacheOption]::OnLoad
-            $logo.UriSource = New-Object System.Uri($logoPath, [System.UriKind]::Absolute)
-            $logo.EndInit()
-            $logo.Freeze() # Verbessert die Leistung
+        default {
+            Write-DebugMessage "No logo mapping for tab: $tabName"
             
-            # Set the image source
-            $picLogo.Source = $logo
-            Write-DebugMessage "Logo successfully set for $logoControl"
-            
-            # Add click event if URL is specified
-            if ($global:Config["WPFGUI"].Contains("HeaderLogoURL")) {
-                $picLogo.Cursor = [System.Windows.Input.Cursors]::Hand
-                $picLogo.Tag = $global:Config["WPFGUI"]["HeaderLogoURL"] # Speichern der URL in Tag
+            # Fallback to index-based handling if needed
+            $tabControl = $window.FindName("MainTabControl")
+            if ($tabControl) {
+                $selectedIndex = $tabControl.SelectedIndex
+                Write-DebugMessage "Selected tab index: $selectedIndex"
                 
-                # Entfernen Sie zuerst alle vorhandenen Event-Handler
-                $picLogo.RemoveHandler([System.Windows.Controls.Image]::MouseLeftButtonUpEvent, [System.Windows.Input.MouseButtonEventHandler]::new({param($sender,$e) Start-Process $sender.Tag}))
-                
-                # Fügen Sie den neuen Event-Handler hinzu
-                $picLogo.AddHandler([System.Windows.Controls.Image]::MouseLeftButtonUpEvent, [System.Windows.Input.MouseButtonEventHandler]::new({
-                    param($sender,$e)
-                    $url = $sender.Tag
-                    if (-not [string]::IsNullOrEmpty($url)) {
-                        try {
-                            Start-Process $url
-                        } catch {
-                            Write-DebugMessage "Error opening URL: $($_.Exception.Message)"
-                        }
+                if ($selectedIndex -eq 0) {  # First tab - Onboarding
+                    if ($global:Config.Contains("WPFGUILogos") -and $global:Config["WPFGUILogos"].Contains("OnboardingLogo")) {
+                        Update-SingleLogo -window $window -logoControl "picLogo1" -configPath $global:Config["WPFGUILogos"]["OnboardingLogo"]
                     }
-                }))
-                Write-DebugMessage "Click event added for $logoControl"
-            }
-        } else {
-            Write-DebugMessage "Logo file not found: $logoPath"
-        }
-    } catch {
-        Write-DebugMessage "Error setting logo for $($_.Exception.Message)"
-    }
-}
-
-# Funktion zum Initialisieren der Logo-Anzeige nach dem Laden des Fensters
-function Initialize-LogoHandling {
-    param (
-        [Parameter(Mandatory = $true)]
-        $window
-    )
-
-    # Verzögerte Ausführung sicherstellen
-    $window.Dispatcher.InvokeAsync({
-        # Korrekter Name des TabControls aus XAML (MainTabControl statt tabControl)
-        $tabControl = $window.FindName("MainTabControl")
-        
-        if ($tabControl) {
-            Write-DebugMessage "MainTabControl found, setting up event handlers"
-            
-            # Aktualisiere das Logo für den ersten Tab sofort
-            $selectedTab = $tabControl.SelectedItem
-            if ($selectedTab) {
-                Update-TabLogos -selectedTabName $selectedTab.Name -window $window
-                Write-DebugMessage "Updated logos for initial tab: $($selectedTab.Name)"
-            } else {
-                Write-DebugMessage "No tab selected initially"
-            }
-            
-            # Handler für TabControl.SelectionChanged-Event
-            $tabControl.Add_SelectionChanged({
-                $selectedTab = $tabControl.SelectedItem
-                if ($selectedTab) {
-                    Update-TabLogos -selectedTabName $selectedTab.Name -window $window
-                    Write-DebugMessage "Tab changed to: $($selectedTab.Name)"
                 }
-            })
-            
-            Write-DebugMessage "Tab selection event handler registered"
-        } else {
-            Write-DebugMessage "ERROR: MainTabControl not found in window"
+                elseif ($selectedIndex -eq 1) {  # Second tab - ADUpdate
+                    if ($global:Config.Contains("WPFGUILogos") -and $global:Config["WPFGUILogos"].Contains("ADUpdateLogo")) {
+                        Update-SingleLogo -window $window -logoControl "picLogo2" -configPath $global:Config["WPFGUILogos"]["ADUpdateLogo"]
+                    }
+                }
+            }
         }
-    }, [System.Windows.Threading.DispatcherPriority]::Loaded)
+    }
 }
 # Function to collect selected AD groups
 function Get-SelectedADGroups {
@@ -1401,7 +1317,7 @@ function Get-SelectedADGroups {
         [string]$Separator = ";"
     )
     
-    # Use a more efficient ArrayList to avoid output on add
+    # Use System.Collections.ArrayList to avoid pipeline output when adding items
     [System.Collections.ArrayList]$selectedGroups = @()
     
     if ($null -eq $Panel) {
@@ -1409,21 +1325,67 @@ function Get-SelectedADGroups {
         return "NONE"
     }
     
-    if ($null -eq $Panel.ItemsSource -or ($Panel.ItemsSource | Measure-Object).Count -eq 0) {
+    if ($Panel.Items.Count -eq 0) {
         Write-DebugMessage "Panel contains no items to select from"
         return "NONE"
     }
     
-    # Get selected groups directly from data source
-    foreach ($item in $Panel.ItemsSource) {
-        if ($item.IsChecked) {
-            Write-DebugMessage "Selected group: $($item.GroupName)"
-            [void]$selectedGroups.Add($item.GroupName)
+    Write-DebugMessage "Processing $($Panel.Items.Count) items in AD groups panel"
+    
+    # Get all checkboxes regardless of nesting
+    function Find-CheckBoxes {
+        param (
+            [Parameter(Mandatory=$true)]
+            [System.Windows.DependencyObject]$Parent
+        )
+        
+        $checkBoxes = @()
+        
+        for ($i = 0; $i -lt [System.Windows.Media.VisualTreeHelper]::GetChildrenCount($Parent); $i++) {
+            $child = [System.Windows.Media.VisualTreeHelper]::GetChild($Parent, $i)
+            
+            if ($child -is [System.Windows.Controls.CheckBox]) {
+                $checkBoxes += $child
+            } else {
+                # Recursively search children
+                $checkBoxes += Find-CheckBoxes -Parent $child
+            }
         }
+        
+        return $checkBoxes
+    }
+    
+    # Allow time for UI to render
+    $Panel.Dispatcher.Invoke([System.Action]{
+        $Panel.UpdateLayout()
+    }, "Render")
+    
+    try {
+        # Get all checkboxes in the panel
+        $checkBoxes = $Panel.Dispatcher.Invoke([System.Func[array]]{
+            Find-CheckBoxes -Parent $Panel
+        })
+        
+        Write-DebugMessage "Found $($checkBoxes.Count) checkboxes in panel"
+        
+        # Process each checkbox
+        for ($i = 0; $i -lt $checkBoxes.Count; $i++) {
+            $cb = $checkBoxes[$i]
+            
+            if ($cb.IsChecked) {
+                $groupName = $cb.Content.ToString()
+                Write-DebugMessage "Selected group: $groupName"
+                [void]$selectedGroups.Add($groupName)
+            }
+        }
+    } catch {
+        Write-DebugMessage "Error processing AD group checkboxes: $($_.Exception.Message)"
+        # Continue anyway with any groups we've found
     }
     
     Write-DebugMessage "Total selected groups: $($selectedGroups.Count)"
     
+    # Return appropriate result
     if ($selectedGroups.Count -eq 0) {
         return "NONE"
     } else {
@@ -1435,6 +1397,222 @@ function Get-SelectedADGroups {
 Load-ADGroups
 #endregion
 
+#region [Logo Management Functions]
+# Contains functions to handle logo loading, updating, and event handling for the UI
+
+#region [Update-SingleLogo Function]
+# Updates a single logo image control with an image from the specified path
+# Adds clickable behavior if a URL is configured in the INI file
+function Update-SingleLogo {
+    param (
+        [Parameter(Mandatory = $true)]
+        $window,                # Window object containing the image control
+        
+        [Parameter(Mandatory = $false)]
+        [string]$logoControl = "", # Name of the image control to update
+        
+        [Parameter(Mandatory = $false)]
+        [string]$configPath = ""   # File path to the logo image from configuration
+    )
+    
+    try {
+        # Find the image control in the window by its name
+        $picLogo = $window.FindName($logoControl)
+        
+        if (-not $picLogo) {
+            Write-DebugMessage "Logo control '$logoControl' not found in window"
+            return
+        }
+        
+        if ([string]::IsNullOrWhiteSpace($configPath)) {
+            Write-DebugMessage "Config path is empty for $logoControl"
+            return
+        }
+        
+        # Check if the image file exists and load it
+        if (Test-Path $configPath) {
+            Write-DebugMessage "Loading logo from path: $configPath"
+            
+            # Create a bitmap image from the specified path
+            $logo = New-Object System.Windows.Media.Imaging.BitmapImage
+            $logo.BeginInit()
+            $logo.CacheOption = [System.Windows.Media.Imaging.BitmapCacheOption]::OnLoad
+            $logo.UriSource = New-Object System.Uri($configPath, [System.UriKind]::Absolute)
+            $logo.EndInit()
+            $logo.Freeze() # Improves performance by making the image immutable
+            
+            # Set the image source for the control
+            $picLogo.Source = $logo
+            Write-DebugMessage "Logo successfully set for $logoControl"
+            
+            # Add click event to open URL if one is specified in the configuration
+            if ($global:Config["WPFGUI"].Contains("LogoURL")) {
+                # Change cursor to indicate clickable behavior
+                $picLogo.Cursor = [System.Windows.Input.Cursors]::Hand
+                $picLogo.Tag = $global:Config["WPFGUI"]["LogoURL"]
+                
+                # Remove any existing event handlers first to avoid duplicate handlers
+                try {
+                    [System.Windows.Input.MouseButtonEventHandler]$existingHandler = {
+                        param($senderObj,$e) 
+                        Start-Process $senderObj.Tag
+                    }
+                    $picLogo.RemoveHandler([System.Windows.Controls.Image]::MouseLeftButtonUpEvent, $existingHandler)
+                } catch {
+                    # Ignore errors during removal of non-existent handlers
+                }
+                
+                # Add the new click event handler to open the URL
+                try {
+                    [System.Windows.Input.MouseButtonEventHandler]$clickHandler = {
+                        param($senderObj,$e)
+                        try {
+                            $url = $senderObj.Tag
+                            if (-not [string]::IsNullOrEmpty($url)) {
+                                Start-Process $url
+                            }
+                        } catch {
+                            Write-DebugMessage "Error opening URL: $($_.Exception.Message)"
+                        }
+                    }
+                    $picLogo.AddHandler([System.Windows.Controls.Image]::MouseLeftButtonUpEvent, $clickHandler)
+                    Write-DebugMessage "Click event added for $logoControl"
+                } catch {
+                    Write-DebugMessage "Error adding event handler: $($_.Exception.Message)"
+                }
+            }
+        } else {
+            Write-DebugMessage "Logo file not found: ${configPath}"
+        }
+    } catch {
+        Write-DebugMessage "Error setting logo for ${logoControl}: $($_.Exception.Message)"
+    }
+}
+#endregion
+
+#region [Initialize-LogoHandling Function]
+# Sets up event handlers for logo updates when tab selection changes
+# Uses asynchronous dispatcher to ensure UI is fully loaded before handling events
+function Initialize-LogoHandling {
+    param (
+        [Parameter(Mandatory = $true)]
+        $window  # Main window containing the tab control and logo images
+    )
+
+    try {
+        # Use lower dispatcher priority to ensure UI has fully loaded before manipulation
+        $window.Dispatcher.InvokeAsync({
+            try {
+                # Find the TabControl using the name defined in XAML
+                $tabControl = $window.FindName("MainTabControl")
+                
+                if ($tabControl) {
+                    Write-DebugMessage "MainTabControl found, setting up event handlers"
+                    
+                    # Output diagnostic information about the TabControl and its tabs
+                    Write-DebugMessage "TabControl has $($tabControl.Items.Count) items"
+                    for ($i = 0; $i -lt $tabControl.Items.Count; $i++) {
+                        $tab = $tabControl.Items[$i]
+                        Write-DebugMessage "Tab $i Name: $($tab.Name)"
+                    }
+                    
+                    # Register event handler for tab selection changes to update logos
+                    $tabControl.Add_SelectionChanged({
+                        try {
+                            $selectedIndex = $tabControl.SelectedIndex
+                            if ($selectedIndex -ge 0) {
+                                $selectedTab = $tabControl.Items[$selectedIndex]
+                                if ($selectedTab) {
+                                    # Update content logos when tab changes
+                                    Update-TabLogos -selectedTab $selectedTab -window $window
+                                }
+                            }
+                        } catch {
+                            Write-DebugMessage "Error in tab selection handler: $($_.Exception.Message)"
+                        }
+                    })
+                    
+                    # Initialize the logo for the currently selected tab after a slight delay
+                    $window.Dispatcher.InvokeAsync({
+                        try {
+                            $selectedIndex = $tabControl.SelectedIndex
+                            if ($selectedIndex -ge 0 -and $selectedIndex -lt $tabControl.Items.Count) {
+                                $selectedTab = $tabControl.Items[$selectedIndex]
+                                Update-TabLogos -selectedTab $selectedTab -window $window
+                            }
+                        } catch {
+                            Write-DebugMessage "Error updating initial tab logo: $($_.Exception.Message)" 
+                        }
+                    }, [System.Windows.Threading.DispatcherPriority]::Background)
+                    
+                    Write-DebugMessage "Tab selection event handler registered"
+                } else {
+                    Write-DebugMessage "MainTabControl not found, cannot register event handlers"
+                }
+            } catch {
+                Write-DebugMessage "Error finding TabControl: $($_.Exception.Message)"
+            }
+        }, [System.Windows.Threading.DispatcherPriority]::Background)
+    } catch {
+        Write-DebugMessage "Error in Initialize-LogoHandling: $($_.Exception.Message)"
+    }
+}
+#endregion
+
+# Function to update logos based on the selected tab
+function Update-TabLogos {
+    param (
+        [Parameter(Mandatory = $true)]
+        [object]$selectedTab,
+        
+        [Parameter(Mandatory = $true)]
+        $window
+    )
+    
+    # Use the tab's x:Name property directly instead of trying to use the Header
+    $tabName = $selectedTab.Name
+    
+    Write-DebugMessage "Updating content logos for tab: $tabName"
+    
+    # Logo update based on selected tab name - these are the content logos, not the tab icons
+    switch ($tabName) {
+        "Tab_Onboarding" {
+            # Check if section and key exist first
+            if ($global:Config.Contains("WPFGUILogos") -and $global:Config["WPFGUILogos"].Contains("OnboardingLogo")) {
+                Update-SingleLogo -window $window -logoControl "picLogo1" -configPath $global:Config["WPFGUILogos"]["OnboardingLogo"]
+            }
+        }
+        "Tab_ADUpdate" {
+            if ($global:Config.Contains("WPFGUILogos") -and $global:Config["WPFGUILogos"].Contains("ADUpdateLogo")) {
+                Update-SingleLogo -window $window -logoControl "picLogo2" -configPath $global:Config["WPFGUILogos"]["ADUpdateLogo"]
+            }
+        }
+        default {
+            Write-DebugMessage "No logo mapping for tab with name: $tabName"
+            
+            # Fallback to index-based handling if needed
+            $tabControl = $window.FindName("MainTabControl")
+            if ($tabControl) {
+                $selectedIndex = $tabControl.SelectedIndex
+                Write-DebugMessage "Selected tab index: $selectedIndex"
+                
+                if ($selectedIndex -eq 0) {  # First tab - Onboarding
+                    if ($global:Config.Contains("WPFGUILogos") -and $global:Config["WPFGUILogos"].Contains("OnboardingLogo")) {
+                        Update-SingleLogo -window $window -logoControl "picLogo1" -configPath $global:Config["WPFGUILogos"]["OnboardingLogo"]
+                    }
+                }
+                elseif ($selectedIndex -eq 1) {  # Second tab - ADUpdate
+                    if ($global:Config.Contains("WPFGUILogos") -and $global:Config["WPFGUILogos"].Contains("ADUpdateLogo")) {
+                        Update-SingleLogo -window $window -logoControl "picLogo2" -configPath $global:Config["WPFGUILogos"]["ADUpdateLogo"]
+                    }
+                }
+            }
+        }
+    }
+}
+
+#endregion
+
 Write-DebugMessage "Populating dropdowns (OU, Location, License, MailSuffix, DisplayName Template)."
 
 #region [Region 14 | DROPDOWN POPULATION]
@@ -1443,28 +1621,111 @@ Write-DebugMessage "Populating dropdowns (OU, Location, License, MailSuffix, Dis
 Write-DebugMessage "Dropdown: OU Refresh"
 
 #region [Region 14.1 | OU DROPDOWN]
-# Populates the Organizational Unit dropdown with data from AD
-# --- OU Refresh --- 
-# [14.1.1 - Fetches OUs from beneath the configured default OU]
-Write-DebugMessage "Refreshing OU dropdown."
+# Populates the Organizational Unit dropdown with a hierarchical tree view of OUs
+Write-DebugMessage "Setting initial 'Press Refresh' message for OU dropdown."
+$cmbOU = $window.FindName("cmbOU")
+if ($cmbOU) {
+    # Clear any existing items
+    $cmbOU.ItemsSource = $null
+    $cmbOU.Items.Clear()
+    
+    # Add a placeholder item that prompts the user to press refresh
+    $placeholderItem = [PSCustomObject]@{
+        DisplayText = "-- Press Refresh to load OUs --"
+        Name = "Placeholder"
+        DistinguishedName = ""
+        CanonicalName = ""
+        Depth = 0
+    }
+    
+    # Create a new collection with just the placeholder
+    $placeholderList = @($placeholderItem)
+    
+    # Set as the initial ItemsSource
+    $cmbOU.ItemsSource = $placeholderList
+    $cmbOU.DisplayMemberPath = "DisplayText"
+    $cmbOU.SelectedValuePath = "DistinguishedName"
+    $cmbOU.SelectedIndex = 0
+    
+    Write-DebugMessage "OU dropdown initialized with placeholder text."
+}
+
 $btnRefreshOU = $window.FindName("btnRefreshOU")
 if ($btnRefreshOU) {
     $btnRefreshOU.Add_Click({
         try {
-            $defaultOUFromINI = $global:Config.ADUserDefaults["DefaultOU"]
-            $OUList = Get-ADOrganizationalUnit -Filter * -SearchBase $defaultOUFromINI |
-                Select-Object -ExpandProperty DistinguishedName
-                Write-DebugMessage "Found OUs: $($OUList.Count)"
+            # Get the ComboBox control
             $cmbOU = $window.FindName("cmbOU")
-            if ($cmbOU) {
-                # First set ItemsSource to null
-                $cmbOU.ItemsSource = $null
-                # Then clear the ItemsCollection
-                $cmbOU.Items.Clear()
-                # Now assign the new ItemsSource
-                $cmbOU.ItemsSource = $OUList
-                Write-DebugMessage "Dropdown: OU-DropDown successfully populated."
+            if (-not $cmbOU) {
+                throw "ComboBox 'cmbOU' not found in XAML"
             }
+
+            # Clear existing items
+            $cmbOU.ItemsSource = $null
+            $cmbOU.Items.Clear()
+
+            # Get the default OU from the config to use as root
+            $defaultOUFromINI = $null
+            if ($Config.Contains("ADUserDefaults") -and $Config.ADUserDefaults.Contains("DefaultOU")) {
+                $defaultOUFromINI = $Config.ADUserDefaults["DefaultOU"]
+                Write-DebugMessage "Using default OU from INI: $defaultOUFromINI"
+            }
+            
+            # Build the hierarchical OU list
+            $OUList = @()
+            try {
+                $OUs = Get-ADOrganizationalUnit -Filter * -Properties CanonicalName | Sort-Object CanonicalName
+                
+                # Create dictionary to track depth of each OU
+                $ouDepthMap = @{}
+                foreach ($OU in $OUs) {
+                    # Calculate the depth by counting the number of '/' in the canonical name
+                    # Subtract 1 because the domain part (e.g., "example.com/") counts as depth 0
+                    $depth = ($OU.CanonicalName.Split('/').Count - 2)
+                    if ($depth -lt 0) { $depth = 0 } # Safety check
+                    $ouDepthMap[$OU.DistinguishedName] = $depth
+                }
+                
+                # Build display items with proper indentation for hierarchy
+                foreach ($OU in $OUs) {
+                    $depth = $ouDepthMap[$OU.DistinguishedName]
+                    $indent = "  " * $depth # Two spaces per level for indentation
+                    
+                    $displayText = if ($depth -gt 0) {
+                        "$indent├─ $($OU.Name)"
+                    } else {
+                        $OU.Name # Root level OUs don't get indented
+                    }
+                    
+                    $OUList += [PSCustomObject]@{
+                        DisplayText = $displayText
+                        Name = $OU.Name
+                        DistinguishedName = $OU.DistinguishedName
+                        CanonicalName = $OU.CanonicalName
+                        Depth = $depth
+                    }
+                }
+            } catch {
+                Write-DebugMessage "Error retrieving OUs: $($_.Exception.Message)"
+            }
+            
+            # Now assign the new ItemsSource
+            $cmbOU.ItemsSource = $OUList
+            $cmbOU.DisplayMemberPath = "DisplayText" # Use our formatted DisplayText
+            $cmbOU.SelectedValuePath = "DistinguishedName" # Still select by DN
+            
+            # Select the default OU if specified
+            if (-not [string]::IsNullOrWhiteSpace($defaultOUFromINI)) {
+                foreach ($item in $OUList) {
+                    if ($item.DistinguishedName -eq $defaultOUFromINI) {
+                        $cmbOU.SelectedValue = $item.DistinguishedName
+                        Write-DebugMessage "Default OU selected from INI: $defaultOUFromINI"
+                        break
+                    }
+                }
+            }
+            
+            Write-DebugMessage "Dropdown: OU-DropDown successfully populated with hierarchical view."
         }
         catch {
             [System.Windows.MessageBox]::Show("Error loading OUs: $($_.Exception.Message)", "Error")
@@ -1488,19 +1749,21 @@ if ($comboBoxDisplayTemplate -and $global:Config.Contains("DisplayNameUPNTemplat
     $DisplayNameTemplateList = @()
     $displayTemplates = $global:Config["DisplayNameUPNTemplates"]
 
-    # Add the default entry (from DefaultDisplayNameFormat)
+    # Get the default template value
     $defaultDisplayNameFormat = if ($displayTemplates.Contains("DefaultDisplayNameFormat")) {
         $displayTemplates["DefaultDisplayNameFormat"]
     } else {
-        ""
+        "{first} {last}" # Fallback default format
     }
     
     Write-DebugMessage "Default DisplayName Format: $defaultDisplayNameFormat"
 
+    # Add the default entry first
     if ($defaultDisplayNameFormat) {
         $DisplayNameTemplateList += [PSCustomObject]@{
-            Name     = $defaultDisplayNameFormat
-            Template = $defaultDisplayNameFormat
+            DisplayName = "Default: $defaultDisplayNameFormat";
+            Template = $defaultDisplayNameFormat;
+            IsDefault = $true
         }
     }
 
@@ -1508,24 +1771,56 @@ if ($comboBoxDisplayTemplate -and $global:Config.Contains("DisplayNameUPNTemplat
     if ($displayTemplates -and $displayTemplates.Keys.Count -gt 0) {
         foreach ($key in $displayTemplates.Keys) {
             if ($key -like "DisplayNameTemplate*") {
-                $pattern = $displayTemplates[$key]
-                Write-DebugMessage "DisplayName Template found: $pattern"
-                $DisplayNameTemplateList += [PSCustomObject]@{
-                    Name     = $pattern
-                    Template = $pattern
+                $templateValue = $displayTemplates[$key]
+                
+                # Check if the template has a description
+                $description = $templateValue
+                $templateFormat = $templateValue
+                
+                # Format can be either "Description|Template" or just "Template"
+                if ($templateValue -match '\|') {
+                    $parts = $templateValue -split '\|', 2
+                    $description = $parts[0].Trim()
+                    $templateFormat = $parts[1].Trim()
+                }
+                
+                # Skip if it's the same as the default to avoid duplicates
+                if ($templateFormat -ne $defaultDisplayNameFormat) {
+                    Write-DebugMessage "DisplayName Template found: Description='$description', Format='$templateFormat'"
+                    
+                    # Create a descriptive display name for the dropdown
+                    $displayTextForDropdown = if ($description -ne $templateFormat) {
+                        "$description ($templateFormat)"
+                    } else {
+                        $templateFormat
+                    }
+                    
+                    $DisplayNameTemplateList += [PSCustomObject]@{
+                        DisplayName = $displayTextForDropdown;
+                        Template = $templateFormat;
+                        IsDefault = $false
+                    }
                 }
             }
         }
     }
+    
+    # Add a "Custom" option at the end
+    $DisplayNameTemplateList += [PSCustomObject]@{
+        DisplayName = "Custom Format";
+        Template = "Custom";
+        IsDefault = $false
+    }
 
-    # Set the ItemsSource, DisplayMemberPath and SelectedValuePath
+    # Set the ItemsSource and display/selection properties
     $comboBoxDisplayTemplate.ItemsSource = $DisplayNameTemplateList
-    $comboBoxDisplayTemplate.DisplayMemberPath = "Name"
-    $comboBoxDisplayTemplate.SelectedValuePath = "Template"
+    $comboBoxDisplayTemplate.DisplayMemberPath = "DisplayName"  # Show the descriptive display name in the dropdown
+    $comboBoxDisplayTemplate.SelectedValuePath = "Template"     # But use the template format as the actual value
 
     # Set the default value if available
     if ($defaultDisplayNameFormat) {
         $comboBoxDisplayTemplate.SelectedValue = $defaultDisplayNameFormat
+        Write-DebugMessage "Selected default display name template: $defaultDisplayNameFormat"
     }
 }
 Write-DebugMessage "Display name template dropdown populated successfully."
@@ -1540,15 +1835,33 @@ $comboBoxLicense = $window.FindName("cmbLicense")
 if ($comboBoxLicense -and $global:Config.Contains("LicensesGroups")) {
     [System.Windows.Data.BindingOperations]::ClearBinding($comboBoxLicense, [System.Windows.Controls.ComboBox]::ItemsSourceProperty)
     $LicenseListFromINI = @()
+    
+    # Default license from the configuration
+    $defaultLicense = ""
+    if ($global:Config.Contains("UserCreationDefaults") -and $global:Config.UserCreationDefaults.Contains("DefaultLicense")) {
+        $defaultLicense = $global:Config.UserCreationDefaults["DefaultLicense"]
+        Write-DebugMessage "Default license from INI: $defaultLicense"
+    }
+    
     foreach ($licenseKey in $global:Config["LicensesGroups"].Keys) {
+        $licenseValue = $global:Config["LicensesGroups"][$licenseKey]
         $LicenseListFromINI += [PSCustomObject]@{
-            Name  = $licenseKey -replace '^MS365_', ''
-            Value = $licenseKey
+            License = $licenseKey;
+            Value = $licenseKey;
+            IsDefault = ($licenseKey -eq $defaultLicense)
         }
     }
+    
     $comboBoxLicense.ItemsSource = $LicenseListFromINI
-    if ($LicenseListFromINI.Count -gt 0) {
-        $comboBoxLicense.SelectedValue = $LicenseListFromINI[0].Value
+    $comboBoxLicense.DisplayMemberPath = "License"
+    $comboBoxLicense.SelectedValuePath = "Value"
+    
+    # Select default license if defined
+    if (-not [string]::IsNullOrWhiteSpace($defaultLicense)) {
+        $comboBoxLicense.SelectedValue = $defaultLicense
+        Write-DebugMessage "Selected default license: $defaultLicense"
+    } elseif ($LicenseListFromINI.Count -gt 0) {
+        $comboBoxLicense.SelectedIndex = 0
     }
 }
 Write-DebugMessage "License dropdown populated successfully."
@@ -1561,30 +1874,52 @@ Write-DebugMessage "Dropdown: TLGroups Dropdown populate"
 Write-DebugMessage "Populating team leader group dropdown."
 $comboBoxTLGroup = $window.FindName("cmbTLGroup")
 if ($comboBoxTLGroup -and $global:Config.Contains("TLGroups")) {
-    # Clear old bindings and items
-    $comboBoxTLGroup.Items.Clear()
     [System.Windows.Data.BindingOperations]::ClearBinding($comboBoxTLGroup, [System.Windows.Controls.ComboBox]::ItemsSourceProperty)
+    $TLGroupsListFromINI = @()
     
-    $TLGroupOptions = @()
-    foreach ($key in $global:Config["TLGroups"].Keys) {
-        # Here the key (e.g. DEV) is used as display text,
-        # while the corresponding value (e.g. TEAM1TL) is stored separately.
-        $TLGroupOptions += [PSCustomObject]@{
-            Name  = $key
-            Group = $global:Config["TLGroups"][$key]
+    # Check for default TL group in config
+    $defaultTLGroup = ""
+    if ($global:Config.Contains("UserCreationDefaults") -and $global:Config.UserCreationDefaults.Contains("DefaultTLGroup")) {
+        $defaultTLGroup = $global:Config.UserCreationDefaults["DefaultTLGroup"]
+        Write-DebugMessage "Default TL Group from INI: $defaultTLGroup"
+    }
+    
+    foreach ($tlGroupKey in $global:Config["TLGroups"].Keys) {
+        $groupValue = $global:Config["TLGroups"][$tlGroupKey]
+        $TLGroupsListFromINI += [PSCustomObject]@{
+            GroupKey = $tlGroupKey;
+            GroupValue = $groupValue;
+            IsDefault = ($tlGroupKey -eq $defaultTLGroup) -or ($groupValue -eq $defaultTLGroup)
         }
     }
-    $comboBoxTLGroup.ItemsSource = $TLGroupOptions
-    $comboBoxTLGroup.DisplayMemberPath = "Name"
-    $comboBoxTLGroup.SelectedValuePath = "Group"
-    if ($TLGroupOptions.Count -gt 0) {
+    
+    $comboBoxTLGroup.ItemsSource = $TLGroupsListFromINI
+    $comboBoxTLGroup.DisplayMemberPath = "GroupKey"
+    $comboBoxTLGroup.SelectedValuePath = "GroupValue"
+    
+    # Select the default TL group if specified
+    if (-not [string]::IsNullOrWhiteSpace($defaultTLGroup)) {
+        # Try to match by GroupKey or GroupValue
+        $defaultFound = $false
+        foreach ($item in $TLGroupsListFromINI) {
+            if ($item.GroupKey -eq $defaultTLGroup -or $item.GroupValue -eq $defaultTLGroup) {
+                $comboBoxTLGroup.SelectedValue = $item.GroupValue
+                $defaultFound = $true
+                Write-DebugMessage "Selected default TL group: $($item.GroupKey) ($($item.GroupValue))"
+                break
+            }
+        }
+        
+        if (-not $defaultFound -and $TLGroupsListFromINI.Count -gt 0) {
+            $comboBoxTLGroup.SelectedIndex = 0
+        }
+    } elseif ($TLGroupsListFromINI.Count -gt 0) {
         $comboBoxTLGroup.SelectedIndex = 0
     }
+    
+    Write-DebugMessage "Team leader group dropdown populated successfully."
 }
-Write-DebugMessage "Team leader group dropdown populated successfully."
 #endregion
-
-Write-DebugMessage "Dropdown: MailSuffix Dropdown populate"
 
 #region [Region 14.5 | EMAIL DOMAIN SUFFIXES]
 # Populates the email domain suffix dropdown from configuration
@@ -1593,159 +1928,45 @@ $comboBoxSuffix = $window.FindName("cmbSuffix")
 if ($comboBoxSuffix -and $global:Config.Contains("MailEndungen")) {
     [System.Windows.Data.BindingOperations]::ClearBinding($comboBoxSuffix, [System.Windows.Controls.ComboBox]::ItemsSourceProperty)
     $MailSuffixListFromINI = @()
+    
+    # Get the default mail suffix from configuration
+    $defaultMailSuffix = ""
+    if ($global:Config.Contains("Company") -and $global:Config.Company.Contains("CompanyMailDomain")) {
+        $defaultMailSuffix = $global:Config.Company["CompanyMailDomain"]
+        Write-DebugMessage "Default mail suffix from INI: $defaultMailSuffix"
+    }
+    
     foreach ($domainKey in $global:Config["MailEndungen"].Keys) {
         $domainValue = $global:Config["MailEndungen"][$domainKey]
+        
+        # Ensure domain has @ prefix for display
+        $suffix = $domainValue.Trim()
+        if (-not $suffix.StartsWith('@') -and -not [string]::IsNullOrWhiteSpace($suffix)) {
+            $suffix = "@" + $suffix
+        }
+        
         $MailSuffixListFromINI += [PSCustomObject]@{
-            Key   = $domainValue
-            Value = $domainValue
+            MailDomain = $suffix;
+            Value = $domainValue.Trim();
+            IsDefault = ($domainValue.Trim() -eq $defaultMailSuffix.Trim())
         }
     }
+    
     $comboBoxSuffix.ItemsSource = $MailSuffixListFromINI
-    # Default value from the [Company] section:
-    $defaultSuffix = $global:Config.Company["CompanyMailDomain"]
-    $comboBoxSuffix.SelectedValue = $defaultSuffix
+    $comboBoxSuffix.DisplayMemberPath = "MailDomain"
+    $comboBoxSuffix.SelectedValuePath = "Value"
+    
+    # Select the default mail suffix if available
+    if (-not [string]::IsNullOrWhiteSpace($defaultMailSuffix)) {
+        $comboBoxSuffix.SelectedValue = $defaultMailSuffix.Trim()
+        Write-DebugMessage "Selected default mail suffix: $defaultMailSuffix"
+    } elseif ($MailSuffixListFromINI.Count -gt 0) {
+        $comboBoxSuffix.SelectedIndex = 0
+    }
 }
 Write-DebugMessage "Email domain suffix dropdown populated successfully."
 #endregion
 
-Write-DebugMessage "Dropdown: Location Dropdown populate"
-
-#region [Region 14.6 | LOCATION OPTIONS]
-# Populates the location dropdown with available office locations
-Write-DebugMessage "Populating location dropdown."
-if ($global:Config.Contains("STANDORTE")) {
-    $locationList = @()
-    foreach ($key in $global:Config["STANDORTE"].Keys) {
-        if ($key -match '^(STANDORTE_\d+)$') {
-            $bezKey = $key + "_Bez"
-            $locationObj = [PSCustomObject]@{
-                Key = $global:Config["STANDORTE"][$key]
-                Bez = if ($global:Config["STANDORTE"].Contains($bezKey)) { $global:Config["STANDORTE"][$bezKey] } else { $global:Config["STANDORTE"][$key] }
-            }
-            $locationList += $locationObj
-        }
-    }
-    $global:LocationListFromINI = $locationList
-    $cmbLocation = $window.FindName("cmbLocation")
-    if ($cmbLocation -and $global:LocationListFromINI) {
-        [System.Windows.Data.BindingOperations]::ClearBinding($cmbLocation, [System.Windows.Controls.ComboBox]::ItemsSourceProperty)
-        $cmbLocation.ItemsSource = $global:LocationListFromINI
-        if ($global:LocationListFromINI.Count -gt 0) {
-            $cmbLocation.SelectedIndex = 0
-        }
-    }
-    Write-DebugMessage "Location dropdown populated successfully."
-}
-#endregion
-
-#region [Region 14.2.1 | UPN TEMPLATE DISPLAY]
-# Updates the UPN template display with the current template from INI
-Write-DebugMessage "Initializing UPN Template Display."
-function Update-UPNTemplateDisplay {
-    [CmdletBinding()]
-    param(
-        [Parameter(Mandatory=$false)]
-        [string]$Template
-    )
-    
-    try {
-        $txtUPNTemplateDisplay = $window.FindName("txtUPNTemplateDisplay")
-        if ($null -eq $txtUPNTemplateDisplay) {
-            Write-DebugMessage "UPN Template Display TextBlock not found in XAML"
-            return
-        }
-        
-        # Default UPN template format
-        $defaultUPNFormat = "FIRSTNAME.LASTNAME"
-        
-        # If a template was explicitly provided, use it
-        if (-not [string]::IsNullOrWhiteSpace($Template)) {
-            $defaultUPNFormat = $Template.ToUpper()
-            Write-DebugMessage "Using provided template: $defaultUPNFormat"
-        }
-        # Otherwise read from INI if available
-        elseif ($global:Config.Contains("DisplayNameUPNTemplates") -and 
-            $global:Config.DisplayNameUPNTemplates.Contains("DefaultUserPrincipalNameFormat")) {
-            $upnTemplate = $global:Config.DisplayNameUPNTemplates.DefaultUserPrincipalNameFormat
-            if (-not [string]::IsNullOrWhiteSpace($upnTemplate)) {
-                $defaultUPNFormat = $upnTemplate.ToUpper()
-                Write-DebugMessage "Found UPN template in INI: $defaultUPNFormat"
-            }
-        }
-        
-        # Direct text update (most reliable method)
-        $txtUPNTemplateDisplay.Text = $defaultUPNFormat
-        Write-DebugMessage "UPN Template Display directly set to: $defaultUPNFormat"
-    }
-    catch {
-        Write-DebugMessage "Error updating UPN Template Display: $($_.Exception.Message)"
-    }
-}
-
-# Call the function to initialize the UPN template display
-Update-UPNTemplateDisplay
-
-# Make sure UPN Template Display gets updated when dropdown selection changes
-$comboBoxDisplayTemplate = $window.FindName("cmbDisplayTemplate")
-if ($comboBoxDisplayTemplate) {
-    $comboBoxDisplayTemplate.Add_SelectionChanged({
-        # Check what was selected
-        if ($comboBoxDisplayTemplate.SelectedItem -ne $null) {
-            $selectedItem = $comboBoxDisplayTemplate.SelectedItem
-            Write-DebugMessage "Template dropdown selection changed: $($selectedItem | ConvertTo-Json -Compress)"
-            
-            # First try to get the Template property if it exists
-            $selectedTemplate = if ($selectedItem.PSObject.Properties.Match('Template').Count -gt 0) {
-                $selectedItem.Template
-            } 
-            # If that fails, try Name property
-            elseif ($selectedItem.PSObject.Properties.Match('Name').Count -gt 0) {
-                $selectedItem.Name
-            }
-            # If all else fails, try converting the whole item to string
-            else {
-                $selectedItem.ToString()
-            }
-            
-            Write-DebugMessage "Selected template value: '$selectedTemplate'"
-            
-            # Update the display with the selected template
-            if (-not [string]::IsNullOrWhiteSpace($selectedTemplate)) {
-                Update-UPNTemplateDisplay -Template $selectedTemplate
-            }
-        }
-        else {
-            Write-DebugMessage "Template dropdown selection cleared or set to null"
-        }
-    })
-    
-    # Initial selection based on default from INI
-    if ($global:Config.Contains("DisplayNameUPNTemplates") -and 
-        $global:Config.DisplayNameUPNTemplates.Contains("DefaultDisplayNameFormat")) {
-        
-        $defaultFormat = $global:Config.DisplayNameUPNTemplates.DefaultDisplayNameFormat
-        Write-DebugMessage "Setting initial selection to default format: $defaultFormat"
-        
-        # Find and select the matching item
-        foreach ($item in $comboBoxDisplayTemplate.Items) {
-            $itemTemplate = if ($item.PSObject.Properties.Match('Template').Count -gt 0) {
-                $item.Template
-            } elseif ($item.PSObject.Properties.Match('Name').Count -gt 0) {
-                $item.Name
-            } else {
-                $item.ToString()
-            }
-            
-            if ($itemTemplate -eq $defaultFormat) {
-                $comboBoxDisplayTemplate.SelectedItem = $item
-                Write-DebugMessage "Selected matching item for default format"
-                break
-            }
-        }
-    }
-}
-#endregion
-#endregion
 
 Write-DebugMessage "Defining utility functions."
 
@@ -2798,6 +3019,45 @@ function Invoke-Onboarding {
         $departmentField = if ($null -ne $userData.DepartmentField) { $userData.DepartmentField } else { "" }
         $ablaufdatum = if ($null -ne $userData.Ablaufdatum) { $userData.Ablaufdatum } else { "" }
 
+        # Get Helpdesk information from Config
+        $companyITMitarbeiter = if ($Config.Contains("CompanyHelpdesk") -and $Config.CompanyHelpdesk.Contains("CompanyITMitarbeiter")) { 
+            $Config.CompanyHelpdesk.CompanyITMitarbeiter 
+        } else { "" }
+        
+        $companyHelpdeskMail = if ($Config.Contains("CompanyHelpdesk") -and $Config.CompanyHelpdesk.Contains("CompanyHelpdeskMail")) { 
+            $Config.CompanyHelpdesk.CompanyHelpdeskMail 
+        } else { "" }
+        
+        $companyHelpdeskTel = if ($Config.Contains("CompanyHelpdesk") -and $Config.CompanyHelpdesk.Contains("CompanyHelpdeskTel")) { 
+            $Config.CompanyHelpdesk.CompanyHelpdeskTel 
+        } else { "" }
+
+        # Get WLAN information from Config
+        $companySSID = if ($Config.Contains("CompanyWLAN") -and $Config.CompanyWLAN.Contains("CompanySSID")) { 
+            $Config.CompanyWLAN.CompanySSID 
+        } else { "" }
+        
+        $companySSIDbyod = if ($Config.Contains("CompanyWLAN") -and $Config.CompanyWLAN.Contains("CompanySSIDbyod")) { 
+            $Config.CompanyWLAN.CompanySSIDbyod 
+        } else { "" }
+        
+        $companySSIDGuest = if ($Config.Contains("CompanyWLAN") -and $Config.CompanyWLAN.Contains("CompanySSIDGuest")) { 
+            $Config.CompanyWLAN.CompanySSIDGuest 
+        } else { "" }
+
+        # Get VPN information from Config
+        $companyVPNDomain = if ($Config.Contains("CompanyVPN") -and $Config.CompanyVPN.Contains("CompanyVPNDomain")) { 
+            $Config.CompanyVPN.CompanyVPNDomain 
+        } else { "" }
+        
+        $companyVPNUser = if ($Config.Contains("CompanyVPN") -and $Config.CompanyVPN.Contains("CompanyVPNUser")) { 
+            $Config.CompanyVPN.CompanyVPNUser 
+        } else { "" }
+        
+        $companyVPNPassword = if ($Config.Contains("CompanyVPN") -and $Config.CompanyVPN.Contains("CompanyVPNPassword")) { 
+            $Config.CompanyVPN.CompanyVPNPassword 
+        } else { "" }
+
         $htmlContent = $htmlTemplate `
             -replace "{{ReportTitle}}",    ([string]$reportTitle) `
             -replace "{{Admin}}",          $env:USERNAME `
@@ -2850,7 +3110,16 @@ function Invoke-Onboarding {
             -replace "{{CustomPW2}}",      $CustomPW2 `
             -replace "{{CustomPW3}}",      $CustomPW3 `
             -replace "{{CustomPW4}}",      $CustomPW4 `
-            -replace "{{CustomPW5}}",      $CustomPW5
+            -replace "{{CustomPW5}}",      $CustomPW5 `
+            -replace "{{CompanyITMitarbeiter}}", $companyITMitarbeiter `
+            -replace "{{CompanyHelpdeskMail}}", $companyHelpdeskMail `
+            -replace "{{CompanyHelpdeskTel}}", $companyHelpdeskTel `
+            -replace "{{CompanySSID}}", $companySSID `
+            -replace "{{CompanySSIDbyod}}", $companySSIDbyod `
+            -replace "{{CompanySSIDGuest}}", $companySSIDGuest `
+            -replace "{{CompanyVPNDomain}}", $companyVPNDomain `
+            -replace "{{CompanyVPNUser}}", $companyVPNUser `
+            -replace "{{CompanyVPNPassword}}", $companyVPNPassword
 
         Set-Content -Path $htmlFile -Value $htmlContent -Encoding UTF8
         Write-DebugMessage "HTML report created: $htmlFile"
@@ -2936,7 +3205,16 @@ function Invoke-Onboarding {
                 -replace '\$CustomPW2', $CustomPW2 `
                 -replace '\$CustomPW3', $CustomPW3 `
                 -replace '\$CustomPW4', $CustomPW4 `
-                -replace '\$CustomPW5', $CustomPW5
+                -replace '\$CustomPW5', $CustomPW5 `
+                -replace '\$\(\$companyITMitarbeiter\)', $companyITMitarbeiter `
+                -replace '\$\(\$companyHelpdeskMail\)', $companyHelpdeskMail `
+                -replace '\$\(\$companyHelpdeskTel\)', $companyHelpdeskTel `
+                -replace '\$\(\$companySSID\)', $companySSID `
+                -replace '\$\(\$companySSIDbyod\)', $companySSIDbyod `
+                -replace '\$\(\$companySSIDGuest\)', $companySSIDGuest `
+                -replace '\$\(\$companyVPNDomain\)', $companyVPNDomain `
+                -replace '\$\(\$companyVPNUser\)', $companyVPNUser `
+                -replace '\$\(\$companyVPNPassword\)', $companyVPNPassword
 
             Write-DebugMessage "Writing final TXT to: $txtFile"
             Out-File -FilePath $txtFile -InputObject $txtContent -Encoding UTF8
@@ -2968,100 +3246,167 @@ function Set-DropDownValues {
     param(
         [Parameter(Mandatory = $true)]
         [ValidateNotNullOrEmpty()]
-        $DropDownControl,    # The dropdown/combobox control (WinForms or WPF)
-
+        $DropDownControl,
+        
         [Parameter(Mandatory = $true)]
         [ValidateNotNullOrEmpty()]
-        [string]$DataType,   # Required type (e.g., "OU", "Location", "License", etc.)
-
+        [string]$DataType,
+        
         [Parameter(Mandatory = $true)]
         [ValidateNotNull()]
-        $ConfigData        # Configuration data source (e.g., Hashtable)
+        $ConfigData
     )
     
     try {
-        Write-Verbose "Populating dropdown for type '$DataType'..."
-        Write-DebugMessage "Set-DropDownValues: Removing existing bindings and items"
+        Write-DebugMessage "Set-DropDownValues: Clearing existing items for $DataType"
         
-        # Remove existing bindings and items (regardless of framework used)
-        if ($DropDownControl -is [System.Windows.Forms.ComboBox]) {
-            $DropDownControl.DataSource = $null
-            $DropDownControl.Items.Clear()
-        }
-        elseif ($DropDownControl -is [System.Windows.Controls.ItemsControl]) {
+        # Remove existing items
+        if ($DropDownControl -is [System.Windows.Controls.ComboBox]) {
             $DropDownControl.ItemsSource = $null
             $DropDownControl.Items.Clear()
         }
-        else {
-            try { $DropDownControl.Items.Clear() } catch { }
-        }
-        Write-Verbose "Existing items removed."
         
-        Write-DebugMessage "Set-DropDownValues: Retrieving items and default value from Config"
+        Write-DebugMessage "Set-DropDownValues: Retrieving items for $DataType"
+        
         $items = @()
         $defaultValue = $null
+        
         switch ($DataType.ToLower()) {
-            "ou" {
-                $items = $ConfigData.OUList
-                $defaultValue = $ConfigData.DefaultOU
-            }
-            "location" {
-                $items = $ConfigData.LocationList
-                $defaultValue = $ConfigData.DefaultLocation
-            }
-            "license" {
-                $items = $ConfigData.LicenseList
-                $defaultValue = $ConfigData.DefaultLicense
-            }
             "mailsuffix" {
-                $items = $ConfigData.MailSuffixList
-                $defaultValue = $ConfigData.DefaultMailSuffix
+                # Für Mail-Suffix aus MailEndungen-Sektion
+                if ($ConfigData.Contains("MailEndungen")) {
+                    foreach ($key in $ConfigData.MailEndungen.Keys) {
+                        $domain = $ConfigData.MailEndungen[$key]
+                        # Stelle sicher, dass Mail-Domains mit @ beginnen
+                        if (-not [string]::IsNullOrWhiteSpace($domain)) {
+                            if (-not $domain.StartsWith('@')) {
+                                $domain = "@" + $domain
+                            }
+                            $items += [PSCustomObject]@{
+                                Key = $key
+                                Value = $domain
+                            }
+                        }
+                    }
+                }
+                
+                # Default Mail-Suffix aus Company-Sektion
+                if ($ConfigData.Contains("Company") -and $ConfigData.Company.Contains("CompanyMailDomain")) {
+                    $defaultValue = $ConfigData.Company["CompanyMailDomain"]
+                    if (-not $defaultValue.StartsWith('@') -and -not [string]::IsNullOrWhiteSpace($defaultValue)) {
+                        $defaultValue = "@" + $defaultValue
+                    }
+                    Write-DebugMessage "Default mail suffix: $defaultValue"
+                }
             }
             "displaynametemplate" {
-                $items = $ConfigData.DisplayNameTemplates
-                $defaultValue = $ConfigData.DefaultDisplayNameTemplate
+                if ($ConfigData.Contains("DisplayNameUPNTemplates")) {
+                    foreach ($key in $ConfigData.DisplayNameUPNTemplates.Keys) {
+                        if ($key -like "DisplayNameTemplate*" -or $key -eq "DefaultDisplayNameFormat") {
+                            $template = $ConfigData.DisplayNameUPNTemplates[$key]
+                            $isDefault = $key -eq "DefaultDisplayNameFormat"
+                            $displayText = if ($isDefault) { "$template (Default)" } else { $template }
+                            
+                            $items += [PSCustomObject]@{
+                                Template = $template
+                                DisplayName = $displayText
+                                IsDefault = $isDefault
+                            }
+                        }
+                    }
+                }
+                
+                # Default Value
+                if ($ConfigData.Contains("DisplayNameUPNTemplates") -and 
+                    $ConfigData.DisplayNameUPNTemplates.Contains("DefaultDisplayNameFormat")) {
+                    $defaultValue = $ConfigData.DisplayNameUPNTemplates["DefaultDisplayNameFormat"]
+                }
             }
-            "tlgroups" {
-                $items = $ConfigData.TLGroupsList
-                $defaultValue = $ConfigData.DefaultTLGroup
-            }
+            # Andere Dropdown-Typen können hier hinzugefügt werden
             default {
-                Write-Warning "Unknown dropdown type '$DataType'. Aborting."
-                return
+                Write-Warning "Unknown dropdown type '$DataType'. Only basic operation will be performed."
             }
         }
-    
-        Write-DebugMessage "Set-DropDownValues: Ensuring items is a collection"
-        if ($items) {
-            if ($items -is [string] -or -not ($items -is [System.Collections.IEnumerable])) {
-                $items = @($items)
-            }
-        }
-        else {
-            $items = @()
-        }
-        Write-Verbose "$($items.Count) entries for '$DataType' retrieved from configuration."
-    
-        Write-DebugMessage "Set-DropDownValues: Setting new data binding/items"
-        if ($DropDownControl -is [System.Windows.Forms.ComboBox]) {
-            $DropDownControl.DataSource = $items
-        }
-        else {
+        
+        Write-DebugMessage "Found $($items.Count) items for $DataType"
+        
+        # Setze ItemsSource und DisplayMemberPath/SelectedValuePath basierend auf Dropdown-Typ
+        if ($items.Count -gt 0) {
             $DropDownControl.ItemsSource = $items
+            
+            switch ($DataType.ToLower()) {
+                "mailsuffix" {
+                    $DropDownControl.DisplayMemberPath = "Value"
+                    $DropDownControl.SelectedValuePath = "Value"
+                }
+                "displaynametemplate" {
+                    $DropDownControl.DisplayMemberPath = "DisplayName"
+                    $DropDownControl.SelectedValuePath = "Template"
+                }
+                default {
+                    # Fallback für einfache Listen
+                    if ($items[0] -is [PSCustomObject] -and 
+                        ($items[0].PSObject.Properties.Name -contains "DisplayName" -or
+                         $items[0].PSObject.Properties.Name -contains "Value")) {
+                        
+                        if ($items[0].PSObject.Properties.Name -contains "DisplayName") {
+                            $DropDownControl.DisplayMemberPath = "DisplayName"
+                        }
+                        if ($items[0].PSObject.Properties.Name -contains "Value") {
+                            $DropDownControl.SelectedValuePath = "Value"
+                        }
+                    }
+                }
+            }
+        
+            # Wähle den Standardwert aus, wenn vorhanden
+            if (-not [string]::IsNullOrEmpty($defaultValue)) {
+                Write-DebugMessage "Setting default value"
+                
+                $found = $false
+                
+                # Such den Standardwert im ItemsSource
+                foreach ($item in $items) {
+                    $valueToCompare = $null
+                    
+                    if ($item -is [PSCustomObject]) {
+                        if ($DataType.ToLower() -eq "mailsuffix" -and $item.Value -eq $defaultValue) {
+                            $valueToCompare = $item.Value
+                            $found = $true
+                        }
+                        elseif ($DataType.ToLower() -eq "displaynametemplate" -and $item.Template -eq $defaultValue) {
+                            $valueToCompare = $item.Template
+                            $found = $true
+                        }
+                    }
+                    elseif ($item -eq $defaultValue) {
+                        $valueToCompare = $item
+                        $found = $true
+                    }
+                    
+                    if ($found) {
+                        $DropDownControl.SelectedValue = $valueToCompare
+                        break
+                    }
+                }
+                
+                if (-not $found) {
+                    Write-DebugMessage "Default value '$defaultValue' not found in items list"
+                    if ($items.Count -gt 0) {
+                        $DropDownControl.SelectedIndex = 0
+                    }
+                }
+            }
+            # Fallback: Wähle das erste Element, wenn kein Default gesetzt wurde
+            elseif ($items.Count -gt 0) {
+                $DropDownControl.SelectedIndex = 0
+            }
         }
-        Write-Verbose "Data binding set for '$DataType' dropdown."
-    
-        Write-DebugMessage "Set-DropDownValues: Setting default value if available"
-        if ($defaultValue) {
-            $DropDownControl.SelectedItem = $defaultValue
-            Write-Verbose "Default value for '$DataType' set to '$defaultValue'."
-        }
-        elseif ($items.Count -gt 0) {
-            try { $DropDownControl.SelectedIndex = 0 } catch { }
-        }
-    }
-    catch {
-        Write-Error "Error populating dropdown '$DataType': $($_.Exception.Message)"
+        
+        Write-DebugMessage "DropDown configured successfully"
+        
+    } catch {
+        Write-DebugMessage "Error in Set-DropDownValues ($_.Exception.Message)"
     }
 }
 #endregion
@@ -3164,8 +3509,6 @@ function Get-ADData {
 }
 #endregion
 
-Write-DebugMessage "Open-INIEditor"
-
 #region [Region 20 | INI EDITOR]
 # Function to open the INI configuration editor
 Write-DebugMessage "Opening INI editor."
@@ -3174,12 +3517,35 @@ function Open-INIEditor {
         if ($global:Config.Logging.DebugMode -eq "1") {
             Write-Log " INI Editor is starting." "DEBUG"
         }
-        Write-DebugMessage "INI Editor has started."
-        Write-LogMessage -Message "INI Editor has started." -Level "Info"
-        [System.Windows.MessageBox]::Show("INI Editor (Settings) – Implement functionality here.", "Settings")
+        
+        # Path zum externen INI Editor-Skript
+        $iniEditorScriptPath = Join-Path $PSScriptRoot "easyINIEditor.ps1"
+        
+        # Prüfen, ob das Skript existiert
+        if (-not (Test-Path $iniEditorScriptPath)) {
+            Write-DebugMessage "INI Editor script not found at: $iniEditorScriptPath"
+            [System.Windows.MessageBox]::Show("Das Skript 'easyINIEditor.ps1' wurde nicht gefunden!`n`nPfad: $iniEditorScriptPath", "Fehler", "OK", "Error")
+            return
+        }
+        
+        # INI-Dateipfad als Parameter übergeben
+        $arguments = @(
+            "-NoProfile",
+            "-ExecutionPolicy", "Bypass",
+            "-File", "`"$iniEditorScriptPath`"",
+            "-IniPath", "`"$INIPath`""
+        )
+        
+        Write-DebugMessage "Starting INI Editor with arguments: $($arguments -join ' ')"
+        Write-LogMessage -Message "INI Editor wird gestartet: $iniEditorScriptPath" -Level "Info"
+        
+        # Starte den INI Editor in einem neuen Prozess
+        Start-Process -FilePath "pwsh.exe" -ArgumentList $arguments -NoNewWindow
     }
     catch {
-        Throw "Error opening INI Editor: $_"
+        $errorMsg = "Fehler beim Starten des INI Editors: $($_.Exception.Message)"
+        Write-DebugMessage $errorMsg
+        [System.Windows.MessageBox]::Show($errorMsg, "Fehler", "OK", "Error")
     }
 }
 #endregion
@@ -3188,97 +3554,6 @@ Write-DebugMessage "Defining GUI implementation."
 
 #region [Region 21 | GUI IMPLEMENTATION]
 # Handles the entire GUI implementation and event handlers
-
-Write-DebugMessage "GUI Collecting selected groups from the AD groups panel"
-
-#region [Region 21.1 | AD GROUPS SELECTION]
-# Collects selected groups from the AD groups panel
-Write-DebugMessage "Collecting selected AD groups from panel."
-function Get-SelectedADGroups {
-    [CmdletBinding()]
-    param(
-        [Parameter(Mandatory=$true)]
-        [System.Windows.Controls.ItemsControl]$Panel,
-        
-        [Parameter(Mandatory=$false)]
-        [string]$Separator = ";"
-    )
-    
-    # Use System.Collections.ArrayList to avoid pipeline output when adding items
-    [System.Collections.ArrayList]$selectedGroups = @()
-    
-    if ($null -eq $Panel) {
-        Write-DebugMessage "Error: Panel is null"
-        return "NONE"
-    }
-    
-    if ($Panel.Items.Count -eq 0) {
-        Write-DebugMessage "Panel contains no items to select from"
-        return "NONE"
-    }
-    
-    Write-DebugMessage "Processing $($Panel.Items.Count) items in AD groups panel"
-    
-    # Get all checkboxes regardless of nesting
-    function Find-CheckBoxes {
-        param (
-            [Parameter(Mandatory=$true)]
-            [System.Windows.DependencyObject]$Parent
-        )
-        
-        $checkBoxes = @()
-        
-        for ($i = 0; $i -lt [System.Windows.Media.VisualTreeHelper]::GetChildrenCount($Parent); $i++) {
-            $child = [System.Windows.Media.VisualTreeHelper]::GetChild($Parent, $i)
-            
-            if ($child -is [System.Windows.Controls.CheckBox]) {
-                $checkBoxes += $child
-            } else {
-                # Recursively search children
-                $checkBoxes += Find-CheckBoxes -Parent $child
-            }
-        }
-        
-        return $checkBoxes
-    }
-    
-    # Allow time for UI to render
-    $Panel.Dispatcher.Invoke([System.Action]{
-        $Panel.UpdateLayout()
-    }, "Render")
-    
-    try {
-        # Get all checkboxes in the panel
-        $checkBoxes = $Panel.Dispatcher.Invoke([System.Func[array]]{
-            Find-CheckBoxes -Parent $Panel
-        })
-        
-        Write-DebugMessage "Found $($checkBoxes.Count) checkboxes in panel"
-        
-        # Process each checkbox
-        for ($i = 0; $i -lt $checkBoxes.Count; $i++) {
-            $cb = $checkBoxes[$i]
-            
-            if ($cb.IsChecked) {
-                $groupName = $cb.Content.ToString()
-                Write-DebugMessage "Selected group: $groupName"
-                [void]$selectedGroups.Add($groupName)
-            }
-        }
-    } catch {
-        Write-DebugMessage "Error processing AD group checkboxes: $($_.Exception.Message)"
-        # Continue anyway with any groups we've found
-    }
-    
-    Write-DebugMessage "Total selected groups: $($selectedGroups.Count)"
-    
-    # Return appropriate result
-    if ($selectedGroups.Count -eq 0) {
-        return "NONE"
-    } else {
-        return ($selectedGroups -join $Separator)
-    }
-}
 
 # Helper function to find a specific type of child in the visual tree
 function FindVisualChild {
@@ -3382,6 +3657,7 @@ $btnStartOnboarding.Add_Click({
         $chkExternal = $onboardingTab.FindName("chkExternal")
         $chkTL = $onboardingTab.FindName("chkTL")
         $chkAL = $onboardingTab.FindName("chkAL")
+        $txtDescriptionNumber = $onboardingTab.FindName("txtDescriptionNumber")
         $txtDescription = $onboardingTab.FindName("txtDescription")
         $chkAccountDisabled = $onboardingTab.FindName("chkAccountDisabled")
         $chkSetProxyMail = $onboardingTab.FindName("chkSetProxyMail")
@@ -3519,7 +3795,17 @@ $btnStartOnboarding.Add_Click({
             FirstName        = $firstName
             LastName         = $lastName
             DisplayName      = $formattedDisplayName
-            Description      = if ($txtDescription -and $txtDescription.Text) { $txtDescription.Text.Trim() } else { "" }
+            Description      = if ($txtDescriptionNumber -and $txtDescription) {
+                $descNumber = $txtDescriptionNumber.Text.Trim()
+                $desc = $txtDescription.Text.Trim()
+                if (-not [string]::IsNullOrWhiteSpace($descNumber) -and -not [string]::IsNullOrWhiteSpace($desc)) {
+                    "$descNumber - $desc"
+                } elseif (-not [string]::IsNullOrWhiteSpace($descNumber)) {
+                    $descNumber
+                } elseif (-not [string]::IsNullOrWhiteSpace($desc)) {
+                    $desc
+                } else { "" }
+            } else { "" }
             EmailAddress     = $email
             OfficeRoom       = $office
             PhoneNumber      = $phone
@@ -3700,6 +3986,89 @@ if ($btnPDF) {
 }
 #endregion
 
+#region [Region 21.5.2 | AD UPDATE TAB PDF CREATION BUTTON]
+# Implements the PDF creation button functionality for AD Update tab
+Write-DebugMessage "Setting up AD Update tab PDF creation button."
+$btnPDF2 = $window.FindName("btnPDF2")
+if ($btnPDF2) {
+    Write-DebugMessage "TAB easyADUpdate - BUTTON selected - CREATE PDF"
+    $btnPDF2.Add_Click({
+        try {
+            # Get the selected user from the AD Update tab
+            $lstUsersADUpdate = $adUpdateTab.FindName("lstUsersADUpdate")
+            if (-not $lstUsersADUpdate -or -not $lstUsersADUpdate.SelectedItem) {
+                [System.Windows.MessageBox]::Show("Please select a user before creating the PDF.", "Error", 'OK', 'Error')
+                Write-Log "No user selected in AD Update tab" "DEBUG"
+                return
+            }
+            
+            $selectedUser = $lstUsersADUpdate.SelectedItem
+            $SamAccountName = $selectedUser.SamAccountName
+            
+            # Create date format for file naming
+            $updateDate = Get-Date -Format "yyyy-MM-dd"
+
+            if (-not ($global:Config.Keys -contains "Report")) {
+                [System.Windows.MessageBox]::Show("Error: The section [Report] is missing in the INI file.", "Error", 'OK', 'Error')
+                return
+            }
+
+            $reportBranding = $global:Config["Report"]
+            if (-not $reportBranding -or -not $reportBranding.Contains("ReportPath") -or [string]::IsNullOrWhiteSpace($reportBranding["ReportPath"])) {
+                [System.Windows.MessageBox]::Show("ReportPath is missing or empty in [Report]. PDF cannot be created.", "Error", 'OK', 'Error')
+                return
+            }         
+
+            # Check if the HTML report exists (either with or without date prefix)
+            $htmlReportPath = Join-Path $reportBranding["ReportPath"] "$SamAccountName.html" 
+            $htmlReportPathWithDate = Join-Path $reportBranding["ReportPath"] "UPDATE-${updateDate}_${SamAccountName}.html"
+            
+            # If the dated HTML exists, use that instead of the standard one
+            if (Test-Path $htmlReportPathWithDate) {
+                $htmlReportPath = $htmlReportPathWithDate
+                Write-DebugMessage "Using dated HTML report: $htmlReportPath"
+            }
+
+            # Create the PDF path with date prefix
+            $pdfReportPath = Join-Path $reportBranding["ReportPath"] "UPDATE-${updateDate}_${SamAccountName}.pdf"
+
+            $wkhtmltopdfPath = $reportBranding["wkhtmltopdfPath"]
+            if (-not (Test-Path $wkhtmltopdfPath)) {
+                [System.Windows.MessageBox]::Show("wkhtmltopdf.exe not found! Please check: $wkhtmltopdfPath", "Error", 'OK', 'Error')
+                return
+            }          
+
+            if (-not (Test-Path $htmlReportPath)) {
+                [System.Windows.MessageBox]::Show("HTML report not found: $htmlReportPath`nThe PDF cannot be created.", "Error", 'OK', 'Error')
+                return
+            }
+
+            $pdfScript = Join-Path $PSScriptRoot "PDFCreator.ps1"
+            if (-not (Test-Path $pdfScript)) {
+                [System.Windows.MessageBox]::Show("PDF script 'PDFCreator.ps1' not found!", "Error", 'OK', 'Error')
+                return
+            }
+
+            $arguments = @(
+                "-NoProfile",
+                "-ExecutionPolicy", "Bypass",
+                "-File", "`"$pdfScript`"",
+                "-htmlFile", "`"$htmlReportPath`"",
+                "-pdfFile", "`"$pdfReportPath`"",
+                "-wkhtmltopdfPath", "`"$wkhtmltopdfPath`""
+            )
+            Start-Process -FilePath "powershell.exe" -ArgumentList $arguments -NoNewWindow -Wait
+
+            [System.Windows.MessageBox]::Show("PDF successfully created: $pdfReportPath", "PDF Creation", 'OK', 'Information')
+
+        } catch {
+            [System.Windows.MessageBox]::Show("Error creating PDF: $($_.Exception.Message)", "Error", 'OK', 'Error')
+        }
+    })
+}
+#endregion
+
+
 $btnProxyMail = $window.FindName("btnProxyMail")
 if ($btnProxyMail) {
     Write-DebugMessage "Registering event handler for ProxyMail button"
@@ -3779,16 +4148,98 @@ Write-DebugMessage "TAB easyONBOARDING - BUTTON Info"
 #region [Region 21.6 | INFO BUTTON]
 # Implements the info button functionality
 Write-DebugMessage "Setting up info button."
-$btnInfo = $window.FindName("btnInfo")
-if ($btnInfo) {
+$btnInfo1 = $window.FindName("btnInfo1")
+if ($btnInfo1) {
     Write-DebugMessage "TAB easyONBOARDING - BUTTON selected: Info"
-    $btnInfo.Add_Click({
-        $infoFilePath = Join-Path $PSScriptRoot "easyONBOARDING.txt"
+    $btnInfo1.Add_Click({
+        $infoFilePath = Join-Path $ScriptDir "Readme.md"
+        Write-DebugMessage "Versuche Readme.md zu öffnen von: $infoFilePath"
 
         if (Test-Path $infoFilePath) {
-            Start-Process -FilePath $infoFilePath
-        } else {
-            [System.Windows.MessageBox]::Show("The file easyONBOARDING.txt was not found!", "Error", 'OK', 'Error')
+            # Versuche die Markdown-Datei zu öffnen
+            try {
+                # Erste Methode: Mit Standardprogramm öffnen
+                Start-Process -FilePath $infoFilePath -ErrorAction Stop
+                Write-DebugMessage "Readme.md-Datei erfolgreich mit Standardprogramm geöffnet."
+            } 
+            catch {
+                Write-DebugMessage "Konnte Readme.md nicht mit Standardprogramm öffnen, versuche Fallback-Methoden."
+                
+                # Zweite Methode: Versuche Notepad zu verwenden
+                try {
+                    Start-Process -FilePath "notepad.exe" -ArgumentList $infoFilePath -ErrorAction Stop
+                    Write-DebugMessage "Readme.md-Datei mit Notepad geöffnet."
+                }
+                catch {
+                    # Dritte Methode: Windows-Standard-Texteditor
+                    try {
+                        # PowerShell 7 hat Invoke-Item, das standardmäßig mit der Datei umgehen kann
+                        Invoke-Item -Path $infoFilePath -ErrorAction Stop
+                        Write-DebugMessage "Readme.md-Datei mit Invoke-Item geöffnet."
+                    }
+                    catch {
+                        Write-DebugMessage "Alle Methoden zum Öffnen der Readme.md-Datei fehlgeschlagen: $($_.Exception.Message)"
+                        [System.Windows.MessageBox]::Show("Die Readme.md-Datei wurde gefunden, konnte aber nicht geöffnet werden.`n`nDateipfad: $infoFilePath`n`nFehler: $($_.Exception.Message)", "Fehler beim Öffnen", "OK", "Error")
+                    }
+                }
+            }
+        } 
+        else {
+            Write-DebugMessage "Readme.md-Datei nicht gefunden: $infoFilePath"
+            [System.Windows.MessageBox]::Show(
+                "Die Readme.md-Datei wurde nicht gefunden im Skriptverzeichnis.`n`nErwarteter Pfad: $infoFilePath`n`nBitte erstellen Sie eine Readme.md-Datei mit Dokumentation im Skriptverzeichnis.",
+                "Datei nicht gefunden", 
+                "OK", 
+                "Warning"
+            )
+        }
+    })
+}
+Write-DebugMessage "Setting up info button."
+$btnInfo2 = $window.FindName("btnInfo2")
+if ($btnInfo2) {
+    Write-DebugMessage "TAB easyONBOARDING - BUTTON selected: Info"
+    $btnInfo2.Add_Click({
+        $infoFilePath = Join-Path $ScriptDir "Readme.md"
+        Write-DebugMessage "Versuche Readme.md zu öffnen von: $infoFilePath"
+
+        if (Test-Path $infoFilePath) {
+            # Versuche die Markdown-Datei zu öffnen
+            try {
+                # Erste Methode: Mit Standardprogramm öffnen
+                Start-Process -FilePath $infoFilePath -ErrorAction Stop
+                Write-DebugMessage "Readme.md-Datei erfolgreich mit Standardprogramm geöffnet."
+            } 
+            catch {
+                Write-DebugMessage "Konnte Readme.md nicht mit Standardprogramm öffnen, versuche Fallback-Methoden."
+                
+                # Zweite Methode: Versuche Notepad zu verwenden
+                try {
+                    Start-Process -FilePath "notepad.exe" -ArgumentList $infoFilePath -ErrorAction Stop
+                    Write-DebugMessage "Readme.md-Datei mit Notepad geöffnet."
+                }
+                catch {
+                    # Dritte Methode: Windows-Standard-Texteditor
+                    try {
+                        # PowerShell 7 hat Invoke-Item, das standardmäßig mit der Datei umgehen kann
+                        Invoke-Item -Path $infoFilePath -ErrorAction Stop
+                        Write-DebugMessage "Readme.md-Datei mit Invoke-Item geöffnet."
+                    }
+                    catch {
+                        Write-DebugMessage "Alle Methoden zum Öffnen der Readme.md-Datei fehlgeschlagen: $($_.Exception.Message)"
+                        [System.Windows.MessageBox]::Show("Die Readme.md-Datei wurde gefunden, konnte aber nicht geöffnet werden.`n`nDateipfad: $infoFilePath`n`nFehler: $($_.Exception.Message)", "Fehler beim Öffnen", "OK", "Error")
+                    }
+                }
+            }
+        } 
+        else {
+            Write-DebugMessage "Readme.md-Datei nicht gefunden: $infoFilePath"
+            [System.Windows.MessageBox]::Show(
+                "Die Readme.md-Datei wurde nicht gefunden im Skriptverzeichnis.`n`nErwarteter Pfad: $infoFilePath`n`nBitte erstellen Sie eine Readme.md-Datei mit Dokumentation im Skriptverzeichnis.",
+                "Datei nicht gefunden", 
+                "OK", 
+                "Warning"
+            )
         }
     })
 }
@@ -3798,11 +4249,19 @@ Write-DebugMessage "TAB easyONBOARDING - BUTTON Close"
 
 #region [Region 21.7 | CLOSE BUTTON]
 # Implements the close button functionality
-Write-DebugMessage "Setting up close button."
-$btnClose = $window.FindName("btnClose")
-if ($btnClose) {
+Write-DebugMessage "Close Button - Tab easyONBOARDING"
+$btnClose1 = $window.FindName("btnClose1")
+if ($btnClose1) {
     Write-DebugMessage "BUTTON selected: Close"
-    $btnClose.Add_Click({
+    $btnClose1.Add_Click({
+        $window.Close()
+    })
+}
+Write-DebugMessage "Close Button - Tab easyADUpdate"
+$btnClose2 = $window.FindName("btnClose2")
+if ($btnClose2) {
+    Write-DebugMessage "BUTTON selected: Close"
+    $btnClose2.Add_Click({
         $window.Close()
     })
 }
@@ -4422,6 +4881,15 @@ if ($adUpdateTab) {
                     return
                 }
                 
+                # Generate new password for the user
+                Write-DebugMessage "Generating new password for user: $userToUpdate"
+                $generatedPassword = New-AdvancedPassword
+                $securePassword = ConvertTo-SecureString -String $generatedPassword -AsPlainText -Force
+                
+                # Set the new password for the user
+                Set-ADAccountPassword -Identity $userToUpdate -NewPassword $securePassword -Reset -ErrorAction Stop
+                Write-DebugMessage "Password reset successful for user: $userToUpdate"
+                
                 # build parameters for Set-ADUser
                 $paramUpdate = @{ Identity = $userToUpdate }
                 if ($txtDisplayNameUpdate -and -not [string]::IsNullOrWhiteSpace($txtDisplayNameUpdate.Text)) {
@@ -4495,8 +4963,123 @@ if ($adUpdateTab) {
                     Set-ADUser -Identity $userToUpdate -ChangePasswordAtLogon $chkMustChangePasswordUpdate.IsChecked -ErrorAction Stop
                     Write-DebugMessage "Set ChangePasswordAtLogon to $($chkMustChangePasswordUpdate.IsChecked)"
                 }
-                [System.Windows.MessageBox]::Show("The user '$userToUpdate' was successfully updated.", "Success", "OK", "Information")
-                Write-LogMessage -Message "AD update for $userToUpdate by $($env:USERNAME)" -LogLevel "INFO"
+                
+                # Now create HTML report
+                try {
+                    # Get user details for the report
+                    $adUser = Get-ADUser -Identity $userToUpdate -Properties DisplayName, GivenName, Surname, EmailAddress, Department, Title, 
+                        OfficePhone, Mobile, physicalDeliveryOfficeName, Manager, employeeID, mail, proxyAddresses,
+                        StreetAddress, City, State, PostalCode, Country -ErrorAction Stop
+                        
+                    # Find the HTML template
+                    if (-not $global:Config.Contains("Report")) {
+                        throw "Report section is missing in the configuration."
+                    }
+                    
+                    $reportBranding = $global:Config["Report"]
+                    if (-not $reportBranding.Contains("TemplatePathHTML")) {
+                        throw "TemplatePathHTML is missing in the Report configuration."
+                    }
+                    
+                    $htmlTemplatePath = $reportBranding["TemplatePathHTML"]
+                    if (-not (Test-Path $htmlTemplatePath)) {
+                        throw "HTML template not found: $htmlTemplatePath"
+                    }
+                    
+                    # Read the HTML template
+                    $htmlTemplate = Get-Content -Path $htmlTemplatePath -Raw -ErrorAction Stop
+                    
+                    # Get report path
+                    $reportPath = $reportBranding["ReportPath"]
+                    if (-not (Test-Path $reportPath)) {
+                        New-Item -ItemType Directory -Path $reportPath -Force | Out-Null
+                    }
+                    
+                    # Create filename with update date
+                    $updateDate = Get-Date -Format "yyyy-MM-dd"
+                    $htmlReportPath = Join-Path $reportPath "UPDATE-${updateDate}_${userToUpdate}.html"
+                    
+                    # Get company info from config
+                    $companySection = "Company" # Default to main company section
+                    if ($global:Config.Contains($companySection)) {
+                        $companyData = $global:Config[$companySection]
+                    } else {
+                        $companyData = @{}
+                    }
+                    
+                    # Get custom password labels
+                    $customPWLabels = if ($global:Config.Contains("CustomPWLabels")) { $global:Config["CustomPWLabels"] } else { @{} }
+                    $pwLabel1 = if ($customPWLabels.Contains("CustomPW1_Label")) { $customPWLabels["CustomPW1_Label"] } else { "Custom PW #1" }
+                    
+                    # Additional passwords if needed for the report
+                    $CustomPW1 = New-AdvancedPassword
+                    
+                    # Replace placeholders in the HTML template
+                    $htmlContent = $htmlTemplate `
+                        -replace "{{ReportTitle}}", "Password Reset Report" `
+                        -replace "{{Admin}}", $env:USERNAME `
+                        -replace "{{ReportDate}}", $updateDate `
+                        -replace "{{Vorname}}", $adUser.GivenName `
+                        -replace "{{Nachname}}", $adUser.Surname `
+                        -replace "{{DisplayName}}", $adUser.DisplayName `
+                        -replace "{{Description}}", $txtDescription.Text `
+                        -replace "{{Buero}}", $adUser.physicalDeliveryOfficeName `
+                        -replace "{{Standort}}", $txtLocationUpdate.Text `
+                        -replace "{{Rufnummer}}", $adUser.OfficePhone `
+                        -replace "{{Mobil}}", $adUser.Mobile `
+                        -replace "{{Position}}", $adUser.Title `
+                        -replace "{{Abteilung}}", $adUser.Department `
+                        -replace "{{Ablaufdatum}}", "" `
+                        -replace "{{LoginName}}", $userToUpdate `
+                        -replace "{{Passwort}}", $generatedPassword `
+                        -replace "{{MailAddress}}", $(if ($adUser.mail) { $adUser.mail } else { $adUser.EmailAddress }) `
+                        -replace "{{UPN}}", $adUser.UserPrincipalName `
+                        -replace "{{UPNFormat}}", "" `
+                        -replace "{{Enabled}}", $adUser.Enabled `
+                        -replace "{{External}}", "false" `
+                        -replace "{{MailSuffix}}", "" `
+                        -replace "{{License}}", "" `
+                        -replace "{{ProxyMail}}", $(if ($adUser.proxyAddresses) { $true } else { $false }) `
+                        -replace "{{TL}}", "false" `
+                        -replace "{{AL}}", "false" `
+                        -replace "{{TLGroup}}", "" `
+                        -replace "{{ADGroupsSelected}}", "" `
+                        -replace "{{DefaultOU}}", "" `
+                        -replace "{{HomeDirectory}}", "" `
+                        -replace "{{ProfilePath}}", "" `
+                        -replace "{{LoginScript}}", "" `
+                        -replace "{{CompanyName}}", $(if ($companyData.Contains("CompanyNameFirma")) { $companyData["CompanyNameFirma"] } else { "" }) `
+                        -replace "{{CompanyStreet}}", $(if ($companyData.Contains("CompanyStrasse")) { $companyData["CompanyStrasse"] } else { "" }) `
+                        -replace "{{CompanyZIP}}", $(if ($companyData.Contains("CompanyPLZ")) { $companyData["CompanyPLZ"] } else { "" }) `
+                        -replace "{{CompanyCity}}", $(if ($companyData.Contains("CompanyOrt")) { $companyData["CompanyOrt"] } else { "" }) `
+                        -replace "{{CompanyDomain}}", $(if ($companyData.Contains("CompanyDomain")) { $companyData["CompanyDomain"] } else { "" }) `
+                        -replace "{{CompanyPhone}}", $(if ($companyData.Contains("CompanyTelefon")) { $companyData["CompanyTelefon"] } else { "" }) `
+                        -replace "{{CompanyCountry}}", $(if ($companyData.Contains("CompanyCountry")) { $companyData["CompanyCountry"] } else { "" }) `
+                        -replace "{{WebsitesHTML}}", "" `
+                        -replace "{{ReportFooter}}", $(if ($reportBranding.Contains("ReportFooter")) { $reportBranding["ReportFooter"] } else { "" }) `
+                        -replace "{{LogoTag}}", "" `
+                        -replace "{{CustomPWLabel1}}", $pwLabel1 `
+                        -replace "{{CustomPW1}}", $CustomPW1 `
+                        -replace "{{CustomPWLabel2}}", "" `
+                        -replace "{{CustomPW2}}", "" `
+                        -replace "{{CustomPWLabel3}}", "" `
+                        -replace "{{CustomPW3}}", "" `
+                        -replace "{{CustomPWLabel4}}", "" `
+                        -replace "{{CustomPW4}}", "" `
+                        -replace "{{CustomPWLabel5}}", "" `
+                        -replace "{{CustomPW5}}", ""
+                        
+                    # Write HTML file
+                    Set-Content -Path $htmlReportPath -Value $htmlContent -Encoding UTF8
+                    Write-DebugMessage "HTML report created: $htmlReportPath"
+                }
+                catch {
+                    Write-DebugMessage "Error creating HTML report: $($_.Exception.Message)"
+                    [System.Windows.MessageBox]::Show("Error creating HTML report: $($_.Exception.Message)", "Warning", "OK", "Warning")
+                }
+                
+                [System.Windows.MessageBox]::Show("The user '$userToUpdate' was successfully updated with a new password.`n`nPassword: $generatedPassword`n`nHTML report saved to: $htmlReportPath", "Success", "OK", "Information")
+                Write-LogMessage -Message "AD update with password reset for $userToUpdate by $($env:USERNAME)" -LogLevel "INFO"
             }
             catch {
                 Write-DebugMessage "AD User update error: $($_.Exception.Message)"
@@ -4626,6 +5209,7 @@ else {
     Write-DebugMessage "AD Update tab (Tab_ADUpdate) not found in XAML."
 }
 #endregion
+Write-DebugMessage "Main GUI execution completed."
 
 #region [Region 22 | MAIN GUI EXECUTION]
 # Main code block that starts and handles the GUI dialog
@@ -4638,371 +5222,395 @@ try {
     # Set window properties
     if ($global:Config.Contains("WPFGUI")) {
         # Set window title with dynamic replacements
-        $window.Title = $global:Config["WPFGUI"]["HeaderText"] -replace "{ScriptVersion}", 
-            $global:Config["ScriptInfo"]["ScriptVersion"] -replace "{LastUpdate}", 
-            $global:Config["ScriptInfo"]["LastUpdate"] -replace "{Author}", 
-            $global:Config["ScriptInfo"]["Author"]
-            
-        # Set application name if specified
         if ($global:Config["WPFGUI"].Contains("APPName")) {
             $window.Title = $global:Config["WPFGUI"]["APPName"]
+            Write-DebugMessage "Set window title: $($window.Title)"
         }
         
-        # Set window theme color if specified and valid
-        if ($global:Config["WPFGUI"].Contains("ThemeColor")) {
-            try {
-                $color = $global:Config["WPFGUI"]["ThemeColor"]
-                # Try to create a brush from the color string
-                $themeColorBrush = New-Object System.Windows.Media.SolidColorBrush([System.Windows.Media.ColorConverter]::ConvertFromString($color))
-                $window.Background = $themeColorBrush
-            } catch {
-                Write-DebugMessage "Invalid ThemeColor: $color. Using named color."
+        # Set font properties from WPFGUITypography section if available
+        if ($global:Config.Contains("WPFGUITypography")) {
+            $typographyConfig = $global:Config["WPFGUITypography"]
+            
+            # Create data binding for font properties
+            if ($typographyConfig.Contains("DefaultFontFamily")) {
                 try {
-                    $window.Background = [System.Windows.Media.Brushes]::$color
+                    $window.DataContext = @{
+                        "APPName" = $global:Config["WPFGUI"]["APPName"]
+                        "DefaultFontFamily" = $typographyConfig["DefaultFontFamily"]
+                        "DefaultFontSize" = [double]($typographyConfig["DefaultFontSize"] -as [string])
+                        "HeaderFontSize" = [double]($typographyConfig["HeaderFontSize"] -as [string])
+                        "FooterFontSize" = [double]($typographyConfig["FooterFontSize"] -as [string])
+                        "ThemeColor" = $global:Config["WPFGUI"]["ThemeColor"]
+                        "RahmenColor" = $global:Config["WPFGUI"]["RahmenColor"]
+                        "FooterText" = $typographyConfig["FooterText"]
+                        "FooterWebseite" = $typographyConfig["FooterWebseite"]
+                        "OnboardingLogo" = $global:Config["WPFGUILogos"]["OnboardingLogo"]
+                        "ADUpdateLogo" = $global:Config["WPFGUILogos"]["ADUpdateLogo"]
+                        "InfoIcon" = $global:Config["WPFGUILogos"]["InfoIcon"]
+                        "CloseIcon" = $global:Config["WPFGUILogos"]["CloseIcon"]
+                        "SettingsIcon" = $global:Config["WPFGUILogos"]["SettingsIcon"]
+                    }
+                    Write-DebugMessage "Set font properties from WPFGUITypography section"
                 } catch {
-                    Write-DebugMessage "Named color also invalid. Using default."
+                    Write-DebugMessage "Error setting DataContext: $($_.Exception.Message)"
                 }
-            }
-        }
-        
-        # Set BoxColor for appropriate controls (like GroupBox, TextBox, etc.)
-        if ($global:Config["WPFGUI"].Contains("BoxColor")) {
-            try {
-                $boxColor = $global:Config["WPFGUI"]["BoxColor"]
-                $boxBrush = New-Object System.Windows.Media.SolidColorBrush([System.Windows.Media.ColorConverter]::ConvertFromString($boxColor))
-                
-                # Function to recursively find and set background for appropriate controls
-                function Set-BoxBackground {
-                    param($parent)
-                    
-                    # Process all child elements recursively
-                    for ($i = 0; $i -lt [System.Windows.Media.VisualTreeHelper]::GetChildrenCount($parent); $i++) {
-                        $child = [System.Windows.Media.VisualTreeHelper]::GetChild($parent, $i)
-                        
-                        # Apply to specific control types
-                        if ($child -is [System.Windows.Controls.GroupBox] -or 
-                            $child -is [System.Windows.Controls.TextBox] -or 
-                            $child -is [System.Windows.Controls.ComboBox] -or
-                            $child -is [System.Windows.Controls.ListBox]) {
-                            $child.Background = $boxBrush
-                        }
-                        
-                        # Recursively process children
-                        if ([System.Windows.Media.VisualTreeHelper]::GetChildrenCount($child) -gt 0) {
-                            Set-BoxBackground -parent $child
-                        }
-                    }
-                }
-                
-                # Apply when window is loaded to ensure visual tree is constructed
-                $window.Add_Loaded({
-                    Set-BoxBackground -parent $window
-                })
-                
-            } catch {
-                Write-DebugMessage "Error applying BoxColor: $($_.Exception.Message)"
-            }
-        }
-        
-        # Set RahmenColor (border color) for appropriate controls
-        if ($global:Config["WPFGUI"].Contains("RahmenColor")) {
-            try {
-                $rahmenColor = $global:Config["WPFGUI"]["RahmenColor"]
-                $rahmenBrush = New-Object System.Windows.Media.SolidColorBrush([System.Windows.Media.ColorConverter]::ConvertFromString($rahmenColor))
-                
-                # Function to recursively find and set border color for appropriate controls
-                function Set-BorderColor {
-                    param($parent)
-                    
-                    # Process all child elements recursively
-                    for ($i = 0; $i -lt [System.Windows.Media.VisualTreeHelper]::GetChildrenCount($parent); $i++) {
-                        $child = [System.Windows.Media.VisualTreeHelper]::GetChild($parent, $i)
-                        
-                        # Apply to specific control types with BorderBrush property
-                        if ($child -is [System.Windows.Controls.Border] -or 
-                            $child -is [System.Windows.Controls.GroupBox] -or 
-                            $child -is [System.Windows.Controls.TextBox] -or 
-                            $child -is [System.Windows.Controls.ComboBox]) {
-                            $child.BorderBrush = $rahmenBrush
-                        }
-                        
-                        # Recursively process children
-                        if ([System.Windows.Media.VisualTreeHelper]::GetChildrenCount($child) -gt 0) {
-                            Set-BorderColor -parent $child
-                        }
-                    }
-                }
-                
-                # Apply when window is loaded to ensure visual tree is constructed
-                $window.Add_Loaded({
-                    Set-BorderColor -parent $window
-                })
-                
-            } catch {
-                Write-DebugMessage "Error applying RahmenColor: $($_.Exception.Message)"
-            }
-        }
-        
-        # Set font properties
-        if ($global:Config["WPFGUI"].Contains("FontFamily")) {
-            $window.FontFamily = New-Object System.Windows.Media.FontFamily($global:Config["WPFGUI"]["FontFamily"])
-        }
-        
-        if ($global:Config["WPFGUI"].Contains("FontSize")) {
-            try {
-                $window.FontSize = [double]$global:Config["WPFGUI"]["FontSize"]
-            } catch {
-                Write-DebugMessage "Invalid FontSize value"
-            }
-        }
-        
-        # Set background image if specified
-        if ($global:Config["WPFGUI"].Contains("BackgroundImage")) {
-            try {
-                $bgImagePath = $global:Config["WPFGUI"]["BackgroundImage"]
-                if (Test-Path $bgImagePath) {
-                    $bgImage = New-Object System.Windows.Media.Imaging.BitmapImage
-                    $bgImage.BeginInit()
-                    $bgImage.UriSource = New-Object System.Uri($bgImagePath, [System.UriKind]::Absolute)
-                    $bgImage.EndInit()
-                    $window.Background = New-Object System.Windows.Media.ImageBrush($bgImage)
-                }
-            } catch {
-                Write-DebugMessage "Error setting background image: $($_.Exception.Message)"
-            }
-        }
-        
-        # Create a function to load logos that will be called initially and when tabs change
-        function Update-TabLogos {
-            param(
-                [string]$selectedTabName
-            )
-            
-            Write-DebugMessage "Updating logos for selected tab: $selectedTabName"
-            
-            # Handle Tab_Onboarding
-            if ($selectedTabName -eq "Tab_Onboarding") {
-                $picLogo1 = $window.FindName("picLogo1")
-                $logoParent = if ($picLogo1) { $picLogo1.Parent } else { $null }
-                
-                if ($picLogo1 -and $global:Config["WPFGUI"].Contains("HeaderLogo1")) {
-                    try {
-                        $logoPath = $global:Config["WPFGUI"]["HeaderLogo1"]
-                        if (Test-Path $logoPath) {
-                            $logo = New-Object System.Windows.Media.Imaging.BitmapImage
-                            $logo.BeginInit()
-                            $logo.UriSource = New-Object System.Uri($logoPath, [System.UriKind]::Absolute)
-                            $logo.EndInit()
-                            
-                            # Set both the image source and the parent StackPanel background
-                            $picLogo1.Source = $logo
-                            
-                            # Also set the StackPanel background if possible
-                            if ($logoParent -is [System.Windows.Controls.StackPanel]) {
-                                $imgBrush = New-Object System.Windows.Media.ImageBrush($logo)
-                                $logoParent.Background = $imgBrush
-                            }
-                            
-                            # Add click event if URL is specified
-                            if ($global:Config["WPFGUI"].Contains("HeaderLogoURL")) {
-                                $picLogo1.Cursor = [System.Windows.Input.Cursors]::Hand
-                                $picLogo1.Add_MouseLeftButtonUp({
-                                    $url = $global:Config["WPFGUI"]["HeaderLogoURL"]
-                                    if (-not [string]::IsNullOrEmpty($url)) {
-                                        Start-Process $url
-                                    }
-                                })
-                            }
-                            Write-DebugMessage "Successfully set header logo for Tab_Onboarding"
-                        } else {
-                            Write-DebugMessage "Logo file not found: $logoPath"
-                        }
-                    } catch {
-                        Write-DebugMessage "Error setting header logo for Tab_Onboarding: $($_.Exception.Message)"
-                    }
-                }
-            }
-            
-            # Handle Tab_ADUpdate
-            elseif ($selectedTabName -eq "Tab_ADUpdate") {
-                $picLogo2 = $window.FindName("picLogo2")
-                $logoParent = if ($picLogo2) { $picLogo2.Parent } else { $null }
-                
-                if ($picLogo2 -and $global:Config["WPFGUI"].Contains("HeaderLogo1")) {
-                    try {
-                        $logoPath = $global:Config["WPFGUI"]["HeaderLogo1"]
-                        if (Test-Path $logoPath) {
-                            $logo = New-Object System.Windows.Media.Imaging.BitmapImage
-                            $logo.BeginInit()
-                            $logo.UriSource = New-Object System.Uri($logoPath, [System.UriKind]::Absolute)
-                            $logo.EndInit()
-                            
-                            # Set both the image source and the parent StackPanel background
-                            $picLogo2.Source = $logo
-                            
-                            # Also set the StackPanel background if possible
-                            if ($logoParent -is [System.Windows.Controls.StackPanel]) {
-                                $imgBrush = New-Object System.Windows.Media.ImageBrush($logo)
-                                $logoParent.Background = $imgBrush
-                            }
-                            
-                            # Add click event if URL is specified
-                            if ($global:Config["WPFGUI"].Contains("HeaderLogoURL")) {
-                                $picLogo2.Cursor = [System.Windows.Input.Cursors]::Hand
-                                $picLogo2.Add_MouseLeftButtonUp({
-                                    $url = $global:Config["WPFGUI"]["HeaderLogoURL"]
-                                    if (-not [string]::IsNullOrEmpty($url)) {
-                                        Start-Process $url
-                                    }
-                                })
-                            }
-                            Write-DebugMessage "Successfully set header logo for Tab_ADUpdate"
-                        } else {
-                            Write-DebugMessage "Logo file not found: $logoPath"
-                        }
-                    } catch {
-                        Write-DebugMessage "Error setting header logo for Tab_ADUpdate: $($_.Exception.Message)"
-                    }
-                }
-            }
-            
-            # Handle Tab_INIEditor
-            elseif ($selectedTabName -eq "Tab_INIEditor") {
-                $picLogo3 = $window.FindName("picLogo3")
-                $logoParent = if ($picLogo3) { $picLogo3.Parent } else { $null }
-                
-                if ($picLogo3 -and $global:Config["WPFGUI"].Contains("HeaderLogo1")) {
-                    try {
-                        $logoPath = $global:Config["WPFGUI"]["HeaderLogo1"]
-                        if (Test-Path $logoPath) {
-                            $logo = New-Object System.Windows.Media.Imaging.BitmapImage
-                            $logo.BeginInit()
-                            $logo.UriSource = New-Object System.Uri($logoPath, [System.UriKind]::Absolute)
-                            $logo.EndInit()
-                            
-                            # Set both the image source and the parent StackPanel background
-                            $picLogo3.Source = $logo
-                            
-                            # Also set the StackPanel background if possible
-                            if ($logoParent -is [System.Windows.Controls.StackPanel]) {
-                                $imgBrush = New-Object System.Windows.Media.ImageBrush($logo)
-                                $logoParent.Background = $imgBrush
-                            }
-                            
-                            # Add click event if URL is specified
-                            if ($global:Config["WPFGUI"].Contains("HeaderLogoURL")) {
-                                $picLogo3.Cursor = [System.Windows.Input.Cursors]::Hand
-                                $picLogo3.Add_MouseLeftButtonUp({
-                                    $url = $global:Config["WPFGUI"]["HeaderLogoURL"]
-                                    if (-not [string]::IsNullOrEmpty($url)) {
-                                        Start-Process $url
-                                    }
-                                })
-                            }
-                            Write-DebugMessage "Successfully set header logo for Tab_INIEditor"
-                        } else {
-                            Write-DebugMessage "Logo file not found: $logoPath"
-                        }
-                    } catch {
-                        Write-DebugMessage "Error setting header logo for Tab_INIEditor: $($_.Exception.Message)"
-                    }
-                }
-            }
-        }
-
-        # Load logos when the window loads
-        $window.Add_Loaded({
-            # Get the tab control and register for tab changes
-            $tabControl = $window.FindName("tabControl")
-            if ($tabControl) {
-                # Get the initially selected tab
-                $selectedTab = $tabControl.SelectedItem
-                if ($selectedTab) {
-                    Update-TabLogos -selectedTabName $selectedTab.Name
-                }
-                
-                # Register for selection changed events
-                $tabControl.Add_SelectionChanged({
-                    $selectedTab = $tabControl.SelectedItem
-                    if ($selectedTab) {
-                        Update-TabLogos -selectedTabName $selectedTab.Name
-                    }
-                })
-            }
-    })
-    
-    # Set footer text from configuration
-    $txtFooter = $window.FindName("txtFooter")
-    if ($txtFooter) {
-        try {
-            # Combine footer text with website if both are available
-            $footerText = ""
-            
-            if ($global:Config["WPFGUI"].Contains("FooterText")) {
-                $footerText = $global:Config["WPFGUI"]["FooterText"]
-            }
-                
-                if ($global:Config["WPFGUI"].Contains("FooterWebseite")) {
-                    # If there's already text, add a separator
-                    if (-not [string]::IsNullOrWhiteSpace($footerText)) {
-                        $footerText += " | "
-                    }
-                    $footerText += $global:Config["WPFGUI"]["FooterWebseite"]
-                }
-                
-                # Add any extra info if configured
-                if ($global:Config["WPFGUI"].Contains("GUI_ExtraText")) {
-                    if (-not [string]::IsNullOrWhiteSpace($footerText)) {
-                        $footerText += " | "
-                    }
-                    $footerText += $global:Config["WPFGUI"]["GUI_ExtraText"]
-                }
-                
-                # Set the footer text
-                $txtFooter.Text = $footerText
-                
-                # Apply styling from configuration if available
-                if ($global:Config["WPFGUI"].Contains("FooterTextColor")) {
-                    try {
-                        $colorValue = $global:Config["WPFGUI"]["FooterTextColor"]
-                        $txtFooter.Foreground = New-Object System.Windows.Media.SolidColorBrush(
-                            [System.Windows.Media.ColorConverter]::ConvertFromString($colorValue)
-                        )
-                    } catch {
-                        Write-DebugMessage "Error setting footer text color: $($_.Exception.Message)"
-                    }
-                }
-                
-                if ($global:Config["WPFGUI"].Contains("FooterFontSize")) {
-                    try {
-                        $txtFooter.FontSize = [double]$global:Config["WPFGUI"]["FooterFontSize"]
-                    } catch {
-                        Write-DebugMessage "Error setting footer font size: $($_.Exception.Message)"
-                    }
-                }
-                
-                Write-DebugMessage "Footer text set successfully"
-            } catch {
-                Write-DebugMessage "Error setting footer text: $($_.Exception.Message)"
             }
         }
     }
+    
     Write-DebugMessage "Branding settings applied successfully"
 } catch {
     Write-DebugMessage "Error applying branding settings: $($_.Exception.Message)"
     Write-DebugMessage "Stack trace: $($_.ScriptStackTrace)"
 }
 
+# Register event handlers before showing dialog
+Write-DebugMessage "Setting up button event handlers"
+
+# Event-Handler for the Settings Button
+$btnSettings1 = $window.FindName("btnSettings1")
+if ($btnSettings1) {
+    Write-DebugMessage "Registering event handler for Settings button"
+    $btnSettings1.Add_Click({
+        try {
+            Write-DebugMessage "Settings button clicked - launching INIEditor.ps1"
+            Open-INIEditor
+            $window.Close()
+        } catch {
+            Write-DebugMessage "Error opening INI editor: $($_.Exception.Message)"
+        }
+    })
+}
+$btnSettings2 = $window.FindName("btnSettings2")
+if ($btnSettings2) {
+    Write-DebugMessage "Registering event handler for Settings button"
+    $btnSettings2.Add_Click({
+        try {
+            Write-DebugMessage "Settings button clicked - launching INIEditor.ps1"
+            Open-INIEditor
+            $window.Close()
+        } catch {
+            Write-DebugMessage "Error opening INI editor: $($_.Exception.Message)"
+        }
+    })
+}
+
+# Initialize icons and logos
+function Initialize-IconsAndLogos {
+    [CmdletBinding()]
+    param (
+        [Parameter(Mandatory=$true)]
+        $window,
+        
+        [Parameter(Mandatory=$true)]
+        $config
+    )
+    
+    try {
+        if (-not $config.Contains("WPFGUILogos")) {
+            Write-DebugMessage "WPFGUILogos section not found in config"
+            return
+        }
+        
+        $logoConfig = $config["WPFGUILogos"]
+        
+        # Initialize button icons
+        $buttonIcons = @{
+            "btnInfo1" = $logoConfig["InfoIcon"]
+            "btnSettings1" = $logoConfig["SettingsIcon"] 
+            "btnClose1" = $logoConfig["CloseIcon"]
+            "btnInfo2" = $logoConfig["InfoIcon"]
+            "btnSettings2" = $logoConfig["SettingsIcon"] 
+            "btnClose2" = $logoConfig["CloseIcon"]
+            "btnOnboard" = $logoConfig["OnboardIcon"]
+            "btnPDF" = $logoConfig["PDFIcon"]
+            "btnRefreshOU" = $logoConfig["RefreshIcon"]
+            "btnRefreshADUserList" = $logoConfig["RefreshIcon"]
+            "btnImportCSV" = $logoConfig["ImportIcon"]
+            "btnClearPreview" = $logoConfig["ClearIcon"]
+            "btnSearchADUpdate" = $logoConfig["SearchIcon"]
+            "btnADUserUpdate" = $logoConfig["UpdateIcon"]
+            "btnADUserCancel" = $logoConfig["CancelIcon"]
+            "btnAddGroupUpdate" = $logoConfig["AddIcon"]
+            "btnRemoveGroupUpdate" = $logoConfig["RemoveIcon"]
+        }
+        
+        Write-DebugMessage "Setting up icons for buttons in WPF window"
+        
+        # Set button icons - special focus on the main navigation buttons
+        foreach ($iconName in $buttonIcons.Keys) {
+            $iconControl = $window.FindName($iconName)
+            $iconPath = $buttonIcons[$iconName]
+            
+            if ($iconControl -and -not [string]::IsNullOrWhiteSpace($iconPath)) {
+            Write-DebugMessage "Processing icon for $iconName - path: $iconPath"
+            
+            try {
+                # Check if path exists before trying to load
+                if (Test-Path $iconPath) {
+                # Special debug for navigation buttons
+                if ($iconName -in @("btnInfo1", "btnSettings1", "btnClose1", "btnInfo2", "btnSettings2", "btnClose2")) {
+                    Write-DebugMessage "Setting important navigation button icon: $iconName"
+                }
+                
+                # Create the bitmap image
+                $bitmap = New-Object System.Windows.Media.Imaging.BitmapImage
+                $bitmap.BeginInit()
+                $bitmap.CacheOption = [System.Windows.Media.Imaging.BitmapCacheOption]::OnLoad
+                $bitmap.UriSource = New-Object System.Uri($iconPath, [System.UriKind]::Absolute)
+                $bitmap.EndInit()
+                $bitmap.Freeze()
+                
+                # Different approaches to set the image based on button type
+                
+                # APPROACH 1: Try to find direct Image child of the button
+                $directImage = $null
+                
+                # Try to find by examining the Content if it's an Image
+                if ($iconControl.Content -is [System.Windows.Controls.Image]) {
+                    $directImage = $iconControl.Content
+                    Write-DebugMessage "$iconName has direct Image content"
+                }
+                # Try by examining visual children
+                else {
+                    try {
+                    for ($i = 0; $i -lt [System.Windows.Media.VisualTreeHelper]::GetChildrenCount($iconControl); $i++) {
+                        $child = [System.Windows.Media.VisualTreeHelper]::GetChild($iconControl, $i)
+                        if ($child -is [System.Windows.Controls.Image]) {
+                        $directImage = $child
+                        Write-DebugMessage "$iconName has Image as visual child"
+                        break
+                        }
+                    }
+                    }
+                    catch {
+                    Write-DebugMessage ("Error examining visual children of " + $iconName + ": " + $_.Exception.Message)
+                    }
+                }
+                
+                # If we found a direct Image, set its source
+                if ($directImage) {
+                    $directImage.Source = $bitmap
+                    Write-DebugMessage "Set image source directly for $iconName"
+                }
+                # APPROACH 2: Otherwise, replace the button content
+                else {
+                    # Save the original content
+                    $originalContent = $iconControl.Content
+                    
+                    # Create a new image
+                    $image = New-Object System.Windows.Controls.Image
+                    $image.Source = $bitmap
+                    $image.Width = 16
+                    $image.Height = 16
+                    $image.Margin = New-Object System.Windows.Thickness(0, 0, 5, 0)
+                    
+                    # For navigation buttons, we might want just the icon
+                    if ($iconName -in @("btnInfo1", "btnSettings1", "btnClose1", "btnInfo2", "btnSettings2", "btnClose2")) {
+                    $iconControl.Content = $image
+                    Write-DebugMessage "Set $iconName content to just image"
+                    }
+                    # For other buttons, preserve text if it exists
+                    elseif ($originalContent -is [string] -and -not [string]::IsNullOrEmpty($originalContent)) {
+                    # Create a panel to hold image and text
+                    $panel = New-Object System.Windows.Controls.StackPanel
+                    $panel.Orientation = [System.Windows.Controls.Orientation]::Horizontal
+                    
+                    # Add the image
+                    $panel.Children.Add($image)
+                    
+                    # Add the text
+                    $textBlock = New-Object System.Windows.Controls.TextBlock
+                    $textBlock.Text = $originalContent
+                    $textBlock.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
+                    $panel.Children.Add($textBlock)
+                    
+                    $iconControl.Content = $panel
+                    Write-DebugMessage "Set $iconName content to image+text panel"
+                    }
+                    else {
+                    $iconControl.Content = $image
+                    Write-DebugMessage "Set $iconName content to just image (no text detected)"
+                    }
+                }
+                }
+                else {
+                Write-DebugMessage "Icon path does not exist: $iconPath"
+                }
+            }
+            catch {
+                Write-DebugMessage ("Error setting button icon for " + $iconName + ": " + $_.Exception.Message)
+            }
+            }
+            else {
+            if (-not $iconControl) {
+                Write-DebugMessage "Button control not found: $iconName"
+            }
+            if ([string]::IsNullOrWhiteSpace($iconPath)) {
+                Write-DebugMessage "Icon path is empty for $iconName"
+            }
+            }
+        }
+        
+        # Set content logos (main content area logos for each tab)
+        $contentLogos = @{
+            "picLogo1" = $logoConfig["OnboardingLogo"]
+            "picLogo2" = $logoConfig["ADUpdateLogo"]
+        }
+        
+        foreach ($logoName in $contentLogos.Keys) {
+            $logoControl = $window.FindName($logoName)
+            $logoPath = $contentLogos[$logoName]
+            
+            if ($logoControl -and -not [string]::IsNullOrWhiteSpace($logoPath)) {
+                try {
+                    # Check if path exists before trying to load
+                    if (Test-Path $logoPath) {
+                        $bitmap = New-Object System.Windows.Media.Imaging.BitmapImage
+                        $bitmap.BeginInit()
+                        $bitmap.CacheOption = [System.Windows.Media.Imaging.BitmapCacheOption]::OnLoad
+                        $bitmap.UriSource = New-Object System.Uri($logoPath, [System.UriKind]::Absolute) 
+                        $bitmap.EndInit()
+                        $bitmap.Freeze()
+                        
+                        $logoControl.Source = $bitmap
+                        Write-DebugMessage ("Set content logo for " + $logoName + ": " + $logoPath)
+                        
+                        # Set up click event if URL exists
+                        if ($global:Config["WPFGUI"].Contains("LogoURL")) {
+                            $logoControl.Cursor = [System.Windows.Input.Cursors]::Hand
+                            $logoControl.Tag = $global:Config["WPFGUI"]["LogoURL"]
+                            
+                            # Add click handler
+                            $clickHandler = [System.Windows.Input.MouseButtonEventHandler]{
+                                param($source, $e)
+                                try {
+                                    $url = $source.Tag
+                                    if (-not [string]::IsNullOrEmpty($url)) {
+                                        Start-Process $url
+                                    }
+                                } catch {
+                                    Write-DebugMessage ("Error opening URL: " + $_.Exception.Message)
+                                }
+                            }
+                            
+                            # Remove existing handler if any
+                            try {
+                                $logoControl.RemoveHandler([System.Windows.Controls.Image]::MouseLeftButtonUpEvent, $clickHandler)
+                            } catch {}
+                            
+                            # Add the new handler
+                            $logoControl.AddHandler([System.Windows.Controls.Image]::MouseLeftButtonUpEvent, $clickHandler)
+                        }
+                    } else {
+                        Write-DebugMessage "Logo path does not exist: $logoPath"
+                    }
+                } catch {
+                    Write-DebugMessage ("Error setting content logo for " + $logoName + ": " + $_.Exception.Message)
+                }
+            } else {
+                Write-DebugMessage ("Logo control or path missing for " + $logoName + ": " + $logoPath)
+            }
+        }
+        
+        Write-DebugMessage "Icons and logos initialization completed"
+    } catch {
+        Write-DebugMessage ("Error initializing icons and logos: " + $_.Exception.Message)
+        Write-DebugMessage ("Stack trace: " + $_.ScriptStackTrace)
+    }
+}
+
+# Initialize logos for the currently selected tab
+function Update-TabLogos {
+    param (
+        [Parameter(Mandatory = $true)]
+        [object]$selectedTab,
+        
+        [Parameter(Mandatory = $true)]
+        $window
+    )
+    
+    # Get the tab name from the Name property
+    $tabName = $selectedTab.Name
+    
+    Write-DebugMessage "Updating content logos for tab: $tabName"
+    
+    # Logo update based on selected tab - these are the content logos, not the tab icons
+    switch ($tabName) {
+        "Tab_Onboarding" {
+            # Check if section and key exist first
+            if ($global:Config.Contains("WPFGUILogos") -and $global:Config["WPFGUILogos"].Contains("OnboardingLogo")) {
+                Update-SingleLogo -window $window -logoControl "picLogo1" -configPath $global:Config["WPFGUILogos"]["OnboardingLogo"]
+            }
+        }
+        "Tab_ADUpdate" {
+            if ($global:Config.Contains("WPFGUILogos") -and $global:Config["WPFGUILogos"].Contains("ADUpdateLogo")) {
+                Update-SingleLogo -window $window -logoControl "picLogo2" -configPath $global:Config["WPFGUILogos"]["ADUpdateLogo"]
+            }
+        }
+        default {
+            Write-DebugMessage "No logo mapping for tab: $tabName"
+            
+            # Fallback to index-based handling if needed
+            $tabControl = $window.FindName("MainTabControl")
+            if ($tabControl) {
+                $selectedIndex = $tabControl.SelectedIndex
+                Write-DebugMessage "Selected tab index: $selectedIndex"
+                
+                if ($selectedIndex -eq 0) {  # First tab - Onboarding
+                    if ($global:Config.Contains("WPFGUILogos") -and $global:Config["WPFGUILogos"].Contains("OnboardingLogo")) {
+                        Update-SingleLogo -window $window -logoControl "picLogo1" -configPath $global:Config["WPFGUILogos"]["OnboardingLogo"]
+                    }
+                }
+                elseif ($selectedIndex -eq 1) {  # Second tab - ADUpdate
+                    if ($global:Config.Contains("WPFGUILogos") -and $global:Config["WPFGUILogos"].Contains("ADUpdateLogo")) {
+                        Update-SingleLogo -window $window -logoControl "picLogo2" -configPath $global:Config["WPFGUILogos"]["ADUpdateLogo"]
+                    }
+                }
+            }
+        }
+    }
+}
+
+# Register event for TabControl to update logos when tab changes
+$tabControl = $window.FindName("MainTabControl")
+if ($tabControl) {
+    $tabControl.Add_SelectionChanged({
+        try {
+            $selectedTab = $tabControl.SelectedItem
+            if ($selectedTab) {
+                Update-TabLogos -selectedTab $selectedTab -window $window
+                Write-DebugMessage "Tab selection changed to: $($selectedTab.Name)"
+            }
+        } catch {
+            Write-DebugMessage "Error handling tab selection: $($_.Exception.Message)"
+        }
+    })
+}
+
+# Set up logo handling and initialize icons before showing the window
+try {
+    # Initialize all icons and logos
+    Initialize-IconsAndLogos -window $window -config $global:Config
+    Write-DebugMessage "Icons and logos initialized"
+    
+    # Initialize logo for the currently selected tab
+    if ($tabControl -and $tabControl.SelectedItem) {
+        Update-TabLogos -selectedTab $tabControl.SelectedItem -window $window
+        Write-DebugMessage "Initial tab logo set"
+    }
+} catch {
+    Write-DebugMessage ("Error initializing visual elements: " + $_.Exception.Message)
+}
+
 # Shows main window and handles any GUI initialization errors
 try {
+    Write-DebugMessage "Starting GUI using ShowDialog()"
     $result = $window.ShowDialog()
-    Write-DebugMessage "GUI started successfully, result: $result"
+    Write-DebugMessage "GUI closed with result: $result"
 } catch {
     Write-DebugMessage "ERROR: GUI could not be started!"
-    Write-DebugMessage "Error message: $($_.Exception.Message)"
-    Write-DebugMessage "Error details: $($_.InvocationInfo.PositionMessage)"
-    exit 1
+    Write-DebugMessage ("Error message: " + $_.Exception.Message)
+    Write-DebugMessage ("Error details: " + $_.InvocationInfo.PositionMessage)
 }
 #endregion
-
-Write-DebugMessage "Main GUI execution completed."
