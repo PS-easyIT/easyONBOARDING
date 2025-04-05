@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="de">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -768,7 +768,7 @@
 <div class="container">
     <!-- SEITE 1 -->
     <!-- COMBINED SECTION -->
-    <section>
+    <section class="section welcome-section">
         <!-- Header with logo -->
         <div class="header-image" style="margin-bottom: var(--spacing-md); text-align: center;">
             <img src="C:\easyIT\DATA\easyONBOARDING\assets\easyOnboardingHeaderWelcome4.png" alt="Firmenlogo" style="display: inline-block;">
@@ -776,44 +776,45 @@
         
         <!-- Welcome message with spacing -->
         <div style="margin-top: var(--spacing-lg);">
-            <h2 class="section-title"><b>Hallo {{Vorname}}</b>, herzlich willkommen im Team!</h2>
+            <h2 class="section-title"><b>Hello {{Vorname}}</b>, welcome to the team!</h2>
             <div class="win11-card-header" style="margin-bottom: var(--spacing-md);">
-                <div class="win11-card-title">Wir freuen uns, dass Du bei uns an Bord bist und Teil unseres Teams wirst. Dieses Dokument enthält alle wichtigen Informationen für deinen Start.</div>
+                <div class="win11-card-title">We are delighted you are on board. This document contains all essential information for your start.</div>
             </div>
         </div>
-        <br> <br>
+        <br> 
         <!-- Hint box with spacing -->
         <div style="margin-top: var(--spacing-lg); margin-bottom: var(--spacing-xl);">
             <div class="hint" style="border: 2px solid var(--primary-color); border-radius: var(--border-radius);">
-                <p><b>Für Deinen ersten Login nutze bitte das initiale Passwort. </b><span class="badge badge-success">Wichtig</span></p>
-                <p>Direkt nach der ersten Anmeldung musst du dieses ändern. Bitte beachte dabei folgende Kriterien für Dein neues Passwort:</p>
-                <ul style="margin-bottom: var(--spacing-xs);">
-                    <li>Mindestlänge: 12 Zeichen</li>
-                    <li>Mindestens eine Zahl</li>
-                    <li>Mindestens ein Großbuchstabe</li>
-                    <li>Mindestens ein Sonderzeichen</li>
+                <p><b>For your first login, please use the initial password.</b> <span class="badge badge-success">Important</span></p>
+                <p>Immediately after logging in, you must change it. Please ensure your new password meets the following criteria:</p>
+                <ul style="margin-bottom: var (--spacing-xs);">
+                    <li>Minimum length: 12 characters</li>
+                    <li>At least one number</li>
+                    <li>At least one uppercase letter</li>
+                    <li>At least one special character</li>
                 </ul>
             </div>
         </div>
-<br><br><br>
+<br><br><br><br>
         
-        <!-- Benutzerdetails -->
+        <!-- User details header -->
         <div class="win11-card-header" style="margin-bottom: var(--spacing-md); display: flex; align-items: center;">
-            <div class="win11-card-title" style="font-weight: 500;">Benutzerdetails</div>
+            <div class="win11-card-icon" style="box-shadow: var(--shadow-md); margin-right: var(--spacing-sm);">U</div>
+            <div class="win11-card-title" style="color: var(--accent-color); font-weight: 500;">User Details</div>
         </div>
         
-        <div class="hint">Deine persönlichen Benutzerinformationen.</div>
+        <div class="hint">Your personal user information.</div>
             <table>
                 <tr>
-                    <th style="background-color: var(--gray-400) !important; color: black;">Vorname</th>
+                    <th style="background-color: var(--gray-400) !important; color: black;">First Name</th>
                     <td style="background-color: var(--gray-100) !important; color: black;"><strong>{{Vorname}}</strong></td>
                 </tr>
                 <tr>
-                    <th style="background-color: var(--gray-400) !important; color: black;">Nachname</th>
+                    <th style="background-color: var(--gray-400) !important; color: black;">Last Name</th>
                     <td style="background-color: var(--gray-100) !important; color: black;"><strong>{{Nachname}}</strong></td>
                 </tr>
                 <tr>
-                    <th style="background-color: var(--gray-400) !important; color: black;">Anzeigename</th>
+                    <th style="background-color: var(--gray-400) !important; color: black;">Display Name</th>
                     <td style="background-color: var(--gray-100) !important; color: black;"><strong>{{DisplayName}}</strong></td>
                 </tr>
             </table>
@@ -821,34 +822,36 @@
 
         <!-- Two-column container for login information -->
         <div class="two-columns" style="display: flex; gap: var(--spacing-md); margin-bottom: var(--spacing-md);">
-            <!-- Left column: Anmeldeinformationen -->
+            <!-- Left column: Login Information -->
             <div class="column" style="flex: 1;">
                 <div class="win11-card-header" style="margin-bottom: var(--spacing-md); display: flex; align-items: center;">
-                    <div class="win11-card-title" style="font-weight: 500;">Anmeldeinformationen</div>
+                    <div class="win11-card-icon" style="box-shadow: var(--shadow-md); margin-right: var(--spacing-sm);">A</div>
+                    <div class="win11-card-title" style="color: var(--accent-color); font-weight: 500;">Login Information</div>
                 </div>
-                <div class="hint">Zugangsdaten für deinen Computer und den meisten Systemen.</div>
+                <div class="hint">Credentials for your computer and most systems.</div>
                 <table>
                     <tr>
-                        <th style="background-color: var(--gray-400) !important; color: black;">Benutzername</th>
+                        <th style="background-color: var(--gray-400) !important; color: black;">Username</th>
                         <td style="background-color: var(--gray-100) !important; color: black;">{{LoginName}}</td>
                     </tr>
                     <tr>
-                        <th style="background-color: var(--gray-400) !important; color: black;">Passwort</th>
+                        <th style="background-color: var(--gray-400) !important; color: black;">Password</th>
                         <td style="background-color: var(--gray-100) !important; color: black;">{{Passwort}}</td>
                     </tr>
                     <tr>
-                        <th style="background-color: var(--gray-400) !important; color: black;">E-Mail-Adresse</th>
+                        <th style="background-color: var(--gray-400) !important; color: black;">Email Address</th>
                         <td style="background-color: var(--gray-100) !important; color: black;">{{MailAddress}}</td>
                     </tr>
                 </table>
             </div>
             
-            <!-- Right column: Weitere Konten -->
+            <!-- Right column: Additional Accounts -->
             <div class="column" style="flex: 1;">
                 <div class="win11-card-header" style="margin-bottom: var(--spacing-md); display: flex; align-items: center;">
-                    <div class="win11-card-title" style="font-weight: 500;">Weitere Konten</div>
+                    <div class="win11-card-icon" style="box-shadow: var(--shadow-md); margin-right: var(--spacing-sm);">W</div>
+                    <div class="win11-card-title" style="color: var(--accent-color); font-weight: 500;">Additional Accounts</div>
                 </div>
-                <div class="hint">Zugangsdaten für weitere Systeme.</div>
+                <div class="hint">Credentials for additional systems.</div>
                 <table>
                     <tr>
                         <th style="background-color: var(--gray-400) !important; color: black;">{{CustomPWLabel1}}</th>
@@ -856,7 +859,7 @@
                     </tr>
                     <tr>
                         <th style="background-color: var(--gray-400) !important; color: black;">{{CustomPWLabel2}}</th>
-                        <td style="background-color: var (--gray-100) !important; color: black;"><strong>{{CustomPW2}}</strong></td>
+                        <td style="background-color: var(--gray-100) !important; color: black;"><strong>{{CustomPW2}}</strong></td>
                     </tr>
                     <tr>
                         <th style="background-color: var(--gray-400) !important; color: black;">{{CustomPWLabel3}}</th>
@@ -876,248 +879,258 @@
     </section>
 <br>
 <!-- SEITE 2 -->
-<div class="page-break"></div>
-
-         <!-- ERSTE SCHRITTE -->
-         <section class="section first-steps">
-            <h2 class="section-title">Erste Schritte <span class="badge badge-success">Wichtig</span></h2>
-              <p>Hier sind einige wichtige erste Schritte, um loszulegen:</p>
-                <ol class="steps-list">
-                  <li>Ändere sofort dein initiales Passwort</li>
-                  <li>Richte dein E-Mail-Konto ein (Outlook öffnen)</li>
-                  <li>Aktualisiere dein Profil im Microsoft 365 Portal</li>
-                  <li>Besuche das Unternehmens-Intranet für weitere Informationen</li>
-                  <li>Installiere dir die Microsoft Authenticator App für Zwei-Faktor-Authentifizierung</li>
-                </ol>
-        </section>
-<br><br><br>
-<!-- SICHERHEITSHINWEISE -->
-        <section class="section security-tips">
-          <h2 class="section-title">Sicherheitshinweise <span class="badge badge-important">Wichtig</span></h2>
-            <p>Für die Sicherheit unseres Unternehmens bitten wir dich, folgende Vorgaben zu beachten:</p>
-              <div class="tip-item">Teile deine Zugangsdaten niemals mit Dritten</div>
-              <div class="tip-item">Verwende für jede Anwendung ein einzigartiges Passwort</div>
-              <div class="tip-item">Sperre deinen Computer, wenn du deinen Arbeitsplatz verlässt [Windows] + [L]</div>
-              <div class="tip-item">Sei vorsichtig beim Öffnen von E-Mail-Anhängen</div>
-              <div class="tip-item">Melde verdächtige E-Mails oder Aktivitäten sofort dem IT-Support</div>
-              <div class="tip-item">Unternehmensunterlagen dürfen nicht an private E-Mail-Adressen versendet werden</div>
-              <div class="tip-item">Speichere geschäftliche Daten nur auf Unternehmenslaufwerken oder in der Cloud (OneDrive, SharePoint)</div>
-              <div class="tip-item">Verwende ausschließlich lizenzierte Software über die Unternehmensdistribution</div>
-              <div class="tip-item">Verbinde keine unbekannten USB-Geräte mit deinem Arbeitscomputer</div>
-        </section>
-<br>
-<!-- SEITE 3 -->
  <div class="page-break"></div>
-    <!-- BENUTZERDETAILS UND FIRMEN DETAILS KOMBINIERT -->
-    <section >
-      <h2 class="section-title">Informationen<span class="badge badge-warning">verschiedenes</span></h2>
-
-      <div class="column" style="flex: 1;">
-          <div class="win11-card-header" style="margin-bottom: var(--spacing-md); display: flex; align-items: center;">
-              <div class="win11-card-title" style="color: var(--primary-color); font-weight: 500;">Kontaktdaten & Position</div>
-          </div>
-         
-          <!-- Kontaktinformationen -->
-          <div style="margin-bottom: var(--spacing-md);">
-              <table>
-                  <tr>
-                      <th style="background-color: var(--gray-400) !important; color: black; width: 30%;"">Rufnummer</th>
-                      <td style="background-color: var(--gray-100) !important; color: black;"><strong>{{Buero}}</strong></td>
-                  </tr>
-                  <tr>
-                      <th style="background-color: var(--gray-400) !important; color: black; width: 30%;"">Durchwahl</th>
-                      <td style="background-color: var(--gray-100) !important; color: black;"><strong>{{Rufnummer}}</strong></td>
-                  </tr>
-                  <tr>
-                      <th style="background-color: var(--gray-400) !important; color: black; width: 30%;"">Mobil</th>
-                      <td style="background-color: var(--gray-100) !important; color: black;"><strong>{{Mobil}}</strong></td>
-                  </tr>
-              </table>
-          </div>
-          
-          <!-- Position & Abteilung -->
-          <div style="margin-bottom: var(--spacing-md);">
-              <table>
-                  <tr>
-                      <th style="background-color: var(--gray-400) !important; color: black; width: 30%;"">Position</th>
-                      <td style="background-color: var(--gray-100) !important; color: black;"><strong>{{Position}}</strong></td>
-                  </tr>
-                  <tr>
-                      <th style="background-color: var(--gray-400) !important; color: black; width: 30%;"">Abteilung</th>
-                      <td style="background-color: var(--gray-100) !important; color: black;"><strong>{{Abteilung}}</strong></td>
-                  </tr>
-              </table>
-          </div>
-          <div class="column" style="flex: 1;">
-              <div class="win11-card-header" style="margin-bottom: var(--spacing-md); display: flex; align-items: center;">
-                  <div class="win11-card-title" style="color: var(--primary-color); font-weight: 500;">Microsoft 365</div>
-              </div>
-          <!-- E-Mail Details -->
-          <div>
-              <table>
-                  <tr>
-                      <th style="background-color: var(--gray-400) !important; color: black; width: 30%;">E-Mail-Adresse</th>
-                      <td style="background-color: var(--gray-100) !important; color: black;"><strong>{{MailAddress}}</strong></td>
-                  </tr>
-                  <tr>
-                      <th style="background-color: var(--gray-400) !important; color: black; width: 30%;">Microsoft 365 Login</th>
-                      <td style="background-color: var(--gray-100) !important; color: black;"><strong>{{MailAddress}}</strong></td>
-                  </tr>
-                  <tr>
-                      <th style="background-color: var(--gray-400) !important; color: black; width: 30%;"">MS365 Lizenz</th>
-                      <td style="background-color: var(--gray-100) !important; color: black;"><strong>{{License}}</strong></td>
-                  </tr>
-              </table>
-          </div>
-      </div>
-  </section>
-  <br>
+         <!-- FIRST STEPS -->
+         <section class="section first-steps">
+            <h2 class="section-title">First Steps <span class="badge badge-success">Important</span></h2>
+            <p>Here are some essential first steps to get started:</p>
+            <ol class="steps-list">
+              <li>Change your initial password immediately</li>
+              <li>Set up your email account (open Outlook)</li>
+              <li>Update your profile in the Microsoft 365 Portal</li>
+              <li>Visit the company intranet for more information</li>
+              <li>Install the Microsoft Authenticator app for two-factor authentication</li>
+            </ol>
+          </section>
+<br>
     <!-- Combined Company & HR Information Box -->
     <div class="column" style="flex: 1;"></div>
         <!-- Company Information Section -->
         <div class="win11-card-header" style="margin-bottom: var(--spacing-md); display: flex; align-items: center;">
-            <div class="win11-card-title" style="color: var(--success-color); font-weight: 500;">Firmeninformationen</div>
+            <div class="win11-card-icon" style="background-color: var(--success-color); box-shadow: var(--shadow-md); margin-right: var(--spacing-sm);">C</div>
+            <div class="win11-card-title" style="color: var(--success-color); font-weight: 500;">Company Information</div>
         </div>
-        <div class="hint">
-          <p>Unser Unternehmen steht für Innovation, Teamarbeit und eine offene Unternehmenskultur. Hier sind einige wichtige Informationen:</p>
-          <ul class="icon-list">
-              <li><strong>Gründungsjahr:</strong> {{CompanyFounded}}</li>
-              <li><strong>Standorte: </strong> {{CompanyLocations}}</li>
-              <li><strong>Mitarbeiterzahl:</strong> {{CompanyEmployees}}</li>
-              <li><strong>Mission:</strong> {{CompanyMission}}</li>
-          </ul>
-          <p>Weitere Informationen findest du auf unserer Website: <a href="{{CompanyWebsite}}" target="_blank">{{CompanyWebsite}}</a></p></div>
-        <br>
+        <div class="hint">Details about your company.</div>
         <table>
             <tr>
-                <th style="background-color: var(--gray-400) !important; color: black; width: 30%;"">Firmenname</th>
+                <th style="background-color: var(--gray-400) !important; color: black; width: 30%;">Company Name</th>
                 <td style="background-color: var(--gray-100) !important; color: black;"><strong>{{CompanyName}}</strong></td>
             </tr>
             <tr>
-                <th style="background-color: var(--gray-400) !important; color: black; width: 30%;"">Straße</th>
+                <th style="background-color: var(--gray-400) !important; color: black; width: 30%;">Street</th>
                 <td style="background-color: var(--gray-100) !important; color: black;"><strong>{{CompanyStreet}}</strong></td>
             </tr>
             <tr>
-                <th style="background-color: var(--gray-400) !important; color: black; width: 30%;"">PLZ</th>
+                <th style="background-color: var(--gray-400) !important; color: black; width: 30%;">ZIP Code</th>
                 <td style="background-color: var(--gray-100) !important; color: black;"><strong>{{CompanyZIP}}</strong></td>
             </tr>
             <tr>
-                <th style="background-color: var(--gray-400) !important; color: black; width: 30%;"">Ort</th>
+                <th style="background-color: var(--gray-400) !important; color: black; width: 30%;">City</th>
                 <td style="background-color: var(--gray-100) !important; color: black;"><strong>{{CompanyCity}}</strong></td>
             </tr>
             <tr>
-                <th style="background-color: var(--gray-400) !important; color: black; width: 30%;"">Domain</th>
+                <th style="background-color: var(--gray-400) !important; color: black; width: 30%;">Domain</th>
                 <td style="background-color: var(--gray-100) !important; color: black;"><strong>{{CompanyDomain}}</strong></td>
             </tr>
             <tr>
-                <th style="background-color: var(--gray-400) !important; color: black; width: 30%;"">Telefon</th>
+                <th style="background-color: var(--gray-400) !important; color: black; width: 30%;">Phone</th>
                 <td style="background-color: var(--gray-100) !important; color: black;"><strong>{{CompanyPhone}}</strong></td>
             </tr>
         </table>
     </div>
-     <div class="column" style="flex: 1;">
+<br>
+<section class="section additional-info">
+    <h2>Additional Resources</h2>
+    <p>Here you will find further information and links to help you get started:</p>
+    <ul class="icon-list">
+      <li>Company Intranet: <strong><a href="{{CompanyIntranetURL}}">{{CompanyIntranetURL}}</a></strong></li>
+      <li>IT Training Portal: <strong><a href="{{ITTrainingURL}}">{{ITTrainingURL}}</a></strong></li>
+      <li>Frequently Asked Questions: <strong><a href="{{FAQURL}}">{{FAQURL}}</a></strong></li>
+      <li>Administration Portal: <strong><a href="{{AdminPortalURL}}">{{AdminPortalURL}}</a></strong></li>
+    </ul>
+  </section>
+  <br>
+  
+    <div class="column" style="flex: 1;">
         <!-- HR Contact Section -->
         <div class="win11-card-header" style="margin-bottom: var(--spacing-md); display: flex; align-items: center;">
-            <div class="win11-card-title" style="font-weight: 500;">HR-Kontaktdaten</div>
+            <div class="win11-card-icon" style="background-color: var(--warning-color); box-shadow: var(--shadow-md); margin-right: var(--spacing-sm);">HR</div>
+            <div class="win11-card-title" style="color: var(--warning-color); font-weight: 500;">HR Contact Details</div>
         </div>
-        <div class="hint">
-            Kontaktiere die Personalabteilung bei Fragen zu deinem Arbeitsvertrag, Urlaubsanträgen, Gehaltsabrechnungen oder anderen personalbezogenen Themen. 
-            Die HR-Abteilung steht dir während der regulären Geschäftszeiten zur Verfügung und hilft dir gerne weiter.
-        </div>
+        <div class="hint">Contact the HR department for any inquiries.</div>
         <table>
             <tr>
-                <th style="background-color: var(--gray-400) !important; color: black;">Telefon</th>
+                <th style="background-color: var(--gray-400) !important; color: black;">Phone</th>
                 <td style="background-color: var(--gray-100) !important; color: black;"><strong>{{CompanyHRPhone}}</strong></td>
             </tr>
             <tr>
-                <th style="background-color: var(--gray-400) !important; color: black;">E-Mail</th>
+                <th style="background-color: var(--gray-400) !important; color: black;">Email</th>
                 <td style="background-color: var(--gray-100) !important; color: black;"><strong>{{CompanyHREmail}}</strong></td>
             </tr>
         </table>
     </div>
-    <br>
-<!-- SEITE 4 -->
-<div class="page-break"></div>
+    <br> 
+    <br> 
+    <!-- SEITE 3 & 4 -->
+    <div class="page-break"></div>
+        <!-- SECURITY TIPS -->
+    <section class="section security-tips">
+      <h2 class="section-title">Security Tips <span class="badge badge-important">Important</span></h2>
+      <p>For the security of our company, please adhere to the following guidelines:</p>
+      <div class="tip-item">Never share your login credentials with others</div>
+      <div class="tip-item">Use a unique password for each application</div>
+      <div class="tip-item">Lock your computer when leaving your workstation [Windows] + [L]</div>
+      <div class="tip-item">Be cautious when opening email attachments</div>
+      <div class="tip-item">Report suspicious emails or activity to IT support immediately</div>
+      <div class="tip-item">Do not send company documents to private email addresses</div>
+      <div class="tip-item">Store business data only on company drives or in the cloud (OneDrive, SharePoint)</div>
+      <div class="tip-item">Only use licensed software provided by the company</div>
+      <div class="tip-item">Do not connect unknown USB devices to your work computer</div>
+    </section>
+    <br><br><br>
+    <!-- USER & COMPANY DETAILS COMBINED -->
+    <section>
+        <h2 class="section-title">Information<span class="badge badge-warning">Personal</span></h2>
 
-        <h2 class="section-title">IT-Unterstützung & Hilfe <span class="badge badge-warning">IT-Helpdesk</span></h2>
-        <div class="hint">
-            Unser IT-Support-Team steht dir bei technischen Fragen oder Problemen jederzeit zur Verfügung. 
-            Bitte nutze unser internes Wiki oder kontaktiere uns direkt, wenn du Unterstützung benötigst. 
+        <div class="column" style="flex: 1;">
+            <div class="win11-card-header" style="margin-bottom: var(--spacing-md); display: flex; align-items: center;">
+                <div class="win11-card-icon" style="background-color: var(--primary-color); box-shadow: var(--shadow-md); margin-right: var(--spacing-sm);">C</div>
+                <div class="win11-card-title" style="color: var(--primary-color); font-weight: 500;">Contact Details & Position</div>
+            </div>
+           
+            <!-- Contact Information -->
+            <div style="margin-bottom: var(--spacing-md);">
+                <table>
+                    <tr>
+                        <th style="background-color: var(--gray-400) !important; color: black;">Phone Number</th>
+                        <td style="background-color: var(--gray-100) !important; color: black;"><strong>{{Buero}}</strong></td>
+                    </tr>
+                    <tr>
+                        <th style="background-color: var(--gray-400) !important; color: black;">Extension</th>
+                        <td style="background-color: var(--gray-100) !important; color: black;"><strong>{{Rufnummer}}</strong></td>
+                    </tr>
+                    <tr>
+                        <th style="background-color: var(--gray-400) !important; color: black;">Mobile</th>
+                        <td style="background-color: var(--gray-100) !important; color: black;"><strong>{{Mobil}}</strong></td>
+                    </tr>
+                </table>
+            </div>
+            
+            <!-- Position & Department -->
+            <div style="margin-bottom: var(--spacing-md);">
+                <table>
+                    <tr>
+                        <th style="background-color: var(--gray-400) !important; color: black;">Position</th>
+                        <td style="background-color: var(--gray-100) !important; color: black;"><strong>{{Position}}</strong></td>
+                    </tr>
+                    <tr>
+                        <th style="background-color: var(--gray-400) !important; color: black;">Department</th>
+                        <td style="background-color: var(--gray-100) !important; color: black;"><strong>{{Abteilung}}</strong></td>
+                    </tr>
+                </table>
+            </div><br>
+            <div class="column" style="flex: 1;">
+                <div class="win11-card-header" style="margin-bottom: var(--spacing-md); display: flex; align-items: center;">
+                    <div class="win11-card-icon" style="background-color: var(--primary-color); box-shadow: var(--shadow-md); margin-right: var(--spacing-sm);">M</div>
+                    <div class="win11-card-title" style="color: var(--primary-color); font-weight: 500;">Email & Microsoft 365 Account</div>
+                </div>
+            <!-- E-Mail Details -->
+            <div>
+                <table>
+                    <tr>
+                        <th style="background-color: var(--gray-400) !important; color: black;">Email Address</th>
+                        <td style="background-color: var(--gray-100) !important; color: black;"><strong>{{MailAddress}}</strong></td>
+                    </tr>
+                    <tr>
+                        <th style="background-color: var(--gray-400) !important; color: black;">Microsoft 365 Login</th>
+                        <td style="background-color: var(--gray-100) !important; color: black;"><strong>{{MailAddress}}</strong></td>
+                    </tr>
+                    <tr>
+                        <th style="background-color: var(--gray-400) !important; color: black;">MS365 License</th>
+                        <td style="background-color: var(--gray-100) !important; color: black;"><strong>{{License}}</strong></td>
+                    </tr>
+                </table>
+            </div>
         </div>
+    </section>
+    <br>
+
+    <!-- SEITE 5 & 6 -->
+    <div class="page-break"></div>
+
+    <div class="column" style="flex: 1;">
+        <div class="win11-card-header" style="margin-bottom: var(--spacing-md); display: flex; align-items: center;">
+            <div class="win11-card-icon" style="background-color: var(--primary-color); box-shadow: var(--shadow-md); margin-right: var(--spacing-sm);">H</div>
+            <div class="win11-card-title" style="color: var(--primary-color); font-weight: 500;">IT-Helpdesk</div>
+        </div>
+        <div class="hint">Contact details for IT support.</div>
         <table>
             <tr>
-                <th style="background-color: var(--gray-400) !important; color: black;">Telefon</th>
+                <th style="background-color: var(--gray-400) !important; color: black;">Phone</th>
                 <td style="background-color: var(--gray-100) !important; color: black;">{{CompanyHelpdeskTel}}</td>
             </tr>
             <tr>
-                <th style="background-color: var(--gray-400) !important; color: black; width: 30%;"">E-Mail</th>
+                <th style="background-color: var(--gray-400) !important; color: black; width: 30%;">Email</th>
                 <td style="background-color: var(--gray-100) !important; color: black;">{{CompanyHelpdeskMail}}</td>
             </tr>
             <tr>
-                <th style="background-color: var(--gray-400) !important; color: black; width: 30%;"">Ansprechpartner</th>
+                <th style="background-color: var(--gray-400) !important; color: black; width: 30%;">Contact Person</th>
                 <td style="background-color: var(--gray-100) !important; color: black;">{{CompanyITMitarbeiter}}</td>
             </tr>
             <tr>
-                <th style="background-color: var(--gray-400) !important; color: black; width: 30%;"">Erreichbar</th>
-                <td style="background-color: var(--gray-100) !important; color: black;">Mo-Fr ab 08:15 Uhr</td>
+                <th style="background-color: var(--gray-400) !important; color: black; width: 30%;">Available</th>
+                <td style="background-color: var(--gray-100) !important; color: black;">Mon-Fri from 08:15 AM</td>
             </tr>
         </table>
     </div>
-    <br>
+    <br><br><br><br>
+    <!-- SUPPORT-INFORMATIONEN -->
+    <section>
+      <h2 class="section-title">IT Support & Help <span class="badge badge-warning">Support</span></h2>
+      <div class="hint">For technical questions or issues, our internal wiki or IT support is available:</div>
    
-      <br><br><br>
-    <h3>Häufige Fragen (FAQ)</h3>
+      
+    <h3>Frequently Asked Questions (FAQ)</h3>
     <div class="faq-container">
         <div class="faq-item">
-            <div class="faq-question">Was tue ich, wenn ich mein Passwort vergessen habe?</div>
-            <div class="faq-answer">In diesem Fall wende dich bitte telefonisch an den IT-Support. Aus Sicherheitsgründen kann das Passwort nur nach persönlicher Identifikation zurückgesetzt werden.</div>
+            <div class="faq-question">What should I do if I forget my password?</div>
+            <div class="faq-answer">In this case, please contact IT support by phone. For security reasons, the password can only be reset after personal identification.</div>
         </div>
         
         <div class="faq-item">
-            <div class="faq-question">Wie verbinde ich mich mit dem VPN?</div>
-            <div class="faq-answer">Für den VPN-Zugriff verwende bitte die installierte Cisco AnyConnect-Software. Die Zugangsdaten findest du im Abschnitt "VPN-Zugang". Bei Problemen wende dich an den IT-Support.</div>
+            <div class="faq-question">How do I connect to the VPN?</div>
+            <div class="faq-answer">For VPN access, please use the installed Cisco AnyConnect software. The access data can be found in the "VPN Access" section. If you have any problems, please contact IT support.</div>
         </div>
 
         <div class="faq-item">
-            <div class="faq-question">Wie richte ich die Zwei-Faktor-Authentifizierung ein?</div>
-            <div class="faq-answer">Installiere die Microsoft Authenticator App auf deinem Smartphone, öffne dann das Microsoft 365 Portal und folge den Anweisungen unter "Sicherheitseinstellungen". Scanne den QR-Code und bestätige deine Identität. Bei Problemen hilft der IT-Support.</div>
+            <div class="faq-question">How do I set up two-factor authentication?</div>
+            <div class="faq-answer">Install the Microsoft Authenticator app on your smartphone, then open the Microsoft 365 portal and follow the instructions under "Security Settings". Scan the QR code and confirm your identity. If you have any problems, IT support can help.</div>
         </div>
         
         <div class="faq-item">
-            <div class="faq-question">Was muss ich bei der Nutzung von mobilen Geräten beachten?</div>
-            <div class="faq-answer">Mobile Geräte müssen mit einem Kennwort/PIN gesichert sein und die Verschlüsselung muss aktiviert sein. Nutze nur vertrauenswürdige WLAN-Netzwerke oder das Firmen-VPN. Bei Verlust oder Diebstahl informiere umgehend den IT-Support.</div>
+            <div class="faq-question">What should I consider when using mobile devices?</div>
+            <div class="faq-answer">Mobile devices must be secured with a password/PIN and encryption must be enabled. Only use trusted Wi-Fi networks or the company VPN. In case of loss or theft, inform IT support immediately.</div>
         </div>
         
         <div class="faq-item">
-            <div class="faq-question">Wie kann ich Druckeinstellungen einrichten?</div>
-            <div class="faq-answer">Die meisten Drucker werden automatisch im Netzwerk gefunden. Öffne die Einstellungen und füge den gewünschten Drucker hinzu. Sollten Treiber benötigt werden, findest du diese im IT-Portal oder wende dich an den Support.</div>
+            <div class="faq-question">How can I set up print settings?</div>
+            <div class="faq-answer">Most printers are automatically found on the network. Open the settings and add the desired printer. If drivers are needed, you can find them in the IT portal or contact support.</div>
         </div>
 
         <div class="faq-item">
-            <div class="faq-question">Wo finde ich weitere Hilfestellungen zu IT-Themen?</div>
-            <div class="faq-answer">Wir bieten ein umfangreiches internes Wiki unter <strong>{{CompanyWikiURL}}</strong> an. Dort findest du detaillierte Anleitungen zu allen wichtigen Systemen und Prozessen. Zusätzlich steht dir auch unser Schulungsportal mit Video-Tutorials zur Verfügung.</div>
+            <div class="faq-question">Where can I find further assistance on IT topics?</div>
+            <div class="faq-answer">We offer an extensive internal wiki at <strong>{{CompanyWikiURL}}</strong>. There you will find detailed instructions on all important systems and processes. Additionally, our training portal with video tutorials is also available.</div>
         </div>
     </div>
     </section>
     <br>    
 
-<!-- SEITE 5-->
-<div class="page-break"></div>
+<div class="page-break">
     <!-- IT-INFRASTRUKTUR -->
     <section>
-      <h2 class="section-title">IT-Infrastruktur & Systeme <span class="badge badge-info">Ressourcen</span></h2>
+      <h2 class="section-title">IT Infrastructure & Systems <span class="badge badge-info">Resources</span></h2>
       
       <div class="info-grid">
         <!-- Box 1: Firmennetzwerk -->
         <div class="info-box-container">
           <div class="info-panel">
-            <h3>Firmennetzwerk</h3>
-            <p>Nutze unser Firmen-WLAN für dienstliche Zwecke. Für private Internetnutzung verwende bitte das separate Netzwerk: <strong>{{CompanySSIDbyod}}</strong></p>
+            <h3>Company Network</h3>
+            <p>Use our company Wi-Fi for business purposes. For personal internet use, please use the separate network: <strong>{{CompanySSIDbyod}}</strong></p>
             <ul class="icon-list">
-              <li>Firmennetz: <strong>{{CompanySSID}}</strong></li>
-              <li>Eigene Geräte: <strong>{{CompanySSIDbyod}}</strong></li>
-              <li>Gäste-WLAN: <strong>{{CompanySSIDGuest}}</strong></li>
-              <li>Gäste-Voucher: <strong>Wird auf Anfrage ausgegeben</strong></li>
+              <li>Company Network: <strong>{{CompanySSID}}</strong></li>
+              <li>Personal Devices: <strong>{{CompanySSIDbyod}}</strong></li>
+              <li>Guest Wi-Fi: <strong>{{CompanySSIDGuest}}</strong></li>
+              <li>Guest Voucher: <strong>Issued upon request</strong></li>
             </ul>
           </div>
         </div>
@@ -1125,13 +1138,13 @@
         <!-- Box 2: VPN-Zugang -->
         <div class="info-box-container">
           <div class="info-panel">
-            <h3>VPN-Zugang</h3>
-            <p>Für den sicheren Remote-Zugriff auf das Firmennetzwerk. Lade Dein persönliches VPN-Profil von <a href="{{CompanyVPNDomain}}">{{CompanyVPNDomain}}</a> herunter.</p>
+            <h3>VPN Access</h3>
+            <p>For secure remote access to the company network. Download your personal VPN profile from <a href="{{CompanyVPNDomain}}">{{CompanyVPNDomain}}</a>.</p>
             <ul class="icon-list">
-              <li>Benutzername: <strong>{{CompanyVPNUser}}</strong></li>
-              <li>Passwort: <strong>{{CompanyVPNPassword}}</strong></li>
-              <li>VPN-Server: <strong>{{CompanyVPNDomain}}</strong></li>
-              <li>2FA: <strong>Erforderlich</strong> (Microsoft Authenticator)</li>
+              <li>Username: <strong>{{CompanyVPNUser}}</strong></li>
+              <li>Password: <strong>{{CompanyVPNPassword}}</strong></li>
+              <li>VPN Server: <strong>{{CompanyVPNDomain}}</strong></li>
+              <li>2FA: <strong>Required</strong> (Microsoft Authenticator)</li>
             </ul>
           </div>
         </div>
@@ -1139,13 +1152,13 @@
         <!-- Box 3: Cloud-Speicher -->
         <div class="info-box-container">
           <div class="info-panel">
-            <h3>Cloud-Speicher</h3>
-            <p>Speicher und synchronisiere Deine Dateien sicher in der Cloud:</p>
+            <h3>Cloud Storage</h3>
+            <p>Store and sync your files securely in the cloud:</p>
             <ul class="icon-list">
-              <li><strong>OneDrive</strong> für persönliche Dateien</li>
-              <li><strong>SharePoint</strong> für Teamdateien (gemeinsame Bearbeitung)</li>
-              <li><strong>Automatische Synchronisation</strong> mit allen Geräten</li>
-              <li><strong>Versionsverlauf</strong> für alle gespeicherten Dokumente</li>
+              <li><strong>OneDrive</strong> for personal files</li>
+              <li><strong>SharePoint</strong> for team files (collaborative editing)</li>
+              <li><strong>Automatic synchronization</strong> with all devices</li>
+              <li><strong>Version history</strong> for all saved documents</li>
             </ul>
           </div>
         </div>
@@ -1153,14 +1166,14 @@
         <!-- Box 4: Kommunikation -->
         <div class="info-box-container">
           <div class="info-panel">
-            <h3>Kommunikationstools</h3>
-            <p>Tools für moderne Zusammenarbeit:</p>
+            <h3>Communication Tools</h3>
+            <p>Tools for modern collaboration:</p>
             <ul class="icon-list">
-              <li><strong>Microsoft Teams</strong> - Chat, Videoanrufe und Zusammenarbeit</li>
-              <li><strong>Outlook</strong> - E-Mail und Kalender</li>
-              <li><strong>Zoom</strong> - für externe Meetings</li>
-              <li><strong>VoIP-Telefonie</strong> mit Deiner persönlichen Durchwahl</li>
-              <li><strong>Mobile Apps</strong> für unterwegs und Home-Office</li>
+              <li><strong>Microsoft Teams</strong> - Chat, video calls, and collaboration</li>
+              <li><strong>Outlook</strong> - Email and calendar</li>
+              <li><strong>Zoom</strong> - for external meetings</li>
+              <li><strong>VoIP Telephony</strong> with your personal extension</li>
+              <li><strong>Mobile Apps</strong> for on-the-go and home office</li>
             </ul>
           </div>
         </div>
@@ -1169,13 +1182,13 @@
       <!-- 2FA-AUTHENTIFIZIERUNG BOX -->
       <div class="info-box-container" style="margin-top: 20px;">
         <div class="info-panel">
-          <h3>Zwei-Faktor-Authentifizierung (2FA) <span class="badge badge-important">WICHTIG</span></h3>
-          <p>Für die sichere Anmeldung bei Microsoft 365 Apps und anderen Unternehmensdiensten benötigst Du die Microsoft Authenticator App:</p>
+          <h3>Two-Factor Authentication (2FA) <span class="badge badge-important">IMPORTANT</span></h3>
+          <p>For secure login to Microsoft 365 apps and other company services, you need the Microsoft Authenticator app:</p>
           <ul class="icon-list">
-            <li><strong>Sofort einrichten</strong> für vollen Systemzugriff</li>
-            <li><strong>Push-Benachrichtigungen aktivieren</strong> für schnelle Bestätigung</li>
-            <li><strong>Backup einrichten</strong> in den App-Einstellungen</li>
-            <li><strong>Geräteverlust sofort melden</strong> bei IT-Support</li>
+            <li><strong>Set up immediately</strong> for full system access</li>
+            <li><strong>Enable push notifications</strong> for quick confirmation</li>
+            <li><strong>Set up backup</strong> in the app settings</li>
+            <li><strong>Report device loss immediately</strong> to IT support</li>
           </ul>
           
           <!-- QR-Codes für App-Installation -->
@@ -1196,8 +1209,8 @@
     <!-- FOOTER -->
     <footer>
       <p>{{ReportFooter}}</p>
-      <p>Erstellt von: {{Admin}}</p>
-      <p>Datum: {{ReportDate}}</p>
+      <p>Created by: {{Admin}}</p>
+      <p>Date: {{ReportDate}}</p>
       <p>easyONBOARDING - Template 0.4 | Andreas Hepp</p>
     </footer>
   </div>
