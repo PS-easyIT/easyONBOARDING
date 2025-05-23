@@ -1,0 +1,11 @@
+FirstName;LastName;Description;OfficeRoom;PhoneNumber;MobileNumber;Position;DepartmentField;EmailAddress;Ablaufdatum;External;TL;AL;AccountDisabled;ADGroup
+Gottlob;Scheel;Gottlob Scheel - Support;668;+49 (0) 9685 924246;+49 (0) 4179 825836;Support;Marketing;seifertbirgitta@sager.org;08.07.2025;No;Niko Gumprich;Benjamin Boucsein;False;HR-Team
+Dora;Gehringer;Dora Gehringer - Techniker;667;+49(0) 371971149;(08167) 92805;Administrator;Vertrieb;klotzhelge@beer.de;22.09.2025;No;Mahmoud Kramer;Karl-Peter Aumann;False;IT-Admins
+Nora;Bohnbach;Nora Bohnbach - Support;363;+49(0)5700667210;(09335) 25770;Support;Finanzen;horst12@googlemail.com;28.02.2026;No;Maximilian Henschel;Willy Löchel;False;HR-Team
+Dana;Putz;Dana Putz - Support;369;(03687) 00284;+49(0)8189 817701;Support;HR;benderahmad@jopich.org;23.06.2025;No;Simone Gnatz;Halil Schulz;True;IT-Admins
+Amir;Pohl;Amir Pohl - Entwickler;957;04934 577754;(05476) 75526;Manager;Vertrieb;clairewagner@gmail.com;08.07.2025;No;Ada Ruppert;Bernt Dussen van;True;HR-Team
+Donald;Trupp;Donald Trupp - Techniker;209;+49(0)5776 523005;(01441) 215475;Support;IT;egbertmies@baehr.de;22.08.2025;No;Augustin Langern;Maxim Wernecke;True;IT-Admins
+Carolin;Zimmer;Carolin Zimmer - Administrator;176;0808591202;+49(0)7169 41112;Techniker;IT;hubertine50@gmx.de;01.03.2026;No;Yasmin Atzler;Vladimir Meyer;False;Sales-Group
+Anna;Caspar;Anna Caspar - Techniker;187;+49(0)2703551999;00034947535;Support;Marketing;kherrmann@henck.de;04.05.2025;No;Oscar Mälzer;Berit Biggen;True;Sales-Group
+Sebastiano;Walter;Sebastiano Walter - Support;293;+49(0)2978 69645;(09177) 734042;Administrator;Vertrieb;rknappe@gmail.com;07.11.2025;Yes;Denis Becker;Hans-Ulrich Gieß;True;Marketing-Team
+Ralph;Becker;Ralph Becker - Techniker;602;(01298) 553403;06837 198076;Administrator;Vertrieb;huebelgert@jacobi.de;07.06.2025;No;Anatolij Biggen;Grete Schomber;True;IT-Admins

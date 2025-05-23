@@ -1,0 +1,2417 @@
+<Window
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    Title="{Binding APPName}"
+    Width="1270"
+    Height="860"
+    Background="#F5F5F5"
+    ResizeMode="NoResize"
+    SizeToContent="Manual"
+    WindowStartupLocation="CenterScreen">
+    <!--  Define reusable styles with INI property bindings  -->
+    <Window.Resources>
+        <!--  Windows 11 inspired styles  -->
+        <Style x:Key="StandardButton" TargetType="Button">
+            <Setter Property="Height" Value="40" />
+            <Setter Property="Margin" Value="5" />
+            <Setter Property="Padding" Value="16,0" />
+            <Setter Property="Background" Value="#FFFFFF" />
+            <Setter Property="BorderBrush" Value="#E0E0E0" />
+            <Setter Property="Foreground" Value="#202020" />
+            <Setter Property="FontFamily" Value="{Binding DefaultFontFamily}" />
+            <Setter Property="FontSize" Value="{Binding DefaultFontSize}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border
+                            Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            CornerRadius="4">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="#F2F2F2" />
+                    <Setter Property="BorderBrush" Value="#D0D0D0" />
+                </Trigger>
+                <Trigger Property="IsPressed" Value="True">
+                    <Setter Property="Background" Value="#E6E6E6" />
+                </Trigger>
+                <Trigger Property="IsEnabled" Value="False">
+                    <Setter Property="Opacity" Value="0.6" />
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <Style
+            x:Key="ActionButton"
+            BasedOn="{StaticResource StandardButton}"
+            TargetType="Button">
+            <Setter Property="Width" Value="225" />
+        </Style>
+
+        <Style
+            x:Key="SquareButton"
+            BasedOn="{StaticResource StandardButton}"
+            TargetType="Button">
+            <Setter Property="Width" Value="50" />
+            <Setter Property="Height" Value="50" />
+            <Setter Property="Margin" Value="5" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border
+                            Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            CornerRadius="4">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="StandardTextBlock" TargetType="TextBlock">
+            <Setter Property="Margin" Value="0,0,5,0" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="FontFamily" Value="{Binding DefaultFontFamily}" />
+            <Setter Property="FontSize" Value="{Binding DefaultFontSize}" />
+            <Setter Property="Foreground" Value="#202020" />
+        </Style>
+
+        <Style x:Key="StandardTextBox" TargetType="TextBox">
+            <Setter Property="Margin" Value="5" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="FontFamily" Value="{Binding DefaultFontFamily}" />
+            <Setter Property="FontSize" Value="{Binding DefaultFontSize}" />
+            <Setter Property="Background" Value="White" />
+            <Setter Property="Foreground" Value="#202020" />
+            <Setter Property="BorderBrush" Value="#E0E0E0" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Padding" Value="8,6" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type TextBox}">
+                        <Border
+                            Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            CornerRadius="4">
+                            <ScrollViewer x:Name="PART_ContentHost" Margin="0" />
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="BorderBrush" Value="#BDBDBD" />
+                </Trigger>
+                <Trigger Property="IsFocused" Value="True">
+                    <Setter Property="BorderBrush" Value="#0078D4" />
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <!--  Stil für Pflichtfelder mit rotem Rahmen  -->
+        <Style
+            x:Key="RequiredTextBox"
+            BasedOn="{StaticResource StandardTextBox}"
+            TargetType="TextBox">
+            <Style.Triggers>
+                <Trigger Property="Text" Value="">
+                    <Setter Property="BorderBrush" Value="#E81123" />
+                    <Setter Property="BorderThickness" Value="1" />
+                    <Setter Property="ToolTip" Value="Dieses Feld ist erforderlich!" />
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <Style x:Key="GroupBoxStyle" TargetType="GroupBox">
+            <Setter Property="Margin" Value="0,0,0,10" />
+            <Setter Property="Padding" Value="12" />
+            <Setter Property="Background" Value="#FFFFFF" />
+            <Setter Property="BorderBrush" Value="#E0E0E0" />
+            <Setter Property="Foreground" Value="#202020" />
+            <Setter Property="FontFamily" Value="{Binding FontFamily}" />
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="GroupBox">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="*" />
+                            </Grid.RowDefinitions>
+                            <Border Grid.Row="0" Background="Transparent">
+                                <ContentPresenter
+                                    Margin="8,0,0,0"
+                                    ContentSource="Header"
+                                    RecognizesAccessKey="True" />
+                            </Border>
+                            <Border
+                                Grid.Row="1"
+                                Margin="0,5,0,0"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="8">
+                                <ContentPresenter Margin="{TemplateBinding Padding}" />
+                            </Border>
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="TabControlStyle" TargetType="TabControl">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderBrush" Value="#E0E0E0" />
+            <Setter Property="FontFamily" Value="{Binding FontFamily}" />
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="TabStripPlacement" Value="Top" />
+            <Setter Property="Visibility" Value="Visible" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="TabControl">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="*" />
+                            </Grid.RowDefinitions>
+                            <Border
+                                Grid.Row="0"
+                                Panel.ZIndex="1"
+                                Background="Transparent">
+                                <TabPanel IsItemsHost="True" KeyboardNavigation.TabIndex="1" />
+                            </Border>
+                            <Border
+                                Grid.Row="1"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="0,1,0,0"
+                                CornerRadius="0,0,8,8">
+                                <ContentPresenter
+                                    x:Name="PART_SelectedContentHost"
+                                    Margin="0"
+                                    ContentSource="SelectedContent" />
+                            </Border>
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="TabItemStyle" TargetType="TabItem">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="Foreground" Value="#505050" />
+            <Setter Property="BorderBrush" Value="Transparent" />
+            <Setter Property="FontFamily" Value="{Binding FontFamily}" />
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="Margin" Value="2,2,2,0" />
+            <Setter Property="Padding" Value="16,10" />
+            <Setter Property="Height" Value="40" />
+            <Setter Property="MinWidth" Value="120" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="TabItem">
+                        <Border
+                            x:Name="Border"
+                            Margin="{TemplateBinding Margin}"
+                            Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="0,0,0,3"
+                            CornerRadius="4,4,0,0">
+                            <ContentPresenter
+                                x:Name="ContentSite"
+                                Margin="{TemplateBinding Padding}"
+                                HorizontalAlignment="Center"
+                                VerticalAlignment="Center"
+                                ContentSource="Header" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter TargetName="Border" Property="Background" Value="#F8F8F8" />
+                                <Setter TargetName="Border" Property="BorderBrush" Value="#0078D4" />
+                                <Setter Property="Foreground" Value="#0078D4" />
+                                <Setter Property="FontWeight" Value="SemiBold" />
+                            </Trigger>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Border" Property="Background" Value="#F2F2F2" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="StandardComboBox" TargetType="ComboBox">
+            <Setter Property="Margin" Value="5" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="FontFamily" Value="{Binding DefaultFontFamily}" />
+            <Setter Property="FontSize" Value="{Binding DefaultFontSize}" />
+            <Setter Property="Background" Value="White" />
+            <Setter Property="Foreground" Value="#202020" />
+            <Setter Property="BorderBrush" Value="#E0E0E0" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Padding" Value="8,6" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ComboBox">
+                        <Grid>
+                            <ToggleButton
+                                x:Name="ToggleButton"
+                                ClickMode="Press"
+                                IsChecked="{Binding IsDropDownOpen, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}">
+                                <ToggleButton.Template>
+                                    <ControlTemplate TargetType="ToggleButton">
+                                        <Border
+                                            x:Name="ToggleBorder"
+                                            Background="{TemplateBinding Background}"
+                                            BorderBrush="{TemplateBinding BorderBrush}"
+                                            BorderThickness="{TemplateBinding BorderThickness}"
+                                            CornerRadius="4">
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition />
+                                                    <ColumnDefinition Width="30" />
+                                                </Grid.ColumnDefinitions>
+                                                <ContentPresenter
+                                                    Grid.Column="0"
+                                                    Margin="8,0,0,0"
+                                                    HorizontalAlignment="Left"
+                                                    VerticalAlignment="Center" />
+                                                <Path
+                                                    x:Name="Arrow"
+                                                    Grid.Column="1"
+                                                    HorizontalAlignment="Center"
+                                                    VerticalAlignment="Center"
+                                                    Data="M0,0 L6,6 L12,0"
+                                                    Fill="#505050"
+                                                    Stroke="#505050"
+                                                    StrokeThickness="1" />
+                                            </Grid>
+                                        </Border>
+                                        <ControlTemplate.Triggers>
+                                            <Trigger Property="IsMouseOver" Value="True">
+                                                <Setter TargetName="ToggleBorder" Property="Background" Value="#F8F8F8" />
+                                                <Setter TargetName="ToggleBorder" Property="BorderBrush" Value="#BDBDBD" />
+                                            </Trigger>
+                                            <Trigger Property="IsChecked" Value="True">
+                                                <Setter TargetName="ToggleBorder" Property="BorderBrush" Value="#0078D4" />
+                                            </Trigger>
+                                        </ControlTemplate.Triggers>
+                                    </ControlTemplate>
+                                </ToggleButton.Template>
+                            </ToggleButton>
+                            <ContentPresenter
+                                x:Name="ContentSite"
+                                Margin="8,0,30,0"
+                                HorizontalAlignment="Left"
+                                VerticalAlignment="Center"
+                                Content="{TemplateBinding SelectionBoxItem}"
+                                ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}" />
+                            <Popup
+                                x:Name="Popup"
+                                AllowsTransparency="True"
+                                IsOpen="{TemplateBinding IsDropDownOpen}"
+                                Placement="Bottom"
+                                PopupAnimation="Fade">
+                                <Border
+                                    x:Name="DropDownBorder"
+                                    MinWidth="{TemplateBinding ActualWidth}"
+                                    MaxHeight="{TemplateBinding MaxDropDownHeight}"
+                                    Background="White"
+                                    BorderBrush="#E0E0E0"
+                                    BorderThickness="1"
+                                    CornerRadius="4">
+                                    <ScrollViewer SnapsToDevicePixels="True">
+                                        <ItemsPresenter KeyboardNavigation.DirectionalNavigation="Contained" />
+                                    </ScrollViewer>
+                                </Border>
+                            </Popup>
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="BorderBrush" Value="#BDBDBD" />
+                </Trigger>
+                <Trigger Property="IsEnabled" Value="False">
+                    <Setter Property="Opacity" Value="0.6" />
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <!--  Stil für Pflichtfeld-ComboBox mit rotem Rahmen  -->
+        <Style
+            x:Key="RequiredComboBox"
+            BasedOn="{StaticResource StandardComboBox}"
+            TargetType="ComboBox">
+            <Style.Triggers>
+                <Trigger Property="SelectedIndex" Value="-1">
+                    <Setter Property="BorderBrush" Value="#E81123" />
+                    <Setter Property="BorderThickness" Value="1" />
+                    <Setter Property="ToolTip" Value="Dieses Feld ist erforderlich!" />
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <Style x:Key="StandardCheckBox" TargetType="CheckBox">
+            <Setter Property="Margin" Value="5" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="FontFamily" Value="{Binding DefaultFontFamily}" />
+            <Setter Property="FontSize" Value="{Binding DefaultFontSize}" />
+            <Setter Property="Foreground" Value="#202020" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="CheckBox">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="20" />
+                                <ColumnDefinition />
+                            </Grid.ColumnDefinitions>
+                            <Border
+                                x:Name="checkBoxBorder"
+                                Width="18"
+                                Height="18"
+                                VerticalAlignment="Center"
+                                Background="White"
+                                BorderBrush="#737373"
+                                BorderThickness="1"
+                                CornerRadius="2">
+                                <Path
+                                    x:Name="checkMark"
+                                    Margin="2"
+                                    Data="M 2,7 L 7,12 L 12,3"
+                                    Fill="#0078D4"
+                                    Stretch="Uniform"
+                                    Stroke="#0078D4"
+                                    StrokeThickness="2"
+                                    Visibility="Collapsed" />
+                            </Border>
+                            <ContentPresenter
+                                Grid.Column="1"
+                                Margin="8,0,0,0"
+                                VerticalAlignment="Center" />
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsChecked" Value="true">
+                                <Setter TargetName="checkMark" Property="Visibility" Value="Visible" />
+                                <Setter TargetName="checkBoxBorder" Property="BorderBrush" Value="#0078D4" />
+                            </Trigger>
+                            <Trigger Property="IsMouseOver" Value="true">
+                                <Setter TargetName="checkBoxBorder" Property="BorderBrush" Value="#0078D4" />
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="false">
+                                <Setter TargetName="checkBoxBorder" Property="Opacity" Value="0.55" />
+                                <Setter TargetName="checkMark" Property="Opacity" Value="0.55" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="StandardRadioButton" TargetType="RadioButton">
+            <Setter Property="Margin" Value="5" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="FontFamily" Value="{Binding DefaultFontFamily}" />
+            <Setter Property="FontSize" Value="{Binding DefaultFontSize}" />
+            <Setter Property="Foreground" Value="#202020" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="RadioButton">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="20" />
+                                <ColumnDefinition />
+                            </Grid.ColumnDefinitions>
+                            <Ellipse
+                                x:Name="radioButtonBorder"
+                                Width="18"
+                                Height="18"
+                                VerticalAlignment="Center"
+                                Fill="White"
+                                Stroke="#737373"
+                                StrokeThickness="1" />
+                            <Ellipse
+                                x:Name="radioButtonMark"
+                                Width="10"
+                                Height="10"
+                                VerticalAlignment="Center"
+                                Fill="#0078D4"
+                                Visibility="Collapsed" />
+                            <ContentPresenter
+                                Grid.Column="1"
+                                Margin="8,0,0,0"
+                                VerticalAlignment="Center" />
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsChecked" Value="true">
+                                <Setter TargetName="radioButtonMark" Property="Visibility" Value="Visible" />
+                                <Setter TargetName="radioButtonBorder" Property="Stroke" Value="#0078D4" />
+                            </Trigger>
+                            <Trigger Property="IsMouseOver" Value="true">
+                                <Setter TargetName="radioButtonBorder" Property="Stroke" Value="#0078D4" />
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="false">
+                                <Setter TargetName="radioButtonBorder" Property="Opacity" Value="0.55" />
+                                <Setter TargetName="radioButtonMark" Property="Opacity" Value="0.55" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="DataGridStyle" TargetType="DataGrid">
+            <Setter Property="Background" Value="White" />
+            <Setter Property="AlternatingRowBackground" Value="#F8F8F8" />
+            <Setter Property="BorderBrush" Value="#E0E0E0" />
+            <Setter Property="HorizontalGridLinesBrush" Value="#E0E0E0" />
+            <Setter Property="VerticalGridLinesBrush" Value="#E0E0E0" />
+            <Setter Property="FontFamily" Value="{Binding FontFamily}" />
+            <Setter Property="FontSize" Value="{Binding FontSize}" />
+            <Setter Property="RowHeight" Value="36" />
+            <Setter Property="ColumnHeaderHeight" Value="40" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="RowHeaderWidth" Value="0" />
+            <Setter Property="HeadersVisibility" Value="Column" />
+        </Style>
+
+        <Style x:Key="ListViewStyle" TargetType="ListView">
+            <Setter Property="Background" Value="White" />
+            <Setter Property="BorderBrush" Value="#E0E0E0" />
+            <Setter Property="FontFamily" Value="{Binding FontFamily}" />
+            <Setter Property="FontSize" Value="{Binding FontSize}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ListView">
+                        <Border
+                            Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            CornerRadius="4">
+                            <ScrollViewer Style="{DynamicResource ScrollViewerStyle}">
+                                <ItemsPresenter />
+                            </ScrollViewer>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="ScrollViewerStyle" TargetType="ScrollViewer">
+            <Setter Property="VerticalScrollBarVisibility" Value="Auto" />
+            <Setter Property="HorizontalScrollBarVisibility" Value="Auto" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ScrollViewer">
+                        <Grid Background="{TemplateBinding Background}">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="*" />
+                                <RowDefinition Height="Auto" />
+                            </Grid.RowDefinitions>
+
+                            <ScrollContentPresenter Grid.Row="0" Grid.Column="0" />
+
+                            <ScrollBar
+                                x:Name="PART_VerticalScrollBar"
+                                Grid.Row="0"
+                                Grid.Column="1"
+                                Maximum="{TemplateBinding ScrollableHeight}"
+                                ViewportSize="{TemplateBinding ViewportHeight}"
+                                Visibility="{TemplateBinding ComputedVerticalScrollBarVisibility}"
+                                Value="{TemplateBinding VerticalOffset}" />
+
+                            <ScrollBar
+                                x:Name="PART_HorizontalScrollBar"
+                                Grid.Row="1"
+                                Grid.Column="0"
+                                Maximum="{TemplateBinding ScrollableWidth}"
+                                Orientation="Horizontal"
+                                ViewportSize="{TemplateBinding ViewportWidth}"
+                                Visibility="{TemplateBinding ComputedHorizontalScrollBarVisibility}"
+                                Value="{TemplateBinding HorizontalOffset}" />
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="ProgressBarStyle" TargetType="ProgressBar">
+            <Setter Property="Height" Value="20" />
+            <Setter Property="Margin" Value="0,5,0,5" />
+            <Setter Property="Foreground" Value="#4CAF50" />
+            <Setter Property="Background" Value="#F5F5F5" />
+            <Setter Property="BorderBrush" Value="#E0E0E0" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ProgressBar">
+                        <Border
+                            Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            CornerRadius="4">
+                            <Grid x:Name="PART_Track">
+                                <Rectangle
+                                    x:Name="PART_Indicator"
+                                    HorizontalAlignment="Left"
+                                    Fill="{TemplateBinding Foreground}"
+                                    RadiusX="4"
+                                    RadiusY="4" />
+                            </Grid>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!--  Icon Converter und andere Ressourcen  -->
+        <Style x:Key="SafeImageStyle" TargetType="Image">
+            <Setter Property="RenderOptions.BitmapScalingMode" Value="HighQuality" />
+            <Style.Triggers>
+                <EventTrigger RoutedEvent="Image.ImageFailed">
+                    <BeginStoryboard>
+                        <Storyboard>
+                            <ObjectAnimationUsingKeyFrames Storyboard.TargetProperty="Visibility">
+                                <DiscreteObjectKeyFrame KeyTime="0:0:0" Value="{x:Static Visibility.Collapsed}" />
+                            </ObjectAnimationUsingKeyFrames>
+                        </Storyboard>
+                    </BeginStoryboard>
+                </EventTrigger>
+            </Style.Triggers>
+        </Style>
+
+        <DrawingImage x:Key="PlaceholderIcon">
+            <DrawingImage.Drawing>
+                <GeometryDrawing Brush="#BDBDBD">
+                    <GeometryDrawing.Geometry>
+                        <RectangleGeometry
+                            RadiusX="4"
+                            RadiusY="4"
+                            Rect="0,0,32,32" />
+                    </GeometryDrawing.Geometry>
+                </GeometryDrawing>
+            </DrawingImage.Drawing>
+        </DrawingImage>
+
+        <!--  Tab-Icons als Platzhalter für die einzelnen Tabs  -->
+        <DrawingImage x:Key="OnboardingIcon">
+            <DrawingImage.Drawing>
+                <GeometryDrawing Brush="#0078D4">
+                    <GeometryDrawing.Geometry>
+                        <RectangleGeometry
+                            RadiusX="3"
+                            RadiusY="3"
+                            Rect="0,0,16,16" />
+                    </GeometryDrawing.Geometry>
+                </GeometryDrawing>
+            </DrawingImage.Drawing>
+        </DrawingImage>
+
+        <DrawingImage x:Key="ADUpdateIcon">
+            <DrawingImage.Drawing>
+                <GeometryDrawing Brush="#4CAF50">
+                    <GeometryDrawing.Geometry>
+                        <RectangleGeometry
+                            RadiusX="3"
+                            RadiusY="3"
+                            Rect="0,0,16,16" />
+                    </GeometryDrawing.Geometry>
+                </GeometryDrawing>
+            </DrawingImage.Drawing>
+        </DrawingImage>
+
+        <DrawingImage x:Key="CSVImportIcon">
+            <DrawingImage.Drawing>
+                <GeometryDrawing Brush="#FF9800">
+                    <GeometryDrawing.Geometry>
+                        <RectangleGeometry
+                            RadiusX="3"
+                            RadiusY="3"
+                            Rect="0,0,16,16" />
+                    </GeometryDrawing.Geometry>
+                </GeometryDrawing>
+            </DrawingImage.Drawing>
+        </DrawingImage>
+
+        <DrawingImage x:Key="JiraConfluenceIcon">
+            <DrawingImage.Drawing>
+                <GeometryDrawing Brush="#9C27B0">
+                    <GeometryDrawing.Geometry>
+                        <RectangleGeometry
+                            RadiusX="3"
+                            RadiusY="3"
+                            Rect="0,0,16,16" />
+                    </GeometryDrawing.Geometry>
+                </GeometryDrawing>
+            </DrawingImage.Drawing>
+        </DrawingImage>
+
+        <DrawingImage x:Key="INIEditorIcon">
+            <DrawingImage.Drawing>
+                <GeometryDrawing Brush="#F44336">
+                    <GeometryDrawing.Geometry>
+                        <RectangleGeometry
+                            RadiusX="3"
+                            RadiusY="3"
+                            Rect="0,0,16,16" />
+                    </GeometryDrawing.Geometry>
+                </GeometryDrawing>
+            </DrawingImage.Drawing>
+        </DrawingImage>
+
+        <!--  Style für das rechte Panel, das in allen Tabs einheitlich sein soll  -->
+        <Style x:Key="RightPanelStyle" TargetType="Border">
+            <Setter Property="Width" Value="275" />
+            <Setter Property="Margin" Value="5,0,5,0" />
+            <Setter Property="Background" Value="#FFFFFF" />
+            <Setter Property="BorderBrush" Value="{Binding RahmenColor}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="8" />
+            <Setter Property="Effect">
+                <Setter.Value>
+                    <DropShadowEffect
+                        BlurRadius="10"
+                        Opacity="0.1"
+                        ShadowDepth="1"
+                        Color="#000000" />
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!--  Gemeinsame Struktur für rechte Panels in allen Tabs  -->
+        <Style x:Key="RightPanelStackStyle" TargetType="StackPanel">
+            <Setter Property="Margin" Value="16" />
+        </Style>
+
+        <!--  Gemeinsame Struktur für linke Panels in allen Tabs (außer easyONBOARDING)  -->
+        <Style x:Key="LeftPanelStyle" TargetType="Border">
+            <Setter Property="Margin" Value="10,0,5,10" />
+            <Setter Property="Background" Value="#FFFFFF" />
+            <Setter Property="BorderBrush" Value="#E0E0E0" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="8" />
+            <Setter Property="Effect">
+                <Setter.Value>
+                    <DropShadowEffect
+                        BlurRadius="10"
+                        Opacity="0.1"
+                        ShadowDepth="1"
+                        Color="#000000" />
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="DatePickerStyle" TargetType="DatePicker">
+            <Setter Property="Margin" Value="5" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="FontFamily" Value="{Binding DefaultFontFamily}" />
+            <Setter Property="FontSize" Value="{Binding DefaultFontSize}" />
+            <Setter Property="Background" Value="White" />
+            <Setter Property="Foreground" Value="#202020" />
+            <Setter Property="BorderBrush" Value="#E0E0E0" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Padding" Value="8,6" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="DatePicker">
+                        <Grid>
+                            <Border
+                                Padding="8,0"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="4">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <DatePickerTextBox
+                                        x:Name="PART_TextBox"
+                                        Grid.Column="0"
+                                        Padding="0"
+                                        HorizontalContentAlignment="Left"
+                                        VerticalContentAlignment="Center"
+                                        Background="Transparent"
+                                        BorderThickness="0"
+                                        FontFamily="{TemplateBinding FontFamily}"
+                                        FontSize="{TemplateBinding FontSize}"
+                                        FontStretch="{TemplateBinding FontStretch}"
+                                        FontStyle="{TemplateBinding FontStyle}"
+                                        FontWeight="{TemplateBinding FontWeight}"
+                                        Foreground="{TemplateBinding Foreground}" />
+                                    <Button
+                                        x:Name="PART_Button"
+                                        Grid.Column="1"
+                                        Width="20"
+                                        Height="20"
+                                        Margin="5,0,0,0"
+                                        VerticalAlignment="Center"
+                                        Background="Transparent"
+                                        BorderThickness="0"
+                                        Focusable="False">
+                                        <Path
+                                            Width="12"
+                                            Height="12"
+                                            Data="M19,4H18V2H16V4H8V2H6V4H5A2,2 0 0,0 3,6V20A2,2 0 0,0 5,22H19A2,2 0 0,0 21,20V6A2,2 0 0,0 19,4M19,20H5V10H19V20M19,8H5V6H19V8Z"
+                                            Fill="#505050"
+                                            Stretch="Uniform" />
+                                    </Button>
+                                </Grid>
+                            </Border>
+                            <Popup
+                                x:Name="PART_Popup"
+                                AllowsTransparency="True"
+                                PlacementTarget="{Binding ElementName=PART_Button}"
+                                StaysOpen="False">
+                                <Border
+                                    Background="White"
+                                    BorderBrush="#E0E0E0"
+                                    BorderThickness="1"
+                                    CornerRadius="4">
+                                    <Calendar
+                                        x:Name="PART_Calendar"
+                                        Background="Transparent"
+                                        BorderThickness="0" />
+                                </Border>
+                            </Popup>
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="BorderBrush" Value="#BDBDBD" />
+                </Trigger>
+                <Trigger Property="IsFocused" Value="True">
+                    <Setter Property="BorderBrush" Value="#0078D4" />
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+    </Window.Resources>
+
+    <!--  Hauptcontainer: Grid, der den TabControl-Bereich umschließt  -->
+    <Grid Background="#FFEEEEEE">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="5*" />
+            <ColumnDefinition Width="1265" />
+        </Grid.ColumnDefinitions>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*" />
+            <RowDefinition Height="55" />
+        </Grid.RowDefinitions>
+
+        <!--  TabControl mit allen Hauptfunktionen  -->
+        <TabControl
+            x:Name="MainTabControl"
+            Grid.Row="0"
+            Grid.RowSpan="2"
+            Grid.Column="1"
+            Margin="2,0,2,0"
+            Background="Transparent"
+            Style="{StaticResource TabControlStyle}">
+            <!--  TAB 1: easyONBOARDING mit Icon  -->
+            <TabItem
+                x:Name="Tab_Onboarding"
+                Margin="2,-1,2,3"
+                Background="#FFD6D6D6"
+                Style="{StaticResource TabItemStyle}">
+                <TabItem.Header>
+                    <StackPanel Orientation="Horizontal">
+                        <Rectangle
+                            Width="16"
+                            Height="16"
+                            Margin="0,0,8,0"
+                            Fill="#0078D4"
+                            RadiusX="3"
+                            RadiusY="3" />
+                        <TextBlock Text="easyONBOARDING" />
+                    </StackPanel>
+                </TabItem.Header>
+                <Grid Height="750" Margin="10,0,10,0">
+                    <Grid.ColumnDefinitions>
+                        <!--  Linkes Panel  -->
+                        <ColumnDefinition Width="420" />
+                        <!--  Mittleres Panel (Suffix _Onb)  -->
+                        <ColumnDefinition Width="*" />
+                        <!--  Rechtes Panel (Suffix _Onb2)  -->
+                        <ColumnDefinition Width="300" />
+                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="750" />
+                    </Grid.RowDefinitions>
+
+                    <!--  Linkes Panel: Eingabeformular für Onboarding-Daten  -->
+                    <Border
+                        Grid.Column="0"
+                        Margin="0,0,5,15"
+                        Background="White"
+                        BorderBrush="#CCCCCC"
+                        BorderThickness="1"
+                        CornerRadius="8">
+                        <StackPanel Margin="0,5,0,9">
+                            <!--  OU Selection Box  -->
+                            <Border
+                                Height="60"
+                                Margin="5"
+                                Background="#FFFFEFEF"
+                                BorderBrush="LightGray"
+                                BorderThickness="1"
+                                CornerRadius="8">
+                                <StackPanel Margin="5" Orientation="Vertical">
+                                    <TextBlock FontWeight="Bold" Text="OU Selection" />
+                                    <!--  OU Auswahl und Refresh  -->
+                                    <Grid Margin="5">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        <ComboBox
+                                            x:Name="cmbOU"
+                                            Grid.Column="1"
+                                            MinWidth="200"
+                                            Margin="0,0,75,0" />
+                                        <Button
+                                            x:Name="btnRefreshOU"
+                                            Grid.Column="1"
+                                            Height="25"
+                                            Margin="311,0,0,0"
+                                            Content="Refresh"
+                                            Style="{StaticResource StandardButton}" />
+                                    </Grid>
+                                </StackPanel>
+                            </Border>
+                            <!--  User Basic Information Box  -->
+                            <Border
+                                Height="140"
+                                Margin="5"
+                                Background="#FFEEEEEE"
+                                BorderBrush="LightGray"
+                                BorderThickness="1"
+                                CornerRadius="8">
+                                <StackPanel Margin="5" Orientation="Vertical">
+                                    <TextBlock FontWeight="Bold" Text="Basic Information" />
+
+                                    <!--  First Name  -->
+                                    <Grid Margin="5">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="*" />
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock
+                                            Margin="0,0,5,0"
+                                            VerticalAlignment="Center"
+                                            FontFamily="{Binding FontFamily}"
+                                            FontSize="{Binding FontSize}"
+                                            Text="First Name *:" />
+                                        <TextBox
+                                            x:Name="txtFirstName"
+                                            Grid.Column="1"
+                                            Width="260"
+                                            MinWidth="200"
+                                            Margin="36,0,0,0"
+                                            HorizontalAlignment="Left"
+                                            HorizontalContentAlignment="Right" />
+                                    </Grid>
+                                    <!--  Last Name  -->
+                                    <Grid Margin="5">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="*" />
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock
+                                            Margin="0,0,5,0"
+                                            VerticalAlignment="Center"
+                                            FontFamily="{Binding FontFamily}"
+                                            FontSize="{Binding FontSize}"
+                                            Text="Last Name *:" />
+                                        <TextBox
+                                            x:Name="txtLastName"
+                                            Grid.Column="1"
+                                            Width="260"
+                                            MinWidth="200"
+                                            Margin="37,0,0,0"
+                                            HorizontalAlignment="Left"
+                                            HorizontalContentAlignment="Right" />
+                                    </Grid>
+                                    <!--  External Employee Checkbox  -->
+                                    <Grid Margin="5">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="*" />
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock
+                                            Margin="0,0,5,0"
+                                            VerticalAlignment="Center"
+                                            FontFamily="{Binding FontFamily}"
+                                            FontSize="{Binding FontSize}"
+                                            Text="External?" />
+                                        <CheckBox
+                                            x:Name="chkExternal"
+                                            Grid.Column="1"
+                                            Margin="56,0,0,0"
+                                            VerticalAlignment="Center" />
+                                    </Grid>
+                                </StackPanel>
+                            </Border>
+                            <!--  Display Name Box  -->
+                            <Border
+                                Height="90"
+                                Margin="5"
+                                Background="#FFEEEEEE"
+                                BorderBrush="LightGray"
+                                BorderThickness="1"
+                                CornerRadius="8">
+                                <StackPanel Margin="5" Orientation="Vertical">
+                                    <TextBlock FontWeight="Bold" Text="Display Settings" />
+
+                                    <!--  Display Name  -->
+                                    <Grid Margin="5">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="*" />
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock
+                                            Margin="0,0,5,0"
+                                            VerticalAlignment="Center"
+                                            FontFamily="{Binding FontFamily}"
+                                            FontSize="{Binding FontSize}"
+                                            Text="Display Name:" />
+                                        <TextBox
+                                            x:Name="txtDisplayName"
+                                            Grid.Column="1"
+                                            Width="260"
+                                            MinWidth="200"
+                                            Margin="28,0,0,0"
+                                            HorizontalAlignment="Left"
+                                            VerticalAlignment="Center"
+                                            HorizontalContentAlignment="Right"
+                                            FontSize="12" />
+                                    </Grid>
+                                    <!--  UPN Template Auswahl  -->
+                                    <Grid Margin="5">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="*" />
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock
+                                            Margin="0,0,5,0"
+                                            VerticalAlignment="Center"
+                                            FontFamily="{Binding FontFamily}"
+                                            FontSize="{Binding FontSize}"
+                                            Text="Template:" />
+                                        <ComboBox
+                                            x:Name="cmbDisplayTemplate"
+                                            Grid.Column="1"
+                                            Height="20"
+                                            MinWidth="200"
+                                            Margin="54,0,10,0"
+                                            VerticalAlignment="Center">
+                                            <ComboBoxItem Content="Template1" />
+                                            <ComboBoxItem Content="Template2" />
+                                        </ComboBox>
+                                    </Grid>
+                                </StackPanel>
+                            </Border>
+                            <!--  Additional Information Box  -->
+                            <Border
+                                Height="270"
+                                Margin="5,10,5,25"
+                                Background="#FFEEEEEE"
+                                BorderBrush="LightGray"
+                                BorderThickness="1"
+                                CornerRadius="8">
+                                <StackPanel Margin="5" Orientation="Vertical">
+                                    <TextBlock FontWeight="Bold" Text="Additional Information" />
+
+                                    <!--  Description  -->
+                                    <Grid Margin="5">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="*" />
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock
+                                            Margin="0,0,5,0"
+                                            VerticalAlignment="Center"
+                                            FontFamily="{Binding FontFamily}"
+                                            FontSize="{Binding FontSize}"
+                                            Text="Description:" />
+                                        <Grid Grid.Column="1" Margin="41,0,0,0">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="Auto" />
+                                                <ColumnDefinition Width="*" />
+                                            </Grid.ColumnDefinitions>
+                                            <!--  Small box for 8 numbers  -->
+                                            <TextBox
+                                                x:Name="txtDescriptionNumber"
+                                                Grid.Column="0"
+                                                Width="80"
+                                                MinWidth="80"
+                                                Margin="0,0,5,0"
+                                                HorizontalAlignment="Right"
+                                                VerticalAlignment="Center"
+                                                HorizontalContentAlignment="Right"
+                                                FontSize="12"
+                                                Text="Ticket ID" />
+                                            <!--  Larger box for main description  -->
+                                            <TextBox
+                                                x:Name="txtDescription"
+                                                Grid.Column="1"
+                                                Width="175"
+                                                MinWidth="120"
+                                                HorizontalAlignment="Left"
+                                                VerticalAlignment="Center"
+                                                HorizontalContentAlignment="Left"
+                                                FontSize="12" />
+                                        </Grid>
+                                    </Grid>
+                                    <Border Height="5" Background="Transparent" />
+                                    <!--  Office  -->
+                                    <Grid Margin="5">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="*" />
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock
+                                            Margin="0,0,5,0"
+                                            VerticalAlignment="Center"
+                                            FontFamily="{Binding FontFamily}"
+                                            FontSize="{Binding FontSize}"
+                                            Text="Office:" />
+                                        <TextBox
+                                            x:Name="txtOffice"
+                                            Grid.Column="1"
+                                            Width="260"
+                                            MinWidth="200"
+                                            Margin="71,0,0,0"
+                                            HorizontalAlignment="Left"
+                                            VerticalAlignment="Center"
+                                            HorizontalContentAlignment="Right"
+                                            FontSize="12" />
+                                    </Grid>
+                                    <!--  Phone  -->
+                                    <Border Height="5" Background="Transparent" />
+                                    <Grid Margin="5">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="*" />
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock
+                                            Margin="0,0,5,0"
+                                            VerticalAlignment="Center"
+                                            FontFamily="{Binding FontFamily}"
+                                            FontSize="{Binding FontSize}"
+                                            Text="Phone:" />
+                                        <TextBox
+                                            x:Name="txtPhone"
+                                            Grid.Column="1"
+                                            Width="210"
+                                            MinWidth="200"
+                                            Margin="119,0,0,0"
+                                            HorizontalAlignment="Left"
+                                            VerticalAlignment="Center"
+                                            HorizontalContentAlignment="Right"
+                                            FontSize="12" />
+                                    </Grid>
+                                    <!--  Mobile  -->
+                                    <Grid Margin="5">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="*" />
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock
+                                            Margin="0,0,5,0"
+                                            VerticalAlignment="Center"
+                                            FontFamily="{Binding FontFamily}"
+                                            FontSize="{Binding FontSize}"
+                                            Text="Mobile:" />
+                                        <TextBox
+                                            x:Name="txtMobile"
+                                            Grid.Column="1"
+                                            Width="210"
+                                            MinWidth="200"
+                                            Margin="115,0,0,0"
+                                            HorizontalAlignment="Left"
+                                            VerticalAlignment="Center"
+                                            HorizontalContentAlignment="Right"
+                                            FontSize="12" />
+                                    </Grid>
+                                    <Border Height="5" Background="Transparent" />
+                                    <!--  Position  -->
+                                    <Grid Margin="5">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="*" />
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock
+                                            Margin="0,0,5,0"
+                                            VerticalAlignment="Center"
+                                            FontFamily="{Binding FontFamily}"
+                                            FontSize="{Binding FontSize}"
+                                            Text="Position:" />
+                                        <TextBox
+                                            x:Name="txtPosition"
+                                            Grid.Column="1"
+                                            Width="260"
+                                            MinWidth="200"
+                                            Margin="59,0,0,0"
+                                            HorizontalAlignment="Left"
+                                            VerticalAlignment="Center"
+                                            HorizontalContentAlignment="Right"
+                                            FontSize="12" />
+                                    </Grid>
+                                    <!--  Department  -->
+                                    <Grid Margin="5">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="*" />
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock
+                                            Margin="0,0,5,0"
+                                            VerticalAlignment="Center"
+                                            FontFamily="{Binding FontFamily}"
+                                            FontSize="{Binding FontSize}"
+                                            Text="Department:" />
+                                        <TextBox
+                                            x:Name="txtDepartment"
+                                            Grid.Column="1"
+                                            Width="260"
+                                            MinWidth="200"
+                                            Margin="37,0,0,0"
+                                            HorizontalAlignment="Left"
+                                            VerticalAlignment="Center"
+                                            HorizontalContentAlignment="Right"
+                                            FontSize="12" />
+                                    </Grid>
+                                    <Border Height="5" Background="Transparent" />
+                                    <!--  Termination Date  -->
+                                    <Grid Margin="5">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="*" />
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock
+                                            Margin="0,0,5,0"
+                                            VerticalAlignment="Center"
+                                            FontFamily="{Binding FontFamily}"
+                                            FontSize="{Binding FontSize}"
+                                            Text="Termination Date:" />
+                                        <DatePicker
+                                            x:Name="datTermination"
+                                            Grid.Column="1"
+                                            Width="260"
+                                            MinWidth="200"
+                                            HorizontalAlignment="Center"
+                                            Style="{StaticResource DatePickerStyle}"
+                                            ToolTip="Leave empty if no end date is set" />
+                                    </Grid>
+                                    <!--  Hinweis  -->
+                                    <Border Height="20" Background="Transparent">
+                                        <TextBlock
+                                            Width="250"
+                                            Margin="111,-3,5,10"
+                                            FontSize="10"
+                                            FontStyle="Italic"><Run Text="Not effective when " /><Run Language="de-de" Text="Account " /><Run Text="disabled!" /></TextBlock>
+                                    </Border>
+                                </StackPanel>
+                            </Border>
+                            <Border
+                                Width="403"
+                                Background="#FFEEEEEE"
+                                BorderBrush="LightGray"
+                                BorderThickness="1"
+                                CornerRadius="8">
+                                <StackPanel Margin="5" Orientation="Vertical">
+                                    <StackPanel Margin="5" Orientation="Horizontal">
+                                        <Grid Width="490" Margin="5">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="Auto" />
+                                                <ColumnDefinition Width="*" />
+                                            </Grid.ColumnDefinitions>
+                                            <TextBlock
+                                                Margin="5,0,10,0"
+                                                Style="{StaticResource StandardTextBlock}"
+                                                Text="Email Address:" />
+                                            <TextBox
+                                                x:Name="txtEmail"
+                                                Grid.Column="1"
+                                                MinWidth="200"
+                                                Margin="10,0,125,0"
+                                                FontSize="12" />
+                                        </Grid>
+                                    </StackPanel>
+                                    <Grid Margin="5">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="*" />
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock
+                                            Grid.Column="0"
+                                            Margin="10,0,5,0"
+                                            Style="{StaticResource StandardTextBlock}"
+                                            Text="Mail Suffix:" />
+                                        <ComboBox
+                                            x:Name="cmbSuffix"
+                                            Grid.Column="1"
+                                            MinWidth="200"
+                                            Margin="36,0,10,0"
+                                            DisplayMemberPath="Value"
+                                            ItemsSource="{Binding MailSuffixListFromINI}"
+                                            SelectedValuePath="Key" />
+                                    </Grid>
+                                    <Border Height="5" Background="Transparent" />
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
+                    </Border>
+
+                    <!--  Footer-Bereich des linken Panels mit Grid statt absoluter Positionierung  -->
+                    <Grid
+                        Grid.Column="0"
+                        Margin="0,0,5,10"
+                        VerticalAlignment="Bottom">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="110" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                    </Grid>
+
+                    <!--  Mittleres Panel: Email & AD Settings  -->
+                    <Border
+                        Grid.Column="1"
+                        Margin="5,0,5,15"
+                        Background="White"
+                        BorderBrush="#CCCCCC"
+                        BorderThickness="1"
+                        CornerRadius="8">
+                        <StackPanel Margin="10">
+                            <!--  Email Settings Box  -->
+                            <!--  Two-column layout for Account Status and Role Assignment  -->
+                            <Grid Margin="0,0,0,5">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+
+                                <!--  Left Box: Account Status  -->
+                                <Border
+                                    Grid.Column="0"
+                                    Margin="0,0,5,0"
+                                    Background="#FFEEEEEE"
+                                    BorderBrush="LightGray"
+                                    BorderThickness="1"
+                                    CornerRadius="8">
+                                    <StackPanel Margin="10" Orientation="Vertical">
+                                        <TextBlock FontWeight="Bold" Text="AccountStatus" />
+                                        <RadioButton
+                                            x:Name="rbAccountEnabled"
+                                            Width="138"
+                                            Margin="55,10,0,0"
+                                            Content="Account Enabled"
+                                            FontSize="12"
+                                            GroupName="AccountStatus" />
+                                        <RadioButton
+                                            x:Name="rbAccountDisabled"
+                                            Width="138"
+                                            Margin="55,10,0,0"
+                                            Content="Account Disabled"
+                                            FontSize="12"
+                                            GroupName="AccountStatus"
+                                            IsChecked="True" />
+                                    </StackPanel>
+                                </Border>
+
+                                <!--  Right Box: Role Assignment (TL/AL)  -->
+                                <Border
+                                    Grid.Column="1"
+                                    Margin="5,0,0,0"
+                                    Background="#FFEEEEEE"
+                                    BorderBrush="LightGray"
+                                    BorderThickness="1"
+                                    CornerRadius="8">
+                                    <StackPanel Margin="10">
+                                        <TextBlock
+                                            Margin="0,0,0,5"
+                                            FontWeight="Bold"
+                                            Text="Role Assignment" />
+                                        <!--  TL/AL Checkboxes  -->
+                                        <StackPanel Margin="0,5,0,5" Orientation="Horizontal">
+                                            <CheckBox
+                                                x:Name="chkTL"
+                                                Margin="0,0,15,0"
+                                                VerticalAlignment="Center"
+                                                Content="Team Lead (TL)"
+                                                FontSize="9"
+                                                FontWeight="Bold" />
+                                            <CheckBox
+                                                x:Name="chkAL"
+                                                VerticalAlignment="Center"
+                                                Content="Head of ... (AL)"
+                                                FontSize="9"
+                                                FontWeight="Bold" />
+                                        </StackPanel>
+                                        <!--  TL Group Selection  -->
+                                        <Grid Margin="0,5,0,0">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="Auto" />
+                                                <ColumnDefinition Width="*" />
+                                            </Grid.ColumnDefinitions>
+                                            <TextBlock
+                                                Grid.ColumnSpan="2"
+                                                Margin="0,0,152,0"
+                                                VerticalAlignment="Center"
+                                                FontFamily="{Binding FontFamily}"
+                                                FontSize="{Binding FontSize}"
+                                                Text="TL:" />
+                                            <ComboBox
+                                                x:Name="cmbTLGroup"
+                                                Grid.Column="1"
+                                                Height="20"
+                                                MinWidth="150"
+                                                Margin="30,0,0,0"
+                                                VerticalAlignment="Center"
+                                                DisplayMemberPath="Value"
+                                                ItemsSource="{Binding TLGroupOptions}"
+                                                SelectedValuePath="Value" />
+                                        </Grid>
+                                    </StackPanel>
+                                </Border>
+                            </Grid>
+                            <!--  Password Options Section  -->
+                            <Border
+                                Margin="0,0,0,5"
+                                Background="#FFEEEEEE"
+                                BorderBrush="LightGray"
+                                BorderThickness="1"
+                                CornerRadius="8">
+                                <StackPanel Orientation="Vertical">
+                                    <TextBlock
+                                        Margin="10,10,0,0"
+                                        FontWeight="Bold"
+                                        Text="Password Options" />
+                                    <Grid Margin="10">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="*" />
+                                        </Grid.ColumnDefinitions>
+                                        <!--  Left Box: GENERATED Password  -->
+                                        <Border
+                                            Grid.Column="0"
+                                            Margin="0,0,5,0"
+                                            Background="#FFF3F3F3"
+                                            BorderBrush="LightGray"
+                                            BorderThickness="1"
+                                            CornerRadius="6">
+                                            <StackPanel Margin="9,0,9,0" Orientation="Vertical">
+                                                <RadioButton
+                                                    x:Name="rbRand"
+                                                    Content="Use generated password"
+                                                    FontWeight="Bold"
+                                                    GroupName="PasswordOption"
+                                                    IsChecked="True"
+                                                    Style="{StaticResource StandardRadioButton}" />
+                                                <Grid Margin="5,5,0,0">
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="Auto" />
+                                                        <ColumnDefinition Width="Auto" />
+                                                    </Grid.ColumnDefinitions>
+                                                    <TextBlock
+                                                        Grid.Column="0"
+                                                        Style="{StaticResource StandardTextBlock}"
+                                                        Text="Length:" />
+                                                    <TextBox
+                                                        x:Name="txtPWLen"
+                                                        Grid.Column="1"
+                                                        Width="35"
+                                                        FontSize="12"
+                                                        Style="{StaticResource StandardTextBox}"
+                                                        Text="14" />
+                                                </Grid>
+                                                <CheckBox
+                                                    x:Name="chkIncludeSpecial"
+                                                    Margin="5,5,0,0"
+                                                    Content="Special Characters"
+                                                    FontSize="11"
+                                                    IsChecked="True"
+                                                    Style="{StaticResource StandardCheckBox}" />
+                                                <CheckBox
+                                                    x:Name="chkAvoidAmbig"
+                                                    Margin="5,5,0,0"
+                                                    Content="Avoid Ambiguous Characters"
+                                                    FontSize="11"
+                                                    IsChecked="True"
+                                                    Style="{StaticResource StandardCheckBox}" />
+                                            </StackPanel>
+                                        </Border>
+
+                                        <!--  Right Box: FIXED Password  -->
+                                        <Border
+                                            Grid.Column="1"
+                                            Margin="5,0,0,0"
+                                            Background="#FFF3F3F3"
+                                            BorderBrush="LightGray"
+                                            BorderThickness="1"
+                                            CornerRadius="6">
+                                            <StackPanel
+                                                Height="121"
+                                                Margin="10"
+                                                Orientation="Vertical">
+                                                <RadioButton
+                                                    x:Name="rbFix"
+                                                    Content="Use fixed password"
+                                                    FontWeight="Bold"
+                                                    GroupName="PasswordOption"
+                                                    Style="{StaticResource StandardRadioButton}" />
+                                                <TextBox
+                                                    x:Name="txtFixPW"
+                                                    Margin="0,25,0,0"
+                                                    FontSize="10"
+                                                    IsEnabled="{Binding IsChecked, ElementName=rbFix}" />
+                                            </StackPanel>
+                                        </Border>
+                                    </Grid>
+                                </StackPanel>
+                            </Border>
+                            <!--  Two-column layout for License and Placeholder  -->
+                            <Grid Margin="0,0,0,15">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="146*" />
+                                    <ColumnDefinition Width="69*" />
+                                    <ColumnDefinition Width="215*" />
+                                </Grid.ColumnDefinitions>
+                                <!--  Left Box: MS365 License Selection  -->
+                                <Border
+                                    Grid.Column="0"
+                                    Grid.ColumnSpan="3"
+                                    Background="#FFEEEEEE"
+                                    BorderBrush="LightGray"
+                                    BorderThickness="1"
+                                    CornerRadius="8">
+                                    <StackPanel Margin="10">
+                                        <TextBlock
+                                            Margin="0,0,0,5"
+                                            FontWeight="Bold"
+                                            Text="License Selection" />
+                                        <Grid Margin="0,5,0,0">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="Auto" />
+                                                <ColumnDefinition Width="*" />
+                                            </Grid.ColumnDefinitions>
+                                            <TextBlock
+                                                Margin="0,0,3,0"
+                                                VerticalAlignment="Center"
+                                                FontFamily="{Binding FontFamily}"
+                                                FontSize="{Binding FontSize}"
+                                                Text="MS365 License:" />
+                                            <ComboBox
+                                                x:Name="cmbLicense"
+                                                Grid.Column="1"
+                                                MinWidth="130"
+                                                Margin="3,0,0,0"
+                                                DisplayMemberPath="Name"
+                                                ItemsSource="{Binding LicenseListFromINI}"
+                                                SelectedValuePath="Value" />
+                                        </Grid>
+                                    </StackPanel>
+                                </Border>
+                            </Grid>
+                            <!--  AD Groups Section Box  -->
+                            <Border
+                                Margin="0,0,0,15"
+                                Background="#FFEEEEEE"
+                                BorderBrush="LightGray"
+                                BorderThickness="1"
+                                CornerRadius="8">
+                                <StackPanel Orientation="Vertical">
+                                    <TextBlock
+                                        Margin="10,10,0,5"
+                                        FontWeight="Bold"
+                                        Text="AD Groups:" />
+                                    <ScrollViewer
+                                        Height="230"
+                                        Margin="10,0,10,10"
+                                        Background="#FFF3F3F3"
+                                        HorizontalScrollBarVisibility="Disabled"
+                                        VerticalScrollBarVisibility="Auto">
+                                        <ItemsControl x:Name="icADGroups">
+                                            <ItemsControl.ItemsPanel>
+                                                <ItemsPanelTemplate>
+                                                    <UniformGrid Columns="3" />
+                                                </ItemsPanelTemplate>
+                                            </ItemsControl.ItemsPanel>
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate>
+                                                    <CheckBox Margin="3" Content="{Binding}" />
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                    </ScrollViewer>
+                                </StackPanel>
+                            </Border>
+                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                                <Button
+                                    x:Name="btnClearPreview"
+                                    Width="120"
+                                    Height="30"
+                                    Margin="5"
+                                    Background="LightGray"
+                                    Content="Clear Preview">
+                                    <Button.Template>
+                                        <ControlTemplate TargetType="Button">
+                                            <Border
+                                                Background="{TemplateBinding Background}"
+                                                BorderBrush="{TemplateBinding BorderBrush}"
+                                                BorderThickness="{TemplateBinding BorderThickness}"
+                                                CornerRadius="8">
+                                                <ContentPresenter
+                                                    HorizontalAlignment="Center"
+                                                    VerticalAlignment="Center" />
+                                            </Border>
+                                        </ControlTemplate>
+                                    </Button.Template>
+                                </Button>
+                                <Button
+                                    x:Name="btnImportCSV"
+                                    Width="120"
+                                    Height="30"
+                                    Margin="5"
+                                    Background="AntiqueWhite"
+                                    Content="Import CSV">
+                                    <Button.Template>
+                                        <ControlTemplate TargetType="Button">
+                                            <Border
+                                                Background="{TemplateBinding Background}"
+                                                BorderBrush="{TemplateBinding BorderBrush}"
+                                                BorderThickness="{TemplateBinding BorderThickness}"
+                                                CornerRadius="8">
+                                                <ContentPresenter
+                                                    HorizontalAlignment="Center"
+                                                    VerticalAlignment="Center" />
+                                            </Border>
+                                        </ControlTemplate>
+                                    </Button.Template>
+                                </Button>
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+
+                    <!--  Rechtes Panel: Admin Buttons, Logo und Dokumentenoptionen  -->
+                    <Border
+                        Grid.Column="2"
+                        Margin="5,0,0,15"
+                        VerticalAlignment="Stretch"
+                        Background="White"
+                        BorderBrush="LightGray"
+                        Style="{StaticResource RightPanelStyle}">
+                        <StackPanel Style="{StaticResource RightPanelStackStyle}" Margin="16,16,16,7">
+                            <!--  Logo und Header  -->
+                            <StackPanel
+                                Height="69"
+                                HorizontalAlignment="Center"
+                                Orientation="Vertical">
+                                <Image
+                                    x:Name="picLogo1"
+                                    Width="150"
+                                    Height="60"
+                                    Margin="0,0,0,10"
+                                    Source="{Binding OnboardingLogo}"
+                                    Stretch="Fill" />
+                            </StackPanel>
+                            <Border Height="80" Background="Transparent" />
+                            <!--  Reporting Options  -->
+                            <Border
+                                Margin="0,0,0,15"
+                                Background="#FFEEEEEE"
+                                BorderBrush="LightGray"
+                                BorderThickness="1"
+                                CornerRadius="8">
+                                <StackPanel Orientation="Vertical">
+                                    <TextBlock
+                                        Margin="10,10,0,5"
+                                        FontWeight="Bold"
+                                        Text="Reporting" />
+                                    <StackPanel
+                                        Width="190"
+                                        HorizontalAlignment="Center"
+                                        Orientation="Vertical">
+                                        <Border Height="5" Background="Transparent" />
+                                        <Button
+                                            x:Name="btnUploadLogo"
+                                            Width="175"
+                                            Height="25"
+                                            Margin="5"
+                                            Background="LightGray"
+                                            Content="Report LOGO">
+                                            <Button.Template>
+                                                <ControlTemplate TargetType="Button">
+                                                    <Border
+                                                        Background="{TemplateBinding Background}"
+                                                        BorderBrush="{TemplateBinding BorderBrush}"
+                                                        BorderThickness="{TemplateBinding BorderThickness}"
+                                                        CornerRadius="8">
+                                                        <ContentPresenter
+                                                            HorizontalAlignment="Center"
+                                                            VerticalAlignment="Center" />
+                                                    </Border>
+                                                </ControlTemplate>
+                                            </Button.Template>
+                                        </Button>
+                                        <Border Height="5" Background="Transparent" />
+                                        <Button
+                                            x:Name="btnPDF"
+                                            Width="175"
+                                            Height="25"
+                                            Margin="5"
+                                            Background="LightYellow"
+                                            Content="CREATE PDF">
+                                            <Button.Template>
+                                                <ControlTemplate TargetType="Button">
+                                                    <Border
+                                                        Background="{TemplateBinding Background}"
+                                                        BorderBrush="{TemplateBinding BorderBrush}"
+                                                        BorderThickness="{TemplateBinding BorderThickness}"
+                                                        CornerRadius="8">
+                                                        <ContentPresenter
+                                                            HorizontalAlignment="Center"
+                                                            VerticalAlignment="Center" />
+                                                    </Border>
+                                                </ControlTemplate>
+                                            </Button.Template>
+                                        </Button>
+                                        <Border Height="5" Background="Transparent" />
+                                    </StackPanel>
+                                </StackPanel>
+                            </Border>
+                            <Border Height="130" Background="Transparent" />
+                            <!--  Progress & Status  -->
+                            <StackPanel
+                                Margin="10"
+                                HorizontalAlignment="Center"
+                                Orientation="Vertical">
+                                <ProgressBar
+                                    x:Name="progressBar"
+                                    Width="170"
+                                    Height="20"
+                                    Margin="0,23,0,5"
+                                    Maximum="100"
+                                    Minimum="0"
+                                    Value="0" />
+                                <TextBlock
+                                    x:Name="lblStatus"
+                                    HorizontalAlignment="Center"
+                                    Text="Ready..." />
+                            </StackPanel>
+                            <!--  Onboard, PDF, Info, Close Buttons  -->
+                            <StackPanel
+                                Width="200"
+                                Height="295"
+                                Margin="10,10,10,10"
+                                HorizontalAlignment="Center"
+                                Orientation="Vertical">
+                                <Button
+                                    x:Name="btnOnboard"
+                                    Width="160"
+                                    Height="30"
+                                    Margin="5"
+                                    Background="LightGreen"
+                                    Content="ONBOARDING">
+                                    <Button.Template>
+                                        <ControlTemplate TargetType="Button">
+                                            <Border
+                                                Background="{TemplateBinding Background}"
+                                                BorderBrush="{TemplateBinding BorderBrush}"
+                                                BorderThickness="{TemplateBinding BorderThickness}"
+                                                CornerRadius="8">
+                                                <ContentPresenter
+                                                    HorizontalAlignment="Center"
+                                                    VerticalAlignment="Center" />
+                                            </Border>
+                                        </ControlTemplate>
+                                    </Button.Template>
+                                </Button>
+                                <Button
+                                    x:Name="btnProxyMail"
+                                    Width="160"
+                                    Height="30"
+                                    Margin="5"
+                                    Background="YellowGreen"
+                                    Content="set proxyAddresses">
+                                    <Button.Template>
+                                        <ControlTemplate TargetType="Button">
+                                            <Border
+                                                Background="{TemplateBinding Background}"
+                                                BorderBrush="{TemplateBinding BorderBrush}"
+                                                BorderThickness="{TemplateBinding BorderThickness}"
+                                                CornerRadius="8">
+                                                <ContentPresenter
+                                                    HorizontalAlignment="Center"
+                                                    VerticalAlignment="Center" />
+                                            </Border>
+                                        </ControlTemplate>
+                                    </Button.Template>
+                                </Button>
+                                <Border Height="20" Background="Transparent" />
+                                <Border Height="40" Background="Transparent" />
+                                <!--  New buttons  -->
+                                <StackPanel HorizontalAlignment="Center" Orientation="Horizontal">
+                                    <Button
+                                        x:Name="btnInfo1"
+                                        BorderBrush="LightGray"
+                                        Style="{StaticResource SquareButton}">
+                                        <Image
+                                            x:Name="infoIcon"
+                                            Width="20"
+                                            Height="20"
+                                            Source="{Binding InfoIcon}" />
+                                    </Button>
+                                    <Button x:Name="btnClose1" Style="{StaticResource SquareButton}">
+                                        <Image
+                                            x:Name="closeIcon"
+                                            Width="20"
+                                            Height="20"
+                                            Source="{Binding CloseIcon}" />
+                                    </Button>
+                                    <Button x:Name="btnSettings1" Style="{StaticResource SquareButton}">
+                                        <Image
+                                            x:Name="settingsIcon"
+                                            Width="20"
+                                            Height="20"
+                                            Source="{Binding SettingsIcon}" />
+                                    </Button>
+                                </StackPanel>
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+                </Grid>
+            </TabItem>
+
+            <!--  TAB 2: easyADUpdate mit Icon  -->
+            <TabItem
+                x:Name="Tab_ADUpdate"
+                Margin="2,-1,2,3"
+                Background="#FFD6D6D6"
+                Style="{StaticResource TabItemStyle}">
+                <TabItem.Header>
+                    <StackPanel Orientation="Horizontal">
+                        <Rectangle
+                            Width="16"
+                            Height="16"
+                            Margin="0,0,8,0"
+                            Fill="#4CAF50"
+                            RadiusX="3"
+                            RadiusY="3" />
+                        <TextBlock Text="easyADUpdate" />
+                    </StackPanel>
+                </TabItem.Header>
+                <Grid Height="750" Margin="10,0,10,0">
+                    <Grid.ColumnDefinitions>
+                        <!--  Linkes Panel (Hauptinhalt)  -->
+                        <ColumnDefinition Width="*" />
+                        <!--  Rechtes Panel (Standardisiert)  -->
+                        <ColumnDefinition Width="300" />
+                    </Grid.ColumnDefinitions>
+
+                    <!--  Linker Bereich: AD-Update Hauptfunktionalität  -->
+                    <Border
+                        Grid.Column="0"
+                        Margin="0,0,5,15"
+                        BorderBrush="#CCCCCC"
+                        BorderThickness="1"
+                        Style="{StaticResource LeftPanelStyle}">
+                        <ScrollViewer Margin="0,0,0,9" VerticalScrollBarVisibility="Auto">
+                            <StackPanel Margin="10">
+                                <!--  Search Section  -->
+                                <GroupBox
+                                    Margin="0,0,0,10"
+                                    Padding="5"
+                                    HorizontalAlignment="Stretch"
+                                    Background="#FFFBFBFB"
+                                    Header="User Search">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock
+                                            Grid.Column="0"
+                                            Margin="10,0,5,0"
+                                            VerticalAlignment="Center"
+                                            Text="Search Term:" />
+                                        <TextBox
+                                            x:Name="txtSearchADUpdate"
+                                            Grid.Column="1"
+                                            Height="30"
+                                            Margin="5" />
+                                        <Button
+                                            x:Name="btnSearchADUpdate"
+                                            Grid.Column="2"
+                                            Width="Auto"
+                                            MinWidth="80"
+                                            Height="30"
+                                            Margin="5"
+                                            Content="Search"
+                                            Style="{StaticResource StandardButton}" />
+                                        <Button
+                                            x:Name="btnADUserCancel"
+                                            Grid.Column="3"
+                                            Width="Auto"
+                                            MinWidth="80"
+                                            Height="30"
+                                            Margin="5"
+                                            Content="Clear View"
+                                            Style="{StaticResource StandardButton}" />
+                                    </Grid>
+                                </GroupBox>
+
+                                <!--  Dieser Bereich teilt die Oberfläche auf  -->
+                                <Grid Height="619">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+
+                                    <!--  User List  -->
+                                    <GroupBox
+                                        Grid.Column="0"
+                                        Margin="0,0,5,10"
+                                        Padding="5"
+                                        Background="#FFFBFBFB"
+                                        Header="User List">
+                                        <Grid>
+                                            <Grid.RowDefinitions>
+                                                <RowDefinition Height="Auto" />
+                                                <RowDefinition Height="*" />
+                                                <RowDefinition Height="Auto" />
+                                            </Grid.RowDefinitions>
+
+                                            <Button
+                                                x:Name="btnRefreshADUserList"
+                                                Grid.Row="0"
+                                                Width="406"
+                                                Margin="0,0,0,5"
+                                                HorizontalAlignment="Center"
+                                                Content="Refresh User List" />
+
+                                            <ListView
+                                                x:Name="lstUsersADUpdate"
+                                                Grid.RowSpan="2"
+                                                Margin="0,26,0,0"
+                                                Style="{StaticResource ListViewStyle}">
+                                                <ListView.View>
+                                                    <GridView>
+                                                        <GridViewColumn
+                                                            Width="165"
+                                                            DisplayMemberBinding="{Binding DisplayName}"
+                                                            Header="Display Name" />
+                                                        <GridViewColumn
+                                                            Width="100"
+                                                            DisplayMemberBinding="{Binding SamAccountName}"
+                                                            Header="Username" />
+                                                    </GridView>
+                                                </ListView.View>
+                                            </ListView>
+                                        </Grid>
+                                    </GroupBox>
+
+                                    <!--  User Properties in rechter Spalte  -->
+                                    <GroupBox
+                                        Grid.Column="1"
+                                        Margin="5,0,0,10"
+                                        Padding="5"
+                                        Background="#FFFBFBFB"
+                                        Header="User Properties">
+                                        <ScrollViewer Height="580" VerticalScrollBarVisibility="Auto">
+                                            <StackPanel>
+                                                <!--  Basic Info  -->
+                                                <GroupBox
+                                                    Margin="0,0,0,10"
+                                                    Background="#FFEDEDED"
+                                                    Header="Basic Information">
+                                                    <Grid Margin="5">
+                                                        <Grid.RowDefinitions>
+                                                            <RowDefinition Height="Auto" />
+                                                            <RowDefinition Height="Auto" />
+                                                            <RowDefinition Height="Auto" />
+                                                            <RowDefinition Height="Auto" />
+                                                            <RowDefinition Height="Auto" />
+                                                        </Grid.RowDefinitions>
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="Auto" />
+                                                            <ColumnDefinition Width="*" />
+                                                        </Grid.ColumnDefinitions>
+
+                                                        <TextBlock
+                                                            Grid.Row="0"
+                                                            Grid.Column="0"
+                                                            Margin="0,5,10,5"
+                                                            Text="First Name:" />
+                                                        <TextBox
+                                                            x:Name="txtFirstNameUpdate"
+                                                            Grid.Row="0"
+                                                            Grid.Column="1"
+                                                            Margin="0,5,0,5" />
+
+                                                        <TextBlock
+                                                            Grid.Row="1"
+                                                            Grid.Column="0"
+                                                            Margin="0,5,10,5"
+                                                            Text="Last Name:" />
+                                                        <TextBox
+                                                            x:Name="txtLastNameUpdate"
+                                                            Grid.Row="1"
+                                                            Grid.Column="1"
+                                                            Margin="0,5,0,5" />
+
+                                                        <TextBlock
+                                                            Grid.Row="2"
+                                                            Grid.Column="0"
+                                                            Margin="0,5,10,5"
+                                                            Text="Display Name:" />
+                                                        <TextBox
+                                                            x:Name="txtDisplayNameUpdate"
+                                                            Grid.Row="2"
+                                                            Grid.Column="1"
+                                                            Margin="0,5,0,5" />
+
+                                                        <TextBox
+                                                            x:Name="txtEmailUpdate"
+                                                            Grid.Row="3"
+                                                            Grid.Column="1"
+                                                            Margin="0,5,0,5" />
+
+                                                        <TextBlock
+                                                            Grid.Row="4"
+                                                            Grid.Column="0"
+                                                            Margin="0,5,10,5"
+                                                            Text="Department:" />
+                                                        <TextBox
+                                                            x:Name="txtDepartmentUpdate"
+                                                            Grid.Row="4"
+                                                            Grid.Column="1"
+                                                            Margin="0,5,0,5" />
+                                                    </Grid>
+                                                </GroupBox>
+
+                                                <!--  Contact Info  -->
+                                                <GroupBox
+                                                    Margin="0,0,0,10"
+                                                    Background="#FFEDEDED"
+                                                    Header="Contact Information">
+                                                    <Grid Margin="5">
+                                                        <Grid.RowDefinitions>
+                                                            <RowDefinition Height="Auto" />
+                                                            <RowDefinition Height="Auto" />
+                                                            <RowDefinition Height="Auto" />
+                                                        </Grid.RowDefinitions>
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="Auto" />
+                                                            <ColumnDefinition Width="*" />
+                                                        </Grid.ColumnDefinitions>
+
+                                                        <TextBlock
+                                                            Grid.Row="0"
+                                                            Grid.Column="0"
+                                                            Margin="0,5,10,5"
+                                                            Text="Phone:" />
+                                                        <TextBox
+                                                            x:Name="txtPhoneUpdate"
+                                                            Grid.Row="0"
+                                                            Grid.Column="1"
+                                                            Margin="0,5,0,5" />
+
+                                                        <TextBlock
+                                                            Grid.Row="1"
+                                                            Grid.Column="0"
+                                                            Margin="0,5,10,5"
+                                                            Text="Mobile:" />
+                                                        <TextBox
+                                                            x:Name="txtMobileUpdate"
+                                                            Grid.Row="1"
+                                                            Grid.Column="1"
+                                                            Margin="0,5,0,5" />
+
+                                                        <TextBlock
+                                                            Grid.Row="2"
+                                                            Grid.Column="0"
+                                                            Margin="0,5,10,5"
+                                                            Text="Office:" />
+                                                        <TextBox
+                                                            x:Name="txtOfficeUpdate"
+                                                            Grid.Row="2"
+                                                            Grid.Column="1"
+                                                            Margin="0,5,0,5" />
+                                                    </Grid>
+                                                </GroupBox>
+                                                <!--  Extended Options  -->
+                                                <GroupBox
+                                                    Margin="0,0,0,10"
+                                                    Background="#FFEDEDED"
+                                                    Header="Extended Properties">
+                                                    <Grid Margin="5">
+                                                        <Grid.RowDefinitions>
+                                                            <RowDefinition Height="Auto" />
+                                                            <RowDefinition Height="Auto" />
+                                                            <RowDefinition Height="Auto" />
+                                                            <RowDefinition Height="Auto" />
+                                                        </Grid.RowDefinitions>
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="Auto" />
+                                                            <ColumnDefinition Width="*" />
+                                                        </Grid.ColumnDefinitions>
+
+                                                        <TextBlock
+                                                            Grid.Row="0"
+                                                            Grid.Column="0"
+                                                            Margin="0,5,10,5"
+                                                            Text="Manager:" />
+                                                        <TextBox
+                                                            x:Name="txtManagerUpdate"
+                                                            Grid.Row="0"
+                                                            Grid.Column="1"
+                                                            Margin="10,5,0,5" />
+
+                                                        <TextBlock
+                                                            Grid.Row="1"
+                                                            Grid.Column="0"
+                                                            Margin="0,5,10,5"
+                                                            Text="Job Title:" />
+                                                        <TextBox
+                                                            x:Name="txtJobTitleUpdate"
+                                                            Grid.Row="1"
+                                                            Grid.Column="1"
+                                                            Margin="10,5,0,5" />
+
+                                                        <TextBlock
+                                                            Grid.Row="2"
+                                                            Grid.Column="0"
+                                                            Margin="0,5,10,5"
+                                                            Text="Location:" />
+                                                        <TextBox
+                                                            x:Name="txtLocationUpdate"
+                                                            Grid.Row="2"
+                                                            Grid.Column="1"
+                                                            Margin="10,5,0,5" />
+
+                                                        <TextBlock
+                                                            Grid.Row="3"
+                                                            Grid.Column="0"
+                                                            Margin="0,5,10,5"
+                                                            Text="TICKET ID:" />
+                                                        <TextBox
+                                                            x:Name="txtEmployeeIDUpdate"
+                                                            Grid.Row="3"
+                                                            Grid.Column="1"
+                                                            Margin="10,5,0,5" />
+                                                    </Grid>
+                                                </GroupBox>
+                                                <!--  Account Options  -->
+                                                <GroupBox
+                                                    Height="81"
+                                                    Margin="0,4,0,10"
+                                                    Background="#FFEDEDED"
+                                                    Header="Account Options">
+                                                    <StackPanel Orientation="Horizontal">
+                                                        <CheckBox
+                                                            x:Name="chkAccountEnabledUpdate"
+                                                            Height="15"
+                                                            Margin="0,-25,10,5"
+                                                            Content="Account Enabled" />
+                                                        <CheckBox
+                                                            x:Name="chkPasswordNeverExpiresUpdate"
+                                                            Height="15"
+                                                            Margin="20,-25,10,5"
+                                                            Content="Password Never Expires" />
+                                                        <CheckBox
+                                                            x:Name="chkMustChangePasswordUpdate"
+                                                            Width="298"
+                                                            Height="21"
+                                                            Margin="-329,25,10,5"
+                                                            Content="Change Password at Next Logon" />
+                                                    </StackPanel>
+
+                                                </GroupBox>
+                                            </StackPanel>
+                                        </ScrollViewer>
+                                    </GroupBox>
+                                </Grid>
+                            </StackPanel>
+                        </ScrollViewer>
+                    </Border>
+
+                    <!--  Rechter Bereich: Standardisiertes Panel  -->
+                    <Border
+                        Grid.Column="1"
+                        Margin="5,0,0,15"
+                        VerticalAlignment="Stretch"
+                        Background="White"
+                        BorderBrush="#FF6F6F6F"
+                        Style="{StaticResource RightPanelStyle}">
+                        <StackPanel Style="{StaticResource RightPanelStackStyle}" Margin="16,16,16,2">
+                            <!--  Logo und Header  -->
+                            <StackPanel
+                                Height="69"
+                                HorizontalAlignment="Center"
+                                Orientation="Vertical">
+                                <Image
+                                    x:Name="picLogo2"
+                                    Width="150"
+                                    Height="60"
+                                    Margin="0,0,0,10"
+                                    Source="{Binding ADUpdateLogo}"
+                                    Stretch="Fill" />
+                            </StackPanel>
+                            <Border Height="35" Background="Transparent" />
+                            <!--  Password Reset Options  -->
+                            <Border
+                                Margin="0,0,0,15"
+                                Background="#FFEEEEEE"
+                                BorderBrush="LightGray"
+                                BorderThickness="1"
+                                CornerRadius="8">
+                                <StackPanel Orientation="Vertical">
+                                    <Border
+                                        Height="125"
+                                        Margin="10"
+                                        Background="#FFF3F3F3"
+                                        BorderBrush="LightGray"
+                                        BorderThickness="1"
+                                        CornerRadius="6">
+                                        <StackPanel Margin="9,0,9,0" Orientation="Vertical">
+                                            <RadioButton
+                                                x:Name="rbRand2"
+                                                Content="Generate new password"
+                                                FontWeight="Bold"
+                                                GroupName="PasswordOption2"
+                                                IsChecked="True"
+                                                Style="{StaticResource StandardRadioButton}" />
+                                            <Grid Margin="5,5,0,0">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="Auto" />
+                                                    <ColumnDefinition Width="Auto" />
+                                                </Grid.ColumnDefinitions>
+                                                <TextBlock
+                                                    Grid.Column="0"
+                                                    Style="{StaticResource StandardTextBlock}"
+                                                    Text="Length:" />
+                                                <TextBox
+                                                    x:Name="txtPWLen2"
+                                                    Grid.Column="1"
+                                                    Width="35"
+                                                    FontSize="12"
+                                                    Style="{StaticResource StandardTextBox}"
+                                                    Text="14" />
+                                            </Grid>
+                                            <CheckBox
+                                                x:Name="chkIncludeSpecial2"
+                                                Margin="5,5,0,0"
+                                                Content="Special Characters"
+                                                FontSize="11"
+                                                IsChecked="True"
+                                                Style="{StaticResource StandardCheckBox}" />
+                                            <CheckBox
+                                                x:Name="chkAvoidAmbig2"
+                                                Margin="5,5,0,0"
+                                                Content="Avoid Ambiguous Characters"
+                                                FontSize="11"
+                                                IsChecked="True"
+                                                Style="{StaticResource StandardCheckBox}" />
+                                        </StackPanel>
+                                    </Border>
+                                </StackPanel>
+                            </Border>
+                            <Border Height="30" Background="Transparent" />
+                            <!--  Reporting Options  -->
+                            <Border
+                                Margin="0,0,0,15"
+                                Background="#FFEEEEEE"
+                                BorderBrush="LightGray"
+                                BorderThickness="1"
+                                CornerRadius="8">
+                                <StackPanel Orientation="Vertical">
+                                    <TextBlock
+                                        Margin="10,10,0,5"
+                                        FontWeight="Bold"
+                                        Text="Reporting" />
+                                    <StackPanel
+                                        Width="190"
+                                        HorizontalAlignment="Center"
+                                        Orientation="Vertical">
+                                        <Border Height="5" Background="Transparent" />
+                                        <Button
+                                            x:Name="btnUploadLogo2"
+                                            Width="175"
+                                            Height="25"
+                                            Margin="5"
+                                            Background="LightGray"
+                                            Content="LOGO Upload PDF">
+                                            <Button.Template>
+                                                <ControlTemplate TargetType="Button">
+                                                    <Border
+                                                        Background="{TemplateBinding Background}"
+                                                        BorderBrush="{TemplateBinding BorderBrush}"
+                                                        BorderThickness="{TemplateBinding BorderThickness}"
+                                                        CornerRadius="8">
+                                                        <ContentPresenter
+                                                            HorizontalAlignment="Center"
+                                                            VerticalAlignment="Center" />
+                                                    </Border>
+                                                </ControlTemplate>
+                                            </Button.Template>
+                                        </Button>
+                                        <Border Height="5" Background="Transparent" />
+                                        <Button
+                                            x:Name="btnPDF2"
+                                            Width="175"
+                                            Height="25"
+                                            Margin="5"
+                                            Background="LightYellow"
+                                            Content="CREATE PDF">
+                                            <Button.Template>
+                                                <ControlTemplate TargetType="Button">
+                                                    <Border
+                                                        Background="{TemplateBinding Background}"
+                                                        BorderBrush="{TemplateBinding BorderBrush}"
+                                                        BorderThickness="{TemplateBinding BorderThickness}"
+                                                        CornerRadius="8">
+                                                        <ContentPresenter
+                                                            HorizontalAlignment="Center"
+                                                            VerticalAlignment="Center" />
+                                                    </Border>
+                                                </ControlTemplate>
+                                            </Button.Template>
+                                        </Button>
+                                        <Border Height="5" Background="Transparent" />
+                                    </StackPanel>
+                                </StackPanel>
+                            </Border>
+                            <Border
+                                Width="246"
+                                Height="88"
+                                Background="Transparent" />
+
+                            <Button
+                                x:Name="btnADUserUpdate"
+                                Width="190"
+                                Height="40"
+                                 Margin="5"
+                                Background="LightGreen"
+                                Content="Update User">
+                                <Button.Template>
+                                    <ControlTemplate TargetType="Button">
+                                        <Border
+                                            Background="{TemplateBinding Background}"
+                                            BorderBrush="{TemplateBinding BorderBrush}"
+                                            BorderThickness="{TemplateBinding BorderThickness}"
+                                            CornerRadius="8">
+                                            <ContentPresenter
+                                                HorizontalAlignment="Center"
+                                                VerticalAlignment="Center" />
+                                        </Border>
+                                    </ControlTemplate>
+                                </Button.Template>
+                            </Button>
+                            <TextBlock
+                                Width="150"
+                                Margin="5,5,5,15"
+                                FontSize="10"
+                                FontStyle="Italic"
+                                Text="This will also reset the password and generate an HTML report according to the template."
+                                TextAlignment="Justify"
+                                TextWrapping="Wrap" />
+                            <Border Height="10" Background="Transparent" />
+                            <!--  Icon buttons replaced the Close button  -->
+                            <StackPanel
+                                Margin="0,10,0,0"
+                                HorizontalAlignment="Center"
+                                Orientation="Horizontal">
+                                <Button
+                                    x:Name="btnInfo2"
+                                    BorderBrush="LightGray"
+                                    Style="{StaticResource SquareButton}">
+                                    <Image
+                                        x:Name="infoIcon2"
+                                        Width="20"
+                                        Height="20"
+                                        Source="{Binding InfoIcon}" />
+                                </Button>
+                                <Button x:Name="btnClose2" Style="{StaticResource SquareButton}">
+                                    <Image
+                                        x:Name="closeIcon2"
+                                        Width="20"
+                                        Height="20"
+                                        Source="{Binding CloseIcon}" />
+                                </Button>
+                                <Button x:Name="btnSettings2" Style="{StaticResource SquareButton}">
+                                    <Image
+                                        x:Name="settingsIcon2"
+                                        Width="20"
+                                        Height="20"
+                                        Source="{Binding SettingsIcon}" />
+                                </Button>
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+                </Grid>
+            </TabItem>
+        </TabControl>
+
+        <!--  Footer Section mit 60px Höhe und verbesserten Stilen  -->
+        <Border
+            Grid.Row="1"
+            Grid.ColumnSpan="2"
+            Margin="0,30,0,0"
+            Background="{Binding ThemeColor, FallbackValue=Silver}"
+            BorderBrush="{Binding RahmenColor, FallbackValue=DarkGray}"
+            BorderThickness="0,1,0,0"
+            Effect="{x:Null}">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+
+                <TextBlock
+                    x:Name="txtFooter"
+                    Grid.Column="0"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center"
+                    FontFamily="{Binding DefaultFontFamily}"
+                    FontSize="{Binding FooterFontSize, FallbackValue=12}"
+                    Foreground="#505050"
+                    Text="{Binding FooterText, FallbackValue='© 2025 Andreas Hepp - www.phinit.de'}" />
+
+                <TextBlock
+                    Grid.Column="1"
+                    Margin="0,0,20,0"
+                    HorizontalAlignment="Right"
+                    VerticalAlignment="Center"
+                    FontFamily="{Binding DefaultFontFamily}"
+                    FontSize="{Binding FooterFontSize, FallbackValue=12}"
+                    Foreground="#505050"
+                    Text="{Binding FooterWebseite, FallbackValue=' easyIT - www.psscripts.de'}" />
+            </Grid>
+        </Border>
+    </Grid>
+</Window>

@@ -1,0 +1,1218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ReportTitle}}</title>
+  <style>
+      /* wkhtmltopdf-specific settings */
+      html {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+        color-adjust: exact !important;
+        width: 210mm;
+        height: 297mm;
+      }
+  
+      /* Table Styling Fix */
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: var(--spacing-sm);
+      }
+  
+      th, td {
+        padding: 8px 12px;
+        text-align: left;
+        border: 1px solid var(--gray-300);
+      }
+  
+      th {
+        background-color: var(--gray-200);
+        font-weight: bold;
+      }
+  
+      td {
+        background-color: var(--gray-100);
+      }
+    
+    /* Stronger color enforcement for wkhtmltopdf */
+    * {
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+      color-adjust: exact !important;
+    }
+    
+    /* Global Styles optimiert für DIN A4 - 6 Seiten */
+    @page {
+      size: 210mm 297mm;
+      margin: 10mm 15mm;
+    }
+    
+    :root {
+      /* Windows 11 inspirierte Farbpalette - gedämpfte, zeitlose Farben */
+      --primary-color: #0078d4;
+      --primary-light: #f0f6fc;
+      --primary-dark: #005a9e;
+      --neutral-color: #6b7280;
+      --neutral-light: #f9fafb;
+      --accent-color: #26a0da;
+      --accent-light: #e7f6fd;
+      --success-color: #107c41;
+      --success-light: #e6f3ed;
+      --warning-color: #f7ba2a;
+      --warning-light: #fef8e7;
+      --danger-color: #d13438;
+      --danger-light: #fdf2f2;
+      
+      /* Windows 11 Grautöne */
+      --gray-900: #202124;
+      --gray-800: #3c4043;
+      --gray-700: #5f6368;
+      --gray-600: #80868b;
+      --gray-500: #9aa0a6;
+      --gray-400: #bdc1c6;
+      --gray-300: #dadce0;
+      --gray-200: #e8eaed;
+      --gray-100: #f1f3f4;
+      --gray-50: #f8f9fa;
+      
+      /* Basis-Stile für 6 Seiten */
+      --border-radius: 8px;
+      --border-radius-sm: 5px;
+      --border-radius-lg: 10px;
+      --spacing-xs: 3px;
+      --spacing-sm: 5px;
+      --spacing-md: 12px;
+      --spacing-lg: 18px;
+      --spacing-xl: 24px;
+      --shadow-sm: 0 1px 3px rgba(0,0,0,0.05);
+      --shadow-md: 0 2px 6px rgba(0,0,0,0.08);
+      
+      --font-family: 'Segoe UI', 'San Francisco', 'Helvetica Neue', -apple-system, BlinkMacSystemFont, sans-serif;
+      --spacing-xxl: 30px;
+    }
+
+    body {
+      font-family: var(--font-family);
+      font-size: 9.5pt; /* Für 6 Seiten */
+      color: var(--gray-800);
+      background-color: #ffffff !important;
+      margin: 0;
+      line-height: 1.4;
+      width: 210mm;
+      max-width: 100%;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+
+    .container {
+      width: 100%;
+      margin: 0 auto;
+      padding: 5mm 0;
+      background-color: #ffffff !important;
+    }
+
+    /* Header für 6 Seiten */
+    header {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: var(--spacing-md) var(--spacing-md);
+      background-color: var(--primary-light) !important;
+      border-radius: var(--border-radius-lg);
+      margin-bottom: var(--spacing-md);
+      text-align: center;
+      box-shadow: var(--shadow-sm);
+      border: 1px solid rgba(0,0,0,0.05);
+    }
+
+    .header-image {
+      margin-bottom: var(--spacing-sm);
+    }
+
+    .header-image img {
+      max-height: 200px; /* Optimal für 6 Seiten */
+      width: auto;
+      border-radius: var(--border-radius);
+    }
+
+    .header-info {
+      text-align: center;
+    }
+
+    .header-info h1 {
+      margin: 0;
+      font-size: 18pt;
+      color: var(--primary-color);
+      font-weight: 500;
+    }
+
+    .header-info p {
+      margin: var(--spacing-xs) 0 0;
+      font-size: 11pt;
+      color: var(--gray-600);
+    }
+
+    .logo-tag {
+      margin-top: var(--spacing-xs);
+      font-style: italic;
+      color: var(--gray-500);
+      font-size: 9pt;
+    }
+
+    /* Content */
+    .content {
+      padding: var(--spacing-sm);
+    }
+
+    /* Section Styles für 6 Seiten */
+    .section {
+      margin-bottom: var(--spacing-md);
+      border: 1px solid rgba(0,0,0,0.05) !important;
+      border-radius: var(--border-radius);
+      padding: var(--spacing-md);
+      box-shadow: var(--shadow-sm);
+      break-inside: avoid;
+      page-break-inside: avoid;
+      background-color: #fff !important;
+    }
+    
+    /* Section-Farben beibehalten */
+    .welcome-section {
+      background-color: var(--primary-light) !important;
+      border-left: 3px solid var(--primary-color) !important;
+    }
+    
+    .login-section {
+      background-color: var(--accent-light) !important;
+      border-left: 3px solid var(--accent-color) !important;
+    }
+    
+    .first-steps {
+      background-color: var(--success-light) !important;
+      border-left: 3px solid var(--success-color) !important;
+    }
+    
+    .support-info {
+      background-color: var(--warning-light) !important;
+      border-left: 3px solid var(--warning-color) !important;
+    }
+    
+    .security-tips {
+      background-color: var(--danger-light) !important;
+      border-left: 3px solid var(--danger-color) !important;
+    }
+    
+    .it-infrastructure {
+      background-color: var(--primary-light) !important;
+      border-left: 3px solid var(--primary-color) !important;
+    }
+
+    /* Section-Titel für 6 Seiten */
+    .section-title {
+      font-size: 14pt;
+      color: var(--gray-800);
+      border-bottom: 1px solid var(--primary-color);
+      padding-bottom: var(--spacing-xs);
+      margin-bottom: var(--spacing-md);
+      display: flex;
+      align-items: center;
+      font-weight: 500;
+      break-after: avoid;
+      page-break-after: avoid;
+    }
+    
+    /* Titel-Farben beibehalten */
+    .welcome-section .section-title {
+      color: var(--primary-color);
+      border-bottom-color: var(--primary-color);
+    }
+    
+    .login-section .section-title {
+      color: var(--accent-color);
+      border-bottom-color: var(--accent-color);
+    }
+    
+    .first-steps .section-title {
+      color: var(--success-color);
+      border-bottom-color: var (--success-color);
+    }
+    
+    .security-tips .section-title {
+      color: var(--danger-color);
+      border-bottom-color: var(--danger-color);
+    }
+    
+    .support-info .section-title {
+      color: var(--warning-color);
+      border-bottom-color: var(--warning-color);
+    }
+
+    .section-title i {
+      margin-right: var(--spacing-xs);
+      font-size: 14pt;
+    }
+
+    /* Tabellen für 6 Seiten */
+    .section table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+      margin-top: var(--spacing-sm);
+      border-radius: var(--border-radius);
+      overflow: hidden;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .section th,
+    .section td {
+      padding: 6px 10px;
+      text-align: left;
+      word-wrap: break-word;
+      vertical-align: top;
+      font-size: 9.5pt;
+      border-bottom: 1px solid var(--gray-200);
+    }
+
+    .section th {
+      background-color: var(--gray-50) !important;
+      width: 30%;
+      color: var(--gray-700);
+      font-weight: 500;
+    }
+
+    .section td {
+      background-color: white !important;
+    }
+    
+    /* Tabellen-Styles beibehalten */
+    .login-section th {
+      background-color: rgba(38, 160, 218, 0.05) !important;
+      color: var(--accent-color);
+    }
+    
+    .login-section td {
+      font-weight: 500;
+      color: var (--gray-700);
+    }
+    
+    .support-info th {
+      background-color: rgba(247, 186, 42, 0.05) !important;
+    }
+
+    .group-header {
+      background-color: var(--gray-100) !important;
+      font-weight: 500;
+      color: var(--gray-700);
+      text-transform: uppercase;
+      font-size: 8.5pt;
+      letter-spacing: 0.5px;
+      padding: 6px 10px;
+    }
+    
+    /* Listen für 6 Seiten */
+    .steps-list {
+      padding-left: 20px;
+      margin: var(--spacing-sm) 0;
+    }
+
+    .steps-list li {
+      margin-bottom: 6px;
+      position: relative;
+      padding-left: 3px;
+      list-style-type: none;
+    }
+
+    .steps-list li::before {
+      content: "→";
+      position: absolute;
+      left: -15px;
+      color: var(--accent-color);
+      font-weight: normal;
+    }
+    
+    /* Kontaktkarten für 6 Seiten */
+    .contact-card {
+      display: flex;
+      margin-bottom: var(--spacing-sm);
+      padding: var(--spacing-sm);
+      border: 1px solid var(--gray-200);
+      border-radius: var(--border-radius);
+      background-color: #ffffff !important;
+      box-shadow: var(--shadow-sm);
+      break-inside: avoid;
+      page-break-inside: avoid;
+    }
+
+    .contact-info {
+      flex-grow: 1;
+    }
+
+    .contact-title {
+      font-weight: 500;
+      margin-bottom: 4px;
+      color: var(--gray-800);
+      font-size: 10pt;
+    }
+    
+    /* QR-Codes für 6 Seiten */
+    .qr-container {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-around;
+      margin-top: var(--spacing-sm);
+    }
+
+    .qr-item {
+      text-align: center;
+      margin: var(--spacing-sm);
+      width: 90px;
+    }
+
+    .qr-img {
+      width: 250px;
+      height: 250px;
+      background-color: white !important;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid var(--gray-200);
+      border-radius: var(--border-radius);
+      overflow: hidden;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .qr-title {
+      margin-top: var(--spacing-xs);
+      font-size: 8pt;
+      color: var(--gray-600);
+      font-weight: normal;
+    }
+    
+    /* Sicherheits-Tipps für 6 Seiten */
+    .tip-item {
+      margin-bottom: 6px;
+      padding: 6px 6px 6px 24px;
+      position: relative;
+      background-color: rgba(209, 52, 56, 0.03);
+      border-radius: var(--border-radius);
+      border-left: 2px solid var(--danger-color);
+      font-size: 9.5pt;
+    }
+
+    .tip-item:before {
+      content: "!";
+      position: absolute;
+      left: 6px;
+      top: 6px;
+      width: 14px;
+      height: 14px;
+      background-color: var(--danger-color);
+      color: white;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+      font-weight: bold;
+    }
+
+    /* Footer für 6 Seiten */
+    footer {
+      background-color: var(--gray-50) !important;
+      text-align: center;
+      padding: var(--spacing-md);
+      font-size: 8pt;
+      color: var(--gray-600);
+      border-top: 1px solid var(--gray-300);
+      margin-top: var (--spacing-md);
+      border-radius: var(--border-radius);
+    }
+
+    /* Footer-Paragraphen */
+    footer p {
+      margin: 2px 0;
+      line-height: 1.3;
+    }
+    
+    /* Print Styles für 6 Seiten */
+    @media print {
+      html, body {
+        width: 210mm;
+        height: 297mm;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+        color-adjust: exact !important;
+      }
+      
+      .page-break {
+        page-break-before: always;
+      }
+      
+      .page-break-avoid {
+        page-break-inside: avoid;
+      }
+      
+      .section {
+        break-inside: avoid;
+        page-break-inside: avoid;
+      }
+      
+      /* Weitere print-spezifische Einstellungen */
+      .no-print {
+        display: none;
+      }
+      
+      body {
+        width: 100%;
+        margin: 0;
+        padding: 0;
+      }
+      
+      /* Verhindert dass Abschnitte auf zwei Seiten verteilt werden */
+      h2, h3, .contact-card, .group-header {
+        break-after: avoid;
+        page-break-after: avoid;
+      }
+    }
+    
+    /* Badges für 6 Seiten */
+    .badge {
+      display: inline-block;
+      padding: 3px 8px;
+      border-radius: 100px;
+      font-size: 8.5pt;
+      font-weight: 500;
+      margin-left: 8px;
+      color: white;
+      border: none;
+      background-color: var(--gray-500) !important;
+    }
+
+    .badge-important {
+      background-color: var(--danger-color) !important;
+    }
+    
+    .badge-warning {
+      background-color: var(--warning-color) !important;
+      color: var(--gray-900);
+    }
+    
+    .badge-info {
+      background-color: var(--accent-color) !important;
+    }
+    
+    .badge-success {
+      background-color: var(--success-color) !important;
+    }
+
+    /* Hinweise & Infokästen für 6 Seiten */
+    .hint {
+      background-color: var(--success-light) !important;
+      padding: var(--spacing-sm);
+      border-radius: var(--border-radius);
+      margin: var(--spacing-sm) 0;
+      border-left: 3px solid var(--success-color);
+      font-size: 9.5pt;
+      color: var(--gray-700);
+      break-inside: avoid;
+      page-break-inside: avoid;
+    }
+    
+    /* Layout */
+    .two-columns {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      gap: var(--spacing-md);
+    }
+
+    .column {
+      flex: 1;
+      min-width: 45%;
+      break-inside: avoid;
+      page-break-inside: avoid;
+    }
+
+    /* Listen mit Icons für 6 Seiten */
+    .icon-list {
+      list-style: none;
+      padding-left: 0;
+      margin: var(--spacing-sm) 0;
+    }
+
+    .icon-list li {
+      padding-left: 22px;
+      position: relative;
+      margin-bottom: var(--spacing-sm);
+      list-style-type: none;
+      font-size: 9.5pt;
+    }
+
+    .icon-list li:before {
+      content: "✓";
+      position: absolute;
+      left: 0;
+      top: 0px;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background-color: var(--success-color);
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 9px;
+    }
+
+    /* Überschriften für 6 Seiten */
+    h3 {
+      font-size: 12pt;
+      margin: var(--spacing-md) 0 var(--spacing-sm) 0;
+      color: var(--gray-700);
+      font-weight: 500;
+    }
+
+    /* Absätze für 6 Seiten */
+    p {
+      margin: var(--spacing-sm) 0;
+      line-height: 1.4;
+    }
+
+    ul, ol {
+      margin: var(--spacing-sm) 0;
+      padding-left: var(--spacing-lg);
+    }
+
+    li {
+      margin-bottom: var(--spacing-sm);
+    }
+    
+    /* Windows 11 Card UI für 6 Seiten */
+    .win11-card {
+      padding: var(--spacing-md);
+      margin-bottom: var(--spacing-md);
+      border-radius: var(--border-radius);
+      background-color: white;
+      border: 1px solid var(--gray-200);
+      box-shadow: var(--shadow-sm);
+      break-inside: avoid;
+      page-break-inside: avoid;
+    }
+    
+    .win11-card-header {
+      display: flex;
+      align-items: center;
+      margin-bottom: var(--spacing-sm);
+    }
+    
+    .win11-card-icon {
+      width: 28px;
+      height: 28px;
+      border-radius: 6px;
+      background-color: var(--primary-color);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-right: var(--spacing-sm);
+      color: white;
+      font-size: 14px;
+      font-weight: bold;
+    }
+    
+    .win11-card-title {
+      font-size: 12pt;
+      font-weight: 500;
+      color: var(--gray-800);
+    }
+    
+    /* Modern Information Grid für 6 Seiten */
+    .info-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 15px;
+      margin-top: var(--spacing-md);
+    }
+    
+    /* Responsive für Print */
+    @media (max-width: 600px), (max-device-width: 600px) {
+      .info-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+    
+    .info-box-container {
+      display: flex;
+      background-color: var(--gray-50) !important;
+      border-radius: var(--border-radius);
+      overflow: hidden;
+      box-shadow: var(--shadow-sm);
+      break-inside: avoid;
+      page-break-inside: avoid;
+      height: 100%;
+      border: 1px solid var(--gray-200);
+    }
+    
+    .info-panel {
+      flex: 1;
+      padding: var(--spacing-md);
+    }
+    
+    .info-panel h3 {
+      color: var(--primary-color);
+      margin-top: 0;
+      margin-bottom: 8px;
+      font-size: 12pt;
+      font-weight: 500;
+    }
+    
+    .info-panel p {
+      margin-bottom: 8px;
+      color: var(--gray-700);
+    }
+    
+    .info-panel .icon-list {
+      margin-top: 8px;
+      margin-bottom: 0;
+    }
+    
+    .info-panel .icon-list li {
+      margin-bottom: 5px;
+    }
+    .faq-container {
+            margin-top: var(--spacing-md);
+        }
+        
+        .faq-item {
+            margin-bottom: var(--spacing-md);
+            border: 1px solid var(--gray-200);
+            border-radius: var(--border-radius);
+            overflow: hidden;
+            background-color: white !important;
+            box-shadow: var(--shadow-sm);
+            break-inside: avoid;
+            page-break-inside: avoid;
+        }
+        
+        .faq-question {
+            padding: var(--spacing-sm) var(--spacing-md);
+            background-color: var(--warning-light) !important;
+            font-weight: 500;
+            color: var(--gray-800);
+            position: relative;
+            display: flex;
+            align-items: center;
+            border-left: 3px solid var(--warning-color);
+        }
+        
+        .faq-question::before {
+            content: "Q";
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            line-height: 20px;
+            text-align: center;
+            background-color: var(--warning-color);
+            color: white;
+            border-radius: 50%;
+            margin-right: var(--spacing-md);
+            font-size: 10pt;
+            font-weight: bold;
+        }
+        
+        .faq-answer {
+            padding: var(--spacing-md);
+            color: var(--gray-700);
+            border-top: 1px solid var(--gray-200);
+            position: relative;
+            padding-left: 40px;
+        }
+        
+        .faq-answer::before {
+            content: "A";
+            position: absolute;
+            left: 10px;
+            top: 10px;
+            width: 20px;
+            height: 20px;
+            line-height: 20px;
+            text-align: center;
+            background-color: var(--accent-color);
+            color: white;
+            border-radius: 50%;
+            font-size: 10pt;
+            font-weight: bold;
+        }
+    .additional-info {
+        margin-top: var(--spacing-md);
+        padding: var(--spacing-md);
+        border: 1px solid var(--gray-300);
+        border-radius: var(--border-radius);
+        background-color: var(--neutral-light) !important;
+        box-shadow: var(--shadow-sm);
+        page-break-inside: avoid;
+      }
+      
+      .additional-info h2 {
+        font-size: 14pt;
+        color: var(--primary-color);
+        margin-bottom: var(--spacing-sm);
+        border-bottom: 1px solid var(--primary-color);
+        padding-bottom: var(--spacing-xs);
+      }
+  </style>
+</head>
+<body>
+<div class="container">
+    <!-- SEITE 1 -->
+    <!-- COMBINED SECTION -->
+    <section class="section welcome-section">
+        <!-- Header with logo -->
+        <div class="header-image" style="margin-bottom: var(--spacing-md); text-align: center;">
+            <img src="C:\easyIT\DATA\easyONBOARDING\assets\easyOnboardingHeaderWelcome4.png" alt="Firmenlogo" style="display: inline-block;">
+        </div>
+        
+        <!-- Welcome message with spacing -->
+        <div style="margin-top: var(--spacing-lg);">
+            <h2 class="section-title"><b>Hello {{Vorname}}</b>, welcome to the team!</h2>
+            <div class="win11-card-header" style="margin-bottom: var(--spacing-md);">
+                <div class="win11-card-title">We are delighted you are on board. This document contains all essential information for your start.</div>
+            </div>
+        </div>
+        <br> 
+        <!-- Hint box with spacing -->
+        <div style="margin-top: var(--spacing-lg); margin-bottom: var(--spacing-xl);">
+            <div class="hint" style="border: 2px solid var(--primary-color); border-radius: var(--border-radius);">
+                <p><b>For your first login, please use the initial password.</b> <span class="badge badge-success">Important</span></p>
+                <p>Immediately after logging in, you must change it. Please ensure your new password meets the following criteria:</p>
+                <ul style="margin-bottom: var (--spacing-xs);">
+                    <li>Minimum length: 12 characters</li>
+                    <li>At least one number</li>
+                    <li>At least one uppercase letter</li>
+                    <li>At least one special character</li>
+                </ul>
+            </div>
+        </div>
+<br><br><br><br>
+        
+        <!-- User details header -->
+        <div class="win11-card-header" style="margin-bottom: var(--spacing-md); display: flex; align-items: center;">
+            <div class="win11-card-icon" style="box-shadow: var(--shadow-md); margin-right: var(--spacing-sm);">U</div>
+            <div class="win11-card-title" style="color: var(--accent-color); font-weight: 500;">User Details</div>
+        </div>
+        
+        <div class="hint">Your personal user information.</div>
+            <table>
+                <tr>
+                    <th style="background-color: var(--gray-400) !important; color: black;">First Name</th>
+                    <td style="background-color: var(--gray-100) !important; color: black;"><strong>{{Vorname}}</strong></td>
+                </tr>
+                <tr>
+                    <th style="background-color: var(--gray-400) !important; color: black;">Last Name</th>
+                    <td style="background-color: var(--gray-100) !important; color: black;"><strong>{{Nachname}}</strong></td>
+                </tr>
+                <tr>
+                    <th style="background-color: var(--gray-400) !important; color: black;">Display Name</th>
+                    <td style="background-color: var(--gray-100) !important; color: black;"><strong>{{DisplayName}}</strong></td>
+                </tr>
+            </table>
+        <br><br><br>
+
+        <!-- Two-column container for login information -->
+        <div class="two-columns" style="display: flex; gap: var(--spacing-md); margin-bottom: var(--spacing-md);">
+            <!-- Left column: Login Information -->
+            <div class="column" style="flex: 1;">
+                <div class="win11-card-header" style="margin-bottom: var(--spacing-md); display: flex; align-items: center;">
+                    <div class="win11-card-icon" style="box-shadow: var(--shadow-md); margin-right: var(--spacing-sm);">A</div>
+                    <div class="win11-card-title" style="color: var(--accent-color); font-weight: 500;">Login Information</div>
+                </div>
+                <div class="hint">Credentials for your computer and most systems.</div>
+                <table>
+                    <tr>
+                        <th style="background-color: var(--gray-400) !important; color: black;">Username</th>
+                        <td style="background-color: var(--gray-100) !important; color: black;">{{LoginName}}</td>
+                    </tr>
+                    <tr>
+                        <th style="background-color: var(--gray-400) !important; color: black;">Password</th>
+                        <td style="background-color: var(--gray-100) !important; color: black;">{{Passwort}}</td>
+                    </tr>
+                    <tr>
+                        <th style="background-color: var(--gray-400) !important; color: black;">Email Address</th>
+                        <td style="background-color: var(--gray-100) !important; color: black;">{{MailAddress}}</td>
+                    </tr>
+                </table>
+            </div>
+            
+            <!-- Right column: Additional Accounts -->
+            <div class="column" style="flex: 1;">
+                <div class="win11-card-header" style="margin-bottom: var(--spacing-md); display: flex; align-items: center;">
+                    <div class="win11-card-icon" style="box-shadow: var(--shadow-md); margin-right: var(--spacing-sm);">W</div>
+                    <div class="win11-card-title" style="color: var(--accent-color); font-weight: 500;">Additional Accounts</div>
+                </div>
+                <div class="hint">Credentials for additional systems.</div>
+                <table>
+                    <tr>
+                        <th style="background-color: var(--gray-400) !important; color: black;">{{CustomPWLabel1}}</th>
+                        <td style="background-color: var(--gray-100) !important; color: black;"><strong>{{CustomPW1}}</strong></td>
+                    </tr>
+                    <tr>
+                        <th style="background-color: var(--gray-400) !important; color: black;">{{CustomPWLabel2}}</th>
+                        <td style="background-color: var(--gray-100) !important; color: black;"><strong>{{CustomPW2}}</strong></td>
+                    </tr>
+                    <tr>
+                        <th style="background-color: var(--gray-400) !important; color: black;">{{CustomPWLabel3}}</th>
+                        <td style="background-color: var(--gray-100) !important; color: black;"><strong>{{CustomPW3}}</strong></td>
+                    </tr>
+                    <tr>
+                        <th style="background-color: var(--gray-400) !important; color: black;">{{CustomPWLabel4}}</th>
+                        <td style="background-color: var(--gray-100) !important; color: black;"><strong>{{CustomPW4}}</strong></td>
+                    </tr>
+                    <tr>
+                        <th style="background-color: var(--gray-400) !important; color: black;">{{CustomPWLabel5}}</th>
+                        <td style="background-color: var(--gray-100) !important; color: black;"><strong>{{CustomPW5}}</strong></td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </section>
+<br>
+<!-- SEITE 2 -->
+ <div class="page-break"></div>
+         <!-- FIRST STEPS -->
+         <section class="section first-steps">
+            <h2 class="section-title">First Steps <span class="badge badge-success">Important</span></h2>
+            <p>Here are some essential first steps to get started:</p>
+            <ol class="steps-list">
+              <li>Change your initial password immediately</li>
+              <li>Set up your email account (open Outlook)</li>
+              <li>Update your profile in the Microsoft 365 Portal</li>
+              <li>Visit the company intranet for more information</li>
+              <li>Install the Microsoft Authenticator app for two-factor authentication</li>
+            </ol>
+          </section>
+<br>
+    <!-- Combined Company & HR Information Box -->
+    <div class="column" style="flex: 1;"></div>
+        <!-- Company Information Section -->
+        <div class="win11-card-header" style="margin-bottom: var(--spacing-md); display: flex; align-items: center;">
+            <div class="win11-card-icon" style="background-color: var(--success-color); box-shadow: var(--shadow-md); margin-right: var(--spacing-sm);">C</div>
+            <div class="win11-card-title" style="color: var(--success-color); font-weight: 500;">Company Information</div>
+        </div>
+        <div class="hint">Details about your company.</div>
+        <table>
+            <tr>
+                <th style="background-color: var(--gray-400) !important; color: black; width: 30%;">Company Name</th>
+                <td style="background-color: var(--gray-100) !important; color: black;"><strong>{{CompanyName}}</strong></td>
+            </tr>
+            <tr>
+                <th style="background-color: var(--gray-400) !important; color: black; width: 30%;">Street</th>
+                <td style="background-color: var(--gray-100) !important; color: black;"><strong>{{CompanyStreet}}</strong></td>
+            </tr>
+            <tr>
+                <th style="background-color: var(--gray-400) !important; color: black; width: 30%;">ZIP Code</th>
+                <td style="background-color: var(--gray-100) !important; color: black;"><strong>{{CompanyZIP}}</strong></td>
+            </tr>
+            <tr>
+                <th style="background-color: var(--gray-400) !important; color: black; width: 30%;">City</th>
+                <td style="background-color: var(--gray-100) !important; color: black;"><strong>{{CompanyCity}}</strong></td>
+            </tr>
+            <tr>
+                <th style="background-color: var(--gray-400) !important; color: black; width: 30%;">Domain</th>
+                <td style="background-color: var(--gray-100) !important; color: black;"><strong>{{CompanyDomain}}</strong></td>
+            </tr>
+            <tr>
+                <th style="background-color: var(--gray-400) !important; color: black; width: 30%;">Phone</th>
+                <td style="background-color: var(--gray-100) !important; color: black;"><strong>{{CompanyPhone}}</strong></td>
+            </tr>
+        </table>
+    </div>
+<br>
+<section class="section additional-info">
+    <h2>Additional Resources</h2>
+    <p>Here you will find further information and links to help you get started:</p>
+    <ul class="icon-list">
+      <li>Company Intranet: <strong><a href="{{CompanyIntranetURL}}">{{CompanyIntranetURL}}</a></strong></li>
+      <li>IT Training Portal: <strong><a href="{{ITTrainingURL}}">{{ITTrainingURL}}</a></strong></li>
+      <li>Frequently Asked Questions: <strong><a href="{{FAQURL}}">{{FAQURL}}</a></strong></li>
+      <li>Administration Portal: <strong><a href="{{AdminPortalURL}}">{{AdminPortalURL}}</a></strong></li>
+    </ul>
+  </section>
+  <br>
+  
+    <div class="column" style="flex: 1;">
+        <!-- HR Contact Section -->
+        <div class="win11-card-header" style="margin-bottom: var(--spacing-md); display: flex; align-items: center;">
+            <div class="win11-card-icon" style="background-color: var(--warning-color); box-shadow: var(--shadow-md); margin-right: var(--spacing-sm);">HR</div>
+            <div class="win11-card-title" style="color: var(--warning-color); font-weight: 500;">HR Contact Details</div>
+        </div>
+        <div class="hint">Contact the HR department for any inquiries.</div>
+        <table>
+            <tr>
+                <th style="background-color: var(--gray-400) !important; color: black;">Phone</th>
+                <td style="background-color: var(--gray-100) !important; color: black;"><strong>{{CompanyHRPhone}}</strong></td>
+            </tr>
+            <tr>
+                <th style="background-color: var(--gray-400) !important; color: black;">Email</th>
+                <td style="background-color: var(--gray-100) !important; color: black;"><strong>{{CompanyHREmail}}</strong></td>
+            </tr>
+        </table>
+    </div>
+    <br> 
+    <br> 
+    <!-- SEITE 3 & 4 -->
+    <div class="page-break"></div>
+        <!-- SECURITY TIPS -->
+    <section class="section security-tips">
+      <h2 class="section-title">Security Tips <span class="badge badge-important">Important</span></h2>
+      <p>For the security of our company, please adhere to the following guidelines:</p>
+      <div class="tip-item">Never share your login credentials with others</div>
+      <div class="tip-item">Use a unique password for each application</div>
+      <div class="tip-item">Lock your computer when leaving your workstation [Windows] + [L]</div>
+      <div class="tip-item">Be cautious when opening email attachments</div>
+      <div class="tip-item">Report suspicious emails or activity to IT support immediately</div>
+      <div class="tip-item">Do not send company documents to private email addresses</div>
+      <div class="tip-item">Store business data only on company drives or in the cloud (OneDrive, SharePoint)</div>
+      <div class="tip-item">Only use licensed software provided by the company</div>
+      <div class="tip-item">Do not connect unknown USB devices to your work computer</div>
+    </section>
+    <br><br><br>
+    <!-- USER & COMPANY DETAILS COMBINED -->
+    <section>
+        <h2 class="section-title">Information<span class="badge badge-warning">Personal</span></h2>
+
+        <div class="column" style="flex: 1;">
+            <div class="win11-card-header" style="margin-bottom: var(--spacing-md); display: flex; align-items: center;">
+                <div class="win11-card-icon" style="background-color: var(--primary-color); box-shadow: var(--shadow-md); margin-right: var(--spacing-sm);">C</div>
+                <div class="win11-card-title" style="color: var(--primary-color); font-weight: 500;">Contact Details & Position</div>
+            </div>
+           
+            <!-- Contact Information -->
+            <div style="margin-bottom: var(--spacing-md);">
+                <table>
+                    <tr>
+                        <th style="background-color: var(--gray-400) !important; color: black;">Phone Number</th>
+                        <td style="background-color: var(--gray-100) !important; color: black;"><strong>{{Buero}}</strong></td>
+                    </tr>
+                    <tr>
+                        <th style="background-color: var(--gray-400) !important; color: black;">Extension</th>
+                        <td style="background-color: var(--gray-100) !important; color: black;"><strong>{{Rufnummer}}</strong></td>
+                    </tr>
+                    <tr>
+                        <th style="background-color: var(--gray-400) !important; color: black;">Mobile</th>
+                        <td style="background-color: var(--gray-100) !important; color: black;"><strong>{{Mobil}}</strong></td>
+                    </tr>
+                </table>
+            </div>
+            
+            <!-- Position & Department -->
+            <div style="margin-bottom: var(--spacing-md);">
+                <table>
+                    <tr>
+                        <th style="background-color: var(--gray-400) !important; color: black;">Position</th>
+                        <td style="background-color: var(--gray-100) !important; color: black;"><strong>{{Position}}</strong></td>
+                    </tr>
+                    <tr>
+                        <th style="background-color: var(--gray-400) !important; color: black;">Department</th>
+                        <td style="background-color: var(--gray-100) !important; color: black;"><strong>{{Abteilung}}</strong></td>
+                    </tr>
+                </table>
+            </div><br>
+            <div class="column" style="flex: 1;">
+                <div class="win11-card-header" style="margin-bottom: var(--spacing-md); display: flex; align-items: center;">
+                    <div class="win11-card-icon" style="background-color: var(--primary-color); box-shadow: var(--shadow-md); margin-right: var(--spacing-sm);">M</div>
+                    <div class="win11-card-title" style="color: var(--primary-color); font-weight: 500;">Email & Microsoft 365 Account</div>
+                </div>
+            <!-- E-Mail Details -->
+            <div>
+                <table>
+                    <tr>
+                        <th style="background-color: var(--gray-400) !important; color: black;">Email Address</th>
+                        <td style="background-color: var(--gray-100) !important; color: black;"><strong>{{MailAddress}}</strong></td>
+                    </tr>
+                    <tr>
+                        <th style="background-color: var(--gray-400) !important; color: black;">Microsoft 365 Login</th>
+                        <td style="background-color: var(--gray-100) !important; color: black;"><strong>{{MailAddress}}</strong></td>
+                    </tr>
+                    <tr>
+                        <th style="background-color: var(--gray-400) !important; color: black;">MS365 License</th>
+                        <td style="background-color: var(--gray-100) !important; color: black;"><strong>{{License}}</strong></td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </section>
+    <br>
+
+    <!-- SEITE 5 & 6 -->
+    <div class="page-break"></div>
+
+    <div class="column" style="flex: 1;">
+        <div class="win11-card-header" style="margin-bottom: var(--spacing-md); display: flex; align-items: center;">
+            <div class="win11-card-icon" style="background-color: var(--primary-color); box-shadow: var(--shadow-md); margin-right: var(--spacing-sm);">H</div>
+            <div class="win11-card-title" style="color: var(--primary-color); font-weight: 500;">IT-Helpdesk</div>
+        </div>
+        <div class="hint">Contact details for IT support.</div>
+        <table>
+            <tr>
+                <th style="background-color: var(--gray-400) !important; color: black;">Phone</th>
+                <td style="background-color: var(--gray-100) !important; color: black;">{{CompanyHelpdeskTel}}</td>
+            </tr>
+            <tr>
+                <th style="background-color: var(--gray-400) !important; color: black; width: 30%;">Email</th>
+                <td style="background-color: var(--gray-100) !important; color: black;">{{CompanyHelpdeskMail}}</td>
+            </tr>
+            <tr>
+                <th style="background-color: var(--gray-400) !important; color: black; width: 30%;">Contact Person</th>
+                <td style="background-color: var(--gray-100) !important; color: black;">{{CompanyITMitarbeiter}}</td>
+            </tr>
+            <tr>
+                <th style="background-color: var(--gray-400) !important; color: black; width: 30%;">Available</th>
+                <td style="background-color: var(--gray-100) !important; color: black;">Mon-Fri from 08:15 AM</td>
+            </tr>
+        </table>
+    </div>
+    <br><br><br><br>
+    <!-- SUPPORT-INFORMATIONEN -->
+    <section>
+      <h2 class="section-title">IT Support & Help <span class="badge badge-warning">Support</span></h2>
+      <div class="hint">For technical questions or issues, our internal wiki or IT support is available:</div>
+   
+      
+    <h3>Frequently Asked Questions (FAQ)</h3>
+    <div class="faq-container">
+        <div class="faq-item">
+            <div class="faq-question">What should I do if I forget my password?</div>
+            <div class="faq-answer">In this case, please contact IT support by phone. For security reasons, the password can only be reset after personal identification.</div>
+        </div>
+        
+        <div class="faq-item">
+            <div class="faq-question">How do I connect to the VPN?</div>
+            <div class="faq-answer">For VPN access, please use the installed Cisco AnyConnect software. The access data can be found in the "VPN Access" section. If you have any problems, please contact IT support.</div>
+        </div>
+
+        <div class="faq-item">
+            <div class="faq-question">How do I set up two-factor authentication?</div>
+            <div class="faq-answer">Install the Microsoft Authenticator app on your smartphone, then open the Microsoft 365 portal and follow the instructions under "Security Settings". Scan the QR code and confirm your identity. If you have any problems, IT support can help.</div>
+        </div>
+        
+        <div class="faq-item">
+            <div class="faq-question">What should I consider when using mobile devices?</div>
+            <div class="faq-answer">Mobile devices must be secured with a password/PIN and encryption must be enabled. Only use trusted Wi-Fi networks or the company VPN. In case of loss or theft, inform IT support immediately.</div>
+        </div>
+        
+        <div class="faq-item">
+            <div class="faq-question">How can I set up print settings?</div>
+            <div class="faq-answer">Most printers are automatically found on the network. Open the settings and add the desired printer. If drivers are needed, you can find them in the IT portal or contact support.</div>
+        </div>
+
+        <div class="faq-item">
+            <div class="faq-question">Where can I find further assistance on IT topics?</div>
+            <div class="faq-answer">We offer an extensive internal wiki at <strong>{{CompanyWikiURL}}</strong>. There you will find detailed instructions on all important systems and processes. Additionally, our training portal with video tutorials is also available.</div>
+        </div>
+    </div>
+    </section>
+    <br>    
+
+<div class="page-break">
+    <!-- IT-INFRASTRUKTUR -->
+    <section>
+      <h2 class="section-title">IT Infrastructure & Systems <span class="badge badge-info">Resources</span></h2>
+      
+      <div class="info-grid">
+        <!-- Box 1: Firmennetzwerk -->
+        <div class="info-box-container">
+          <div class="info-panel">
+            <h3>Company Network</h3>
+            <p>Use our company Wi-Fi for business purposes. For personal internet use, please use the separate network: <strong>{{CompanySSIDbyod}}</strong></p>
+            <ul class="icon-list">
+              <li>Company Network: <strong>{{CompanySSID}}</strong></li>
+              <li>Personal Devices: <strong>{{CompanySSIDbyod}}</strong></li>
+              <li>Guest Wi-Fi: <strong>{{CompanySSIDGuest}}</strong></li>
+              <li>Guest Voucher: <strong>Issued upon request</strong></li>
+            </ul>
+          </div>
+        </div>
+        
+        <!-- Box 2: VPN-Zugang -->
+        <div class="info-box-container">
+          <div class="info-panel">
+            <h3>VPN Access</h3>
+            <p>For secure remote access to the company network. Download your personal VPN profile from <a href="{{CompanyVPNDomain}}">{{CompanyVPNDomain}}</a>.</p>
+            <ul class="icon-list">
+              <li>Username: <strong>{{CompanyVPNUser}}</strong></li>
+              <li>Password: <strong>{{CompanyVPNPassword}}</strong></li>
+              <li>VPN Server: <strong>{{CompanyVPNDomain}}</strong></li>
+              <li>2FA: <strong>Required</strong> (Microsoft Authenticator)</li>
+            </ul>
+          </div>
+        </div>
+        
+        <!-- Box 3: Cloud-Speicher -->
+        <div class="info-box-container">
+          <div class="info-panel">
+            <h3>Cloud Storage</h3>
+            <p>Store and sync your files securely in the cloud:</p>
+            <ul class="icon-list">
+              <li><strong>OneDrive</strong> for personal files</li>
+              <li><strong>SharePoint</strong> for team files (collaborative editing)</li>
+              <li><strong>Automatic synchronization</strong> with all devices</li>
+              <li><strong>Version history</strong> for all saved documents</li>
+            </ul>
+          </div>
+        </div>
+        
+        <!-- Box 4: Kommunikation -->
+        <div class="info-box-container">
+          <div class="info-panel">
+            <h3>Communication Tools</h3>
+            <p>Tools for modern collaboration:</p>
+            <ul class="icon-list">
+              <li><strong>Microsoft Teams</strong> - Chat, video calls, and collaboration</li>
+              <li><strong>Outlook</strong> - Email and calendar</li>
+              <li><strong>Zoom</strong> - for external meetings</li>
+              <li><strong>VoIP Telephony</strong> with your personal extension</li>
+              <li><strong>Mobile Apps</strong> for on-the-go and home office</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- 2FA-AUTHENTIFIZIERUNG BOX -->
+      <div class="info-box-container" style="margin-top: 20px;">
+        <div class="info-panel">
+          <h3>Two-Factor Authentication (2FA) <span class="badge badge-important">IMPORTANT</span></h3>
+          <p>For secure login to Microsoft 365 apps and other company services, you need the Microsoft Authenticator app:</p>
+          <ul class="icon-list">
+            <li><strong>Set up immediately</strong> for full system access</li>
+            <li><strong>Enable push notifications</strong> for quick confirmation</li>
+            <li><strong>Set up backup</strong> in the app settings</li>
+            <li><strong>Report device loss immediately</strong> to IT support</li>
+          </ul>
+          
+          <!-- QR-Codes für App-Installation -->
+          <div style="display: flex; justify-content: center; margin-top: 15px; gap: 30px;">
+            <div style="text-align: center;">
+              <img src="C:\easyIT\easyONBOARDING\assets\ms-mfa_applestore.png" alt="iOS App Store QR Code" style="max-width: 250px; max-height: 250px; border: 2px solid var(--primary-light); border-radius: var(--border-radius); padding: 5px;">
+              <p style="margin: 6px 0 0; font-size: 9pt; font-weight: 500;">App Store (iOS)</p>
+            </div>
+            <div style="text-align: center;">
+              <img src="C:\easyIT\easyONBOARDING\assets\ms-mfa_androidstore.png" alt="Google Play Store QR Code" style="max-width: 250px; max-height: 250px; border: 2px solid var(--primary-light); border-radius: var(--border-radius); padding: 5px;">
+              <p style="margin: 6px 0 0; font-size: 9pt; font-weight: 500;">Play Store (Android)</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+    <br><br><br>
+    <!-- FOOTER -->
+    <footer>
+      <p>{{ReportFooter}}</p>
+      <p>Created by: {{Admin}}</p>
+      <p>Date: {{ReportDate}}</p>
+      <p>easyONBOARDING - Template 0.4 | Andreas Hepp</p>
+    </footer>
+  </div>
+</body>
+</html>

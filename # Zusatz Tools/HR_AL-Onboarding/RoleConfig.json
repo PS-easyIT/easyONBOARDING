@@ -1,0 +1,32 @@
+{
+  "HR": {
+    "Users": ["HR-Support", "PersonalAdmin", "HRManager"],
+    "ADGroups": ["PersonalAbteilung", "HR-Support-Team"],
+    "Permissions": ["ViewHRDashboard", "EditPersonaldata"]
+  },
+  "IT": {
+    "Users": ["ITServicedesk", "ITAdmin", "SystemAdmin"],
+    "ADGroups": ["IT-Support", "Systemadministratoren"],
+    "Permissions": ["ManageAccounts", "AssignLicenses"]
+  },
+  "Manager": {
+    "Users": [],
+    "ADGroups": ["Abteilungsleiter", "Teamleiter"],
+    "Permissions": ["ApproveRequests", "RequestEquipment"]
+  },
+  "SpecialAdmin": {
+    "Users": ["OnboardingAdmin"],
+    "ADGroups": ["Onboarding-Team"],
+    "Permissions": ["ResetWorkflow", "ManageTemplates", "ExportAllData"]
+  },
+  "Admin": {
+    "Users": ["GlobalAdmin", "BackupAdmin", "Administrator"],
+    "ADGroups": ["Global Administrators"],
+    "Permissions": ["SystemConfig", "AuditReporting"]
+  },
+  "Executive": {
+    "Users": ["CEO", "CFO", "COO"],
+    "ADGroups": ["Executive Board", "Management Board"],
+    "Permissions": ["ViewReports", "ApproveHighLevelRequests", "ViewAll"]
+  }
+}

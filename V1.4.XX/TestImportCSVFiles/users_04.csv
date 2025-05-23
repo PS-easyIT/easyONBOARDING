@@ -1,0 +1,11 @@
+FirstName;LastName;Description;OfficeRoom;PhoneNumber;MobileNumber;Position;DepartmentField;EmailAddress;Ablaufdatum;External;TL;AL;AccountDisabled;ADGroup
+Mariechen;Gunpf;Mariechen Gunpf - Support;405;+49(0)4372 019768;(03081) 056873;Manager;IT;lorchmyriam@web.de;25.02.2026;No;Klaus Söding;Siegward Römer;False;Sales-Group
+Josef;Sontag;Josef Sontag - Support;975;03316 376334;+49(0)4796 25365;Manager;HR;loefflerimelda@gmx.de;21.08.2025;Yes;Sibylle Matthäi;Marija Preiß;True;Sales-Group
+Kreszenz;Hauffer;Kreszenz Hauffer - Manager;632;+49(0)3381 826955;+49(0)9372 427600;Techniker;IT;myriamhendriks@gmx.de;01.06.2025;Yes;Annelies Junitz;Leonie Beer;False;Sales-Group
+Angelina;Hartung;Angelina Hartung - Entwickler;215;+49(0) 836284508;+49(0) 423353562;Support;Vertrieb;rwilmsen@gutknecht.com;28.12.2025;No;Joerg Juncken;Klaus Staude;True;Domain Users
+Mira;Neureuther;Mira Neureuther - Techniker;256;+49 (0) 9621 819682;00969260669;Administrator;IT;dorlewende@mangold.com;15.03.2026;No;Daria Stiebitz;Konrad Weitzel;False;HR-Team
+Gretel;Conradi;Gretel Conradi - Techniker;764;+49(0)6317390108;(09777) 00786;Entwickler;Finanzen;tschentschermeral@yahoo.de;26.11.2025;Yes;Lilly Pohl;Hajo Pergande;True;HR-Team
+Gisbert;Schmidtke;Gisbert Schmidtke - Techniker;665;(07968) 12897;+49(0)3523 581268;Support;Marketing;ilhanjuettner@hotmail.de;18.02.2026;No;Kunigunda Heß;Adolf Hartung;False;Domain Users
+Markus;Ruppersberger;Markus Ruppersberger - Administrator;550;(03565) 152924;(04788) 92205;Entwickler;HR;weinholdmehmet@hotmail.de;03.02.2026;No;Cristina Berger;Simona Rohleder;True;IT-Admins
+Karl-Ernst;Weinhold;Karl-Ernst Weinhold - Manager;881;08898928277;+49(0)8091 514436;Manager;Vertrieb;hassanloos@gmail.com;21.10.2025;Yes;Horst-Peter Werner;Achim Winkler;True;Domain Users
+Gerda;Heydrich;Gerda Heydrich - Support;567;+49 (0) 5085 334736;(08132) 73143;Administrator;HR;zthanel@gmx.de;21.05.2025;Yes;Klaas Wesack;Jacek Kusch;False;Sales-Group

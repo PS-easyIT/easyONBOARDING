@@ -1,0 +1,627 @@
+<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:d="http://schemas.microsoft.com/expression/blend/2008" WindowStartupLocation="CenterScreen" Width="1500" Title="easyONBOARDING HR-AL Tool" ResizeMode="CanResize" x:Name="mainWindow" MinHeight="700" MinWidth="1000" Height="1000" Background="#F0F0F0"
+>
+    <Window.Resources
+>
+        <!-- Reduced shadow effect -->
+        <DropShadowEffect x:Key="SoftShadow" ShadowDepth="1" Opacity="0.05" Direction="270" Color="#707070" BlurRadius="4"/>
+        <!-- Style for standard TextBox -->
+        <Style TargetType="{x:Type TextBox}"
+>
+            <Setter Property="Height" Value="28"/>
+            <Setter Property="Margin" Value="10,2,0,2"/>
+            <Setter Property="Padding" Value="8,2"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="Background" Value="#FAFAFA"/>
+            <Setter Property="BorderBrush" Value="#D0D0D0"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="MinWidth" Value="200"/>
+        </Style>
+        <!-- Style for Labels -->
+        <Style TargetType="{x:Type Label}"
+>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="Foreground" Value="#505050"/>
+            <Setter Property="FontWeight" Value="Medium"/>
+            <Setter Property="Padding" Value="0,5,10,5"/>
+            <Setter Property="Margin" Value="0,0,0,0"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="HorizontalAlignment" Value="Right"/>
+            <Setter Property="Width" Value="150"/>
+        </Style>
+        <!-- Style for GroupBox -->
+        <Style TargetType="{x:Type GroupBox}"
+>
+            <Setter Property="Padding" Value="10,8"/>
+            <Setter Property="Margin" Value="5,5,5,10"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Foreground" Value="#5B87A9"/>
+            <Setter Property="BorderBrush" Value="#D0D0D0"/>
+            <Setter Property="BorderThickness" Value="1"/>
+        </Style>
+        <!-- Style for CheckBox -->
+        <Style TargetType="{x:Type CheckBox}"
+>
+            <Setter Property="Margin" Value="10,5,0,5"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="Foreground" Value="#505050"/>
+        </Style>
+        <!-- Style for Buttons -->
+        <Style TargetType="{x:Type Button}"
+>
+            <Setter Property="Height" Value="34"/>
+            <Setter Property="Padding" Value="15,0"/>
+            <Setter Property="Margin" Value="5,4"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Background" Value="#5B87A9"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="MinWidth" Value="120"/>
+            <Setter Property="Effect"
+>
+                <Setter.Value
+>
+                    <DropShadowEffect ShadowDepth="1" Opacity="0.1" Direction="270" Color="#707070" BlurRadius="3"/>
+                </Setter.Value>
+            </Setter>
+            <Style.Triggers
+>
+                <Trigger Property="IsMouseOver" Value="True"
+>
+                    <Setter Property="Background" Value="#4A768E"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+        <!-- Style for Border -->
+        <Style TargetType="{x:Type Border}"
+>
+            <Setter Property="CornerRadius" Value="6"/>
+            <Setter Property="Background" Value="#FAFAFA"/>
+            <Setter Property="Padding" Value="10"/>
+            <Setter Property="Margin" Value="5"/>
+            <Setter Property="BorderBrush" Value="#D0D0D0"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Effect"
+>
+                <Setter.Value
+>
+                    <DropShadowEffect ShadowDepth="1" Opacity="0.05" Direction="270" Color="#707070" BlurRadius="4"/>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <!-- Style for DatePicker -->
+        <Style TargetType="{x:Type DatePicker}"
+>
+            <Setter Property="Height" Value="28"/>
+            <Setter Property="Margin" Value="10,2,0,2"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="BorderBrush" Value="#D0D0D0"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Padding" Value="8,2"/>
+            <Setter Property="MinWidth" Value="200"/>
+        </Style>
+        <!-- Style for TextBlock -->
+        <Style TargetType="{x:Type TextBlock}"
+>
+            <Setter Property="Margin" Value="0,2,0,2"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="Foreground" Value="#505050"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+        <!-- Style for ComboBox -->
+        <Style TargetType="{x:Type ComboBox}"
+>
+            <Setter Property="Height" Value="28"/>
+            <Setter Property="Margin" Value="10,2,0,2"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="Foreground" Value="#505050"/>
+            <Setter Property="Padding" Value="8,2"/>
+            <Setter Property="BorderBrush" Value="#D0D0D0"/>
+            <Setter Property="MinWidth" Value="200"/>
+        </Style>
+        <!-- Style for TabControl -->
+        <Style TargetType="{x:Type TabControl}"
+>
+            <Setter Property="Margin" Value="5,5,5,5"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+        </Style>
+        <!-- Style for TabItem -->
+        <Style TargetType="{x:Type TabItem}"
+>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="Padding" Value="15,7"/>
+            <Setter Property="Margin" Value="0,0,2,0"/>
+            <Setter Property="FontWeight" Value="Medium"/>
+            <Setter Property="Foreground" Value="#505050"/>
+            <Setter Property="Background" Value="#F6F6F6"/>
+            <Setter Property="BorderBrush" Value="#D0D0D0"/>
+            <Style.Triggers
+>
+                <Trigger Property="IsSelected" Value="True"
+>
+                    <Setter Property="Foreground" Value="#5B87A9"/>
+                    <Setter Property="FontWeight" Value="SemiBold"/>
+                    <Setter Property="Background" Value="#FFFFFF"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+        <!-- Style for disabled TabItem -->
+        <Style x:Key="DisabledTabItem" BasedOn="{StaticResource {x:Type TabItem}}" TargetType="{x:Type TabItem}"
+>
+            <Setter Property="Foreground" Value="#AAAAAA"/>
+            <Setter Property="Background" Value="#F8F8F8"/>
+            <Setter Property="BorderBrush" Value="#E0E0E0"/>
+            <Setter Property="IsEnabled" Value="False"/>
+        </Style>
+        <!-- Style for ListBox -->
+        <Style TargetType="{x:Type ListBox}"
+>
+            <Setter Property="BorderBrush" Value="#D0D0D0"/>
+            <Setter Property="Background" Value="#FAFAFA"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Margin" Value="0,5,0,5"/>
+        </Style>
+        <!-- Badge style for workflow indicators -->
+        <Style x:Key="WorkflowBadge" TargetType="{x:Type Border}"
+>
+            <Setter Property="Background" Value="#E3EBF2"/>
+            <Setter Property="CornerRadius" Value="12"/>
+            <Setter Property="Padding" Value="8,3"/>
+            <Setter Property="Margin" Value="0,0,5,0"/>
+            <Setter Property="BorderThickness" Value="0"/>
+        </Style>
+        <!-- Status indicator style -->
+        <Style x:Key="StatusIndicator" TargetType="{x:Type Border}"
+>
+            <Setter Property="Width" Value="10"/>
+            <Setter Property="Height" Value="10"/>
+            <Setter Property="CornerRadius" Value="5"/>
+            <Setter Property="Margin" Value="5,0"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+        <!-- FormField Container Style -->
+        <Style x:Key="FormFieldContainer" TargetType="{x:Type StackPanel}"
+>
+            <Setter Property="Orientation" Value="Horizontal"/>
+            <Setter Property="Margin" Value="0,5,0,5"/>
+        </Style>
+    </Window.Resources>
+    <Grid
+>
+        <Grid.RowDefinitions
+>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        <!-- Header -->
+        <Grid Grid.Row="0" Background="LightGray"
+>
+            <Grid.ColumnDefinitions
+>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <Image Width="120" Stretch="Uniform" x:Name="picLogo" Margin="10" Height="70" Grid.Column="0"/>
+            <StackPanel VerticalAlignment="Center" Margin="10" Grid.Column="1"
+>
+                <TextBlock FontWeight="Bold" FontSize="24"
+><Run Text="easyONBOARDING HR-AL Tool"/></TextBlock>
+                <StackPanel Margin="0,5,0,0" Orientation="Horizontal"
+>
+                    <TextBlock
+><Run Text="Angemeldet als:"/></TextBlock>
+                    <TextBlock FontWeight="SemiBold" Margin="5,0,0,0" x:Name="lblCurrentUser"/>
+                    <TextBlock Margin="20,0,0,0"
+><Run Text="Rolle:"/></TextBlock>
+                    <TextBlock FontWeight="SemiBold" Margin="5,0,0,0" x:Name="lblUserRole"/>
+                </StackPanel>
+            </StackPanel>
+            <StackPanel VerticalAlignment="Center" Orientation="Horizontal" HorizontalAlignment="Right" Grid.Column="2"
+>
+                <Button Width="34" x:Name="btnHelp" Margin="0,0,10,0" Height="34" FontWeight="Bold" Foreground="White" Content="?" Background="SteelBlue"/>
+                <Button Width="80" x:Name="btnClose" Margin="0,0,10,0" Height="34" Content="Schließen"/>
+            </StackPanel>
+        </Grid>
+        <!-- Main Content -->
+        <Grid Grid.Row="1"
+>
+            <Grid.ColumnDefinitions
+>
+                <ColumnDefinition Width="300"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <!-- Left Panel - Records List -->
+            <DockPanel Grid.Column="0" Margin="10"
+>
+                <StackPanel DockPanel.Dock="Top" Margin="0,0,0,10"
+>
+                    <TextBlock FontWeight="Bold" FontSize="16"
+><Run Text="Onboarding Einträge"/></TextBlock>
+                    <TextBlock Margin="0,5,0,0" x:Name="txtAccessLevel"/>
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" Margin="0,10,0,0" DockPanel.Dock="Bottom"
+>
+                    <Button Width="135" x:Name="btnNew" Margin="0,0,10,0" Content="Neu"/>
+                    <Button Width="135" x:Name="btnRefresh" Margin="0,0,10,0" Content="Aktualisieren"/>
+                    <Button Width="135" x:Name="btnExportCSV" Margin="0,0,10,0" Content="Export CSV"/>
+                </StackPanel>
+                <ListBox Margin="0,10,0,0" x:Name="lstOnboardingRecords"/>
+            </DockPanel>
+            <!-- Right Panel - Tabs -->
+            <TabControl x:Name="tabControl" Margin="10" Grid.Column="1"
+>
+                <!-- HR Tab -->
+                <TabItem Header="HR" x:Name="tabHR"
+>
+                    <ScrollViewer
+>
+                        <StackPanel Margin="10"
+>
+                            <TextBlock Margin="0,0,0,15" FontSize="18" FontWeight="Bold"
+><Run Text="HR Onboarding"/></TextBlock>
+                            <Grid
+>
+                                <Grid.ColumnDefinitions
+>
+                                    <ColumnDefinition Width="150"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <Grid.RowDefinitions
+>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+                                <!-- Row 0 -->
+                                <TextBlock VerticalAlignment="Center" Grid.Row="0" Margin="0,5" Grid.Column="0"><Run Text="Vorname:"/></TextBlock>
+                                <TextBox Grid.Row="0" x:Name="txtFirstName" Margin="0,5" Height="25" Grid.Column="1"/>
+                                <!-- Row 1 -->
+                                <TextBlock VerticalAlignment="Center" Grid.Row="1" Margin="0,5" Grid.Column="0"><Run Text="Nachname:"/></TextBlock>
+                                <TextBox Grid.Row="1" x:Name="txtLastName" Margin="0,5" Height="25" Grid.Column="1"/>
+                                <!-- Row 2 -->
+                                <TextBlock VerticalAlignment="Center" Grid.Row="2" Margin="0,5" Grid.Column="0"><Run Text="Bezeichnung:"/></TextBlock>
+                                <TextBox Grid.Row="2" x:Name="txtDescription" Margin="0,5" Height="25" Grid.Column="1"/>
+                                <!-- Row 3 -->
+                                <StackPanel Grid.Row="3" Orientation="Horizontal" Margin="0,5" Grid.ColumnSpan="2" Grid.Column="0">
+                                    <CheckBox Content="Extern" x:Name="chkExternal" VerticalAlignment="Center"/>
+                                    <TextBox Width="200" ToolTip="Externe Firma" x:Name="txtExtCompany" Margin="20,0,0,0" IsEnabled="False"/>
+                                </StackPanel>
+                                <!-- Row 4 -->
+                                <TextBlock VerticalAlignment="Center" Grid.Row="4" Margin="0,5" Grid.Column="0"><Run Text="Büro:"/></TextBlock>
+                                <ComboBox Grid.Row="4" x:Name="cmbOffice" Margin="0,5" Height="25" Grid.Column="1"/>
+                                <!-- Row 5 -->
+                                <TextBlock VerticalAlignment="Center" Grid.Row="5" Margin="0,5" Grid.Column="0"><Run Text="Startdatum:"/></TextBlock>
+                                <DatePicker Grid.Row="5" x:Name="dtpStartWorkDate" Margin="0,5" Height="25" Grid.Column="1"/>
+                                <!-- Row 6 -->
+                                <TextBlock VerticalAlignment="Center" Grid.Row="6" Margin="0,5" Grid.Column="0"><Run Text="Manager:"/></TextBlock>
+                                <ComboBox Grid.Row="6" x:Name="cmbAssignedManager" Margin="0,5" Height="25" Grid.Column="1"/>
+                            </Grid>
+                            <!-- HR Notizen -->
+                            <TextBlock Margin="0,15,0,5"><Run Text="HR Notizen:"/></TextBlock>
+                            <TextBox TextWrapping="Wrap" x:Name="txtHRNotes" Margin="0,5,0,10" Height="80"/>
+                            <Button Width="150" x:Name="btnHRSubmit" Margin="0,20,0,0" Height="35" HorizontalAlignment="Right" Content="Anfrage erstellen"/>
+                        </StackPanel>
+                    </ScrollViewer>
+                </TabItem>
+                <!-- Manager Tab -->
+                <TabItem Header="Manager" x:Name="tabManager">
+                    <ScrollViewer VerticalScrollBarVisibility="Auto">
+                        <Grid Margin="10">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="*"/>
+                                <RowDefinition Height="*"/>
+                            </Grid.RowDefinitions>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            
+                            <!-- Panel 1: Software (oben links) -->
+                            <Border Grid.Row="0" Grid.Column="0" Margin="0,0,5,5">
+                                <StackPanel>
+                                    <TextBlock Margin="0,0,0,10" FontSize="16" FontWeight="Bold"><Run Text="Software"/></TextBlock>
+                                    <!-- Unternehmenssoftware -->
+                                    <GroupBox Header="Unternehmenssoftware" Margin="0,0,0,10">
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="*"/>
+                                            </Grid.ColumnDefinitions>
+                                            <Grid.RowDefinitions>
+                                                <RowDefinition Height="Auto"/>
+                                                <RowDefinition Height="Auto"/>
+                                                <RowDefinition Height="Auto"/>
+                                                <RowDefinition Height="Auto"/>
+                                                <RowDefinition Height="Auto"/>
+                                            </Grid.RowDefinitions>
+                                            <!-- Linke Spalte -->
+                                            <CheckBox Grid.Row="0" x:Name="chkSoftwareSage" Margin="0,5" Content="SAGE" Grid.Column="0"/>
+                                            <CheckBox Grid.Row="1" x:Name="chkSoftwareGenesis" Margin="0,5" Content="Genesis" Grid.Column="0"/>
+                                            <CheckBox Grid.Row="2" x:Name="chkSoftwareNavision" Margin="0,5" Content="Navision" Grid.Column="0"/>
+                                            <CheckBox Grid.Row="3" x:Name="chkSoftwareSAP" Margin="0,5" Content="SAP" Grid.Column="0"/>
+                                            <CheckBox Grid.Row="4" x:Name="chkZugangLizenzmanager" Margin="0,5" Content="Lizenzmanager" Grid.Column="0"/>
+                                            <!-- Rechte Spalte -->
+                                            <CheckBox Grid.Row="0" x:Name="chkSoftwareERP" Margin="0,5" Content="ERP System" Grid.Column="1"/>
+                                            <CheckBox Grid.Row="1" x:Name="chkSoftwareCRM" Margin="0,5" Content="CRM System" Grid.Column="1"/>
+                                            <CheckBox Grid.Row="2" x:Name="chkSoftwareLexware" Margin="0,5" Content="Lexware" Grid.Column="1"/>
+                                            <CheckBox Grid.Row="3" x:Name="chkSoftwareCustom1" Margin="0,5" Content="Sonstige 1" Grid.Column="1"/>
+                                            <CheckBox Grid.Row="4" x:Name="chkSoftwareCustom2" Margin="0,5" Content="Sonstige 2" Grid.Column="1"/>
+                                        </Grid>
+                                    </GroupBox>
+                                    <!-- Weitere Software -->
+                                    <TextBlock Margin="0,5,0,2"><Run Text="Weitere Software:"/></TextBlock>
+                                    <TextBox Height="50" x:Name="txtWeitereUnternehmenssoftware" TextWrapping="Wrap"/>
+                                    <!-- MS365 -->
+                                    <GroupBox Header="Microsoft 365" Margin="0,10,0,0">
+                                        <StackPanel>
+                                            <TextBlock FontWeight="Bold" Margin="0,5,0,5"><Run Text="MS365 Lizenzen:"/></TextBlock>
+                                            <ComboBox Width="Auto" x:Name="cmbMS365Lizenzen" Margin="0,5">
+                                                <ComboBoxItem Content="Microsoft 365 Basic"/>
+                                                <ComboBoxItem Content="Microsoft 365 Business Standard"/>
+                                                <ComboBoxItem Content="Microsoft 365 Business Premium"/>
+                                                <ComboBoxItem Content="Microsoft 365 Enterprise E3"/>
+                                                <ComboBoxItem Content="Microsoft 365 Enterprise E5"/>
+                                            </ComboBox>
+                                            <TextBlock FontWeight="Bold" Margin="0,15,0,5"><Run Text="MS365 Services:"/></TextBlock>
+                                            <CheckBox Content="Exchange Online" Margin="0,5" x:Name="chkMS365Email"/>
+                                            <CheckBox Content="Teams" Margin="0,5" x:Name="chkMS365Teams"/>
+                                            <CheckBox Content="OneDrive for Business" Margin="0,5" x:Name="chkMS365OneDrive"/>
+                                            <CheckBox Content="SharePoint Online" Margin="0,5" x:Name="chkMS365SharePoint"/>
+                                            <CheckBox Content="Power BI" Margin="0,5" x:Name="chkMS365PowerBI"/>
+                                            <CheckBox Content="Power Apps" Margin="0,5" x:Name="chkMS365PowerApps"/>
+                                        </StackPanel>
+                                    </GroupBox>
+                                </StackPanel>
+                            </Border>
+
+                            <!-- Panel 2: Zugriffe und Netzwerk (oben rechts) -->
+                            <Border Grid.Row="0" Grid.Column="1" Margin="5,0,0,5">
+                                <StackPanel>
+                                    <TextBlock Margin="0,0,0,10" FontSize="16" FontWeight="Bold"><Run Text="Zugriffe und Netzwerk"/></TextBlock>
+                                    <!-- Zugriffe -->
+                                    <GroupBox Header="Zugriffsberechtigungen" Margin="0,0,0,10">
+                                        <StackPanel>
+                                            <CheckBox Content="Terminalserver" Margin="0,5" x:Name="chkZugangTerminalserver"/>
+                                            <CheckBox Content="VPN-Zugang" Margin="0,5" x:Name="chkZugangVPN"/>
+                                            <TextBlock Margin="0,5"><Run Text="SharePoint-Berechtigungen:"/></TextBlock>
+                                            <CheckBox Content="SharePoint Bereich - Allgemein" Margin="20,5,0,0" x:Name="chkSharePointBereichA"/>
+                                            <CheckBox Content="SharePoint Bereich - Finanzen" Margin="20,5,0,0" x:Name="chkSharePointBereichB"/>
+                                            <CheckBox Content="SharePoint Bereich - HR" Margin="20,5,0,0" x:Name="chkSharePointBereichC"/>
+                                            <CheckBox Content="SharePoint Bereich - Marketing" Margin="20,5,0,0" x:Name="chkSharePointBereichD"/>
+                                            <CheckBox Content="SharePoint Bereich - Vertrieb" Margin="20,5,0,0" x:Name="chkSharePointBereichE"/>
+                                            <CheckBox Content="SharePoint Bereich - Projekte" Margin="20,5,0,0" x:Name="chkSharePointBereichF"/>
+                                            <TextBlock Margin="0,10,0,2"><Run Text="Weitere Zugriffsrechte:"/></TextBlock>
+                                            <TextBox Height="50" x:Name="txtZugriffe" TextWrapping="Wrap"/>
+                                        </StackPanel>
+                                    </GroupBox>
+                                    <!-- Netzwerk -->
+                                    <GroupBox Header="Netzwerkinformationen" Margin="0,0,0,0">
+                                        <StackPanel>
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="150"/>
+                                                    <ColumnDefinition Width="*"/>
+                                                </Grid.ColumnDefinitions>
+                                                <Grid.RowDefinitions>
+                                                    <RowDefinition Height="Auto"/>
+                                                    <RowDefinition Height="Auto"/>
+                                                    <RowDefinition Height="Auto"/>
+                                                    <RowDefinition Height="Auto"/>
+                                                    <RowDefinition Height="Auto"/>
+                                                </Grid.RowDefinitions>
+                                                <TextBlock Grid.Row="0" Margin="0,5" Grid.Column="0"><Run Text="Netzwerkgruppe:"/></TextBlock>
+                                                <ComboBox Grid.Row="0" x:Name="cmbNetzwerkGruppe" Margin="0,5" Grid.Column="1"/>
+                                                <TextBlock Grid.Row="1" Margin="0,5" Grid.Column="0"><Run Text="Standort:"/></TextBlock>
+                                                <ComboBox Grid.Row="1" x:Name="cmbNetzwerkStandort" Margin="0,5" Grid.Column="1"/>
+                                                <TextBlock Grid.Row="2" Margin="0,5" Grid.Column="0"><Run Text="VLAN ID:"/></TextBlock>
+                                                <TextBox Grid.Row="2" x:Name="txtVLANID" Margin="0,5" Height="25" Grid.Column="1"/>
+                                                <TextBlock Grid.Row="3" Margin="0,5" Grid.Column="0"><Run Text="IP-Bereich:"/></TextBlock>
+                                                <TextBox Grid.Row="3" x:Name="txtNetzwerkIPBereich" Margin="0,5" IsReadOnly="True" Grid.Column="1"/>
+                                                <TextBlock Grid.Row="4" Margin="0,5" Grid.Column="0"><Run Text="Netzwerkfreigaben:"/></TextBlock>
+                                                <TextBox TextWrapping="Wrap" Grid.Row="4" x:Name="txtNetzwerkFreigaben" Margin="0,5" Height="60" Grid.Column="1"/>
+                                            </Grid>
+                                        </StackPanel>
+                                    </GroupBox>
+                                </StackPanel>
+                            </Border>
+
+                            <!-- Panel 3: Hardware (unten links) -->
+                            <Border Grid.Row="1" Grid.Column="0" Margin="0,5,5,0">
+                                <StackPanel>
+                                    <TextBlock Margin="0,0,0,10" FontSize="16" FontWeight="Bold"><Run Text="Hardware"/></TextBlock>
+                                    <!-- Computer -->
+                                    <GroupBox Header="Computer" Margin="0,0,0,10">
+                                        <StackPanel>
+                                            <TextBlock FontWeight="Bold" Margin="0,5,0,5"><Run Text="Computer-Typ:"/></TextBlock>
+                                            <RadioButton x:Name="rbDesktop" Margin="0,5" GroupName="ComputerTyp" Content="Desktop PC"/>
+                                            <RadioButton x:Name="rbLaptop" Margin="0,5" GroupName="ComputerTyp" Content="Laptop"/>
+                                            <RadioButton x:Name="rbKeineHardware" Margin="0,5" GroupName="ComputerTyp" Content="Keine Hardware (BYOD)"/>
+                                            <TextBlock FontWeight="Bold" Margin="0,15,0,5"><Run Text="Hardware-Spezifikation:"/></TextBlock>
+                                            <ComboBox Width="Auto" x:Name="cmbHardwareSpecs" Margin="0,5">
+                                                <ComboBoxItem Content="Standard (i5, 8GB RAM, 256GB SSD)"/>
+                                                <ComboBoxItem Content="Performance (i7, 16GB RAM, 512GB SSD)"/>
+                                                <ComboBoxItem Content="Power User (i9, 32GB RAM, 1TB SSD)"/>
+                                            </ComboBox>
+                                        </StackPanel>
+                                    </GroupBox>
+                                    <!-- Peripherie -->
+                                    <GroupBox Header="Peripheriegeräte" Margin="0,0,0,0">
+                                        <StackPanel>
+                                            <CheckBox Content="1x Monitor" Margin="0,5" x:Name="chkMonitorEinzel"/>
+                                            <CheckBox Content="2x Monitore" Margin="0,5" x:Name="chkMonitorDual"/>
+                                            <CheckBox Content="Docking Station" Margin="0,5" x:Name="chkDockingStation"/>
+                                            <CheckBox Content="Headset" Margin="0,5" x:Name="chkHeadset"/>
+                                            <CheckBox Content="Webcam" Margin="0,5" x:Name="chkWebcam"/>
+                                            <CheckBox Content="Maus - Tastatur" Margin="0,5" x:Name="chkMausTastatur"/>
+                                            <TextBlock FontWeight="Bold" Margin="0,15,0,5"><Run Text="Notizen zur Hardware:"/></TextBlock>
+                                            <TextBox Height="60" x:Name="txtHardwareNotes" TextWrapping="Wrap"/>
+                                        </StackPanel>
+                                    </GroupBox>
+                                </StackPanel>
+                            </Border>
+
+                            <!-- Panel 4: Mobilgeräte und Arbeitsplatz (unten rechts) -->
+                            <Border Grid.Row="1" Grid.Column="1" Margin="5,5,0,0">
+                                <StackPanel>
+                                    <TextBlock Margin="0,0,0,10" FontSize="16" FontWeight="Bold"><Run Text="Mobilgeräte und Arbeitsplatz"/></TextBlock>
+                                    <!-- Mobilgeräte -->
+                                    <GroupBox Header="Mobilgeräte" Margin="0,0,0,10">
+                                        <StackPanel>
+                                            <TextBlock FontWeight="Bold" Margin="0,5,0,5"><Run Text="Smartphone:"/></TextBlock>
+                                            <CheckBox Content="Diensthandy benötigt" Margin="0,5" x:Name="chkSmartphone"/>
+                                            <ComboBox x:Name="cmbSmartphoneModell" Margin="20,5,0,5" IsEnabled="{Binding IsChecked, ElementName=chkSmartphone}" Width="153">
+                                                <ComboBoxItem Content="iPhone Standard"/>
+                                                <ComboBoxItem Content="iPhone Pro"/>
+                                                <ComboBoxItem Content="Samsung Galaxy"/>
+                                                <ComboBoxItem Content="Google Pixel"/>
+                                            </ComboBox>
+                                            <TextBlock FontWeight="Bold" Margin="0,15,0,5"><Run Text="Tablet:"/></TextBlock>
+                                            <CheckBox Content="Tablet benötigt" Margin="0,5" x:Name="chkTablet"/>
+                                            <ComboBox x:Name="cmbTabletModell" Margin="20,5,0,5" IsEnabled="{Binding IsChecked, ElementName=chkTablet}" Width="129">
+                                                <ComboBoxItem Content="iPad"/>
+                                                <ComboBoxItem Content="iPad Pro"/>
+                                                <ComboBoxItem Content="Samsung Galaxy Tab"/>
+                                            </ComboBox>
+                                        </StackPanel>
+                                    </GroupBox>
+                                    <!-- Arbeitsplatz -->
+                                    <GroupBox Header="Arbeitsplatz" Margin="0,0,0,10">
+                                        <StackPanel>
+                                            <TextBlock Margin="0,5"><Run Text="Arbeitsplatz-Bezeichnung:"/></TextBlock>
+                                            <TextBox Height="25" Margin="0,5" x:Name="txtArbeitsplatz"/>
+                                            <TextBlock Margin="0,5"><Run Text="Büroausstattung:"/></TextBlock>
+                                            <ComboBox x:Name="cmbAusstattung" Margin="0,5" Height="25">
+                                                <ComboBoxItem Content="Standard Büroausstattung"/>
+                                                <ComboBoxItem Content="Home-Office Komplettpaket"/>
+                                                <ComboBoxItem Content="Ergonomischer Arbeitsplatz"/>
+                                                <ComboBoxItem Content="Minimalausstattung"/>
+                                            </ComboBox>
+                                        </StackPanel>
+                                    </GroupBox>
+                                    <!-- Zusätzliche Informationen -->
+                                    <GroupBox Header="Zusätzliche Informationen" Margin="0,0,0,0">
+                                        <StackPanel>
+                                            <TextBlock FontWeight="Bold" Margin="0,5,0,5"><Run Text="Manager Notizen:"/></TextBlock>
+                                            <TextBox Height="60" x:Name="txtManagerNotes" TextWrapping="Wrap"/>
+                                            <Button Width="150" x:Name="btnManagerSubmit" Margin="0,10,0,0" Height="35" 
+                                                HorizontalAlignment="Right" Content="Daten speichern"/>
+                                        </StackPanel>
+                                    </GroupBox>
+                                </StackPanel>
+                            </Border>
+                        </Grid>
+                    </ScrollViewer>
+                </TabItem>
+                <!-- Verification Tab -->
+                <TabItem Header="Verifikation" x:Name="tabVerification"
+>
+                    <Grid Margin="10"
+>
+                        <Grid.RowDefinitions
+>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+                        <TextBlock Grid.Row="0" Margin="0,0,0,15" FontSize="18" FontWeight="Bold"
+><Run Text="HR Verifikation"/></TextBlock>
+                        <ListBox x:Name="lstPendingVerifications" Grid.Row="1"/>
+                        <CheckBox Grid.Row="2" x:Name="chkHRVerified" Margin="0,15,0,5" FontWeight="Bold" Content="Von HR verifiziert"/>
+                        <TextBlock Margin="0,10,0,5" Grid.Row="3"
+><Run Text="Notizen:"/></TextBlock>
+                        <TextBox TextWrapping="Wrap" Grid.Row="3" x:Name="txtVerificationNotes" Margin="0,25,0,10" Height="80"/>
+                        <Button Width="150" Grid.Row="4" x:Name="btnVerifySubmit" Margin="0,10,0,0" Height="35" HorizontalAlignment="Right" Content="Verifizieren"/>
+                    </Grid>
+                </TabItem>
+                <!-- IT Tab -->
+                <TabItem Header="IT" x:Name="tabIT">
+                    <Grid Margin="10">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <Grid Margin="0,0,10,0" Grid.Column="0">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="*"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+                            <TextBlock Grid.Row="0" Margin="0,0,0,15" FontSize="18" FontWeight="Bold"><Run Text="IT Bearbeitung"/></TextBlock>
+                            <ListBox x:Name="lstPendingIT" Grid.Row="1"/>
+                            <CheckBox Grid.Row="2" x:Name="chkAccountCreated" Margin="0,15,0,5" FontWeight="Bold" Content="Account erstellt"/>
+                            <Grid Grid.Row="3" Margin="0,10,0,0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <CheckBox VerticalAlignment="Center" x:Name="chkEquipmentReady" FontWeight="Bold" Content="Ausstattung vorbereitet" Grid.Column="0"/>
+                                <TextBlock VerticalAlignment="Center" Text="Asset ID:" Margin="20,0,5,0" HorizontalAlignment="Right" Grid.Column="1"/>
+                                <TextBox Width="100" x:Name="txtAssetID" Height="25" Grid.Column="2"/>
+                            </Grid>
+                            <TextBlock Margin="0,10,0,5" Grid.Row="4"><Run Text="IT Notizen:"/></TextBlock>
+                            <TextBox TextWrapping="Wrap" Grid.Row="4" x:Name="txtITNotes" Margin="0,25,0,10" Height="80"/>
+                            <Button Width="150" Grid.Row="5" x:Name="btnITComplete" Margin="0,10,0,0" Height="35" HorizontalAlignment="Right" Content="Abschließen"/>
+                        </Grid>
+                        <Grid Margin="10,0,0,0" Grid.Column="1">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="*"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+                            <TextBlock Grid.Row="0" Margin="0,0,0,15" FontSize="18" FontWeight="Bold"><Run Text="IT Checkliste"/></TextBlock>
+                            <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+                                <StackPanel x:Name="spITChecklist">
+                                    <!-- Hier werden dynamisch Checkboxen basierend auf den Manager-Auswahlen hinzugefügt -->
+                                    <TextBlock FontWeight="Bold" Margin="0,5"><Run Text="Software Installation:"/></TextBlock>
+                                    <CheckBox Content="Microsoft 365 eingerichtet" Margin="20,5,0,0" x:Name="chkIT_MS365"/>
+                                    <CheckBox Content="Unternehmenssoftware 1 installiert" Margin="20,5,0,0" x:Name="chkIT_Software1"/>
+                                    <CheckBox Content="Unternehmenssoftware 2 installiert" Margin="20,5,0,0" x:Name="chkIT_Software2"/>
+                                    <TextBlock FontWeight="Bold" Margin="0,15,5"><Run Text="Hardware Vorbereitung:"/></TextBlock>
+                                    <CheckBox Content="Computer konfiguriert" Margin="20,5,0,0" x:Name="chkIT_Computer"/>
+                                    <CheckBox Content="Peripheriegeräte vorbereitet" Margin="20,5,0,0" x:Name="chkIT_Peripherie"/>
+                                    <TextBlock FontWeight="Bold" Margin="0,15,5"><Run Text="Netzwerk Konfiguration:"/></TextBlock>
+                                    <CheckBox Content="Netzwerkzugriff eingerichtet" Margin="20,5,0,0" x:Name="chkIT_Netzwerk"/>
+                                    <CheckBox Visibility="Collapsed" x:Name="chkIT_VPN" Margin="20,5,0,0" Content="VPN konfiguriert"/>
+                                    <TextBlock FontWeight="Bold" Margin="0,15,5"><Run Text="Mobilgeräte:"/></TextBlock>
+                                    <CheckBox Visibility="Collapsed" x:Name="chkIT_Smartphone" Margin="20,5,0,0" Content="Smartphone eingerichtet"/>
+                                    <CheckBox Visibility="Collapsed" x:Name="chkIT_Tablet" Margin="20,5,0,0" Content="Tablet eingerichtet"/>
+                                </StackPanel>
+                            </ScrollViewer>
+                            <Button Width="180" Grid.Row="2" x:Name="btnITChecklistUpdate" Margin="0,5,10,5" Height="35" HorizontalAlignment="Right" Content="Checkliste aktualisieren"/>
+                            <Button Width="80" x:Name="btnViewAuditLog" Margin="0,5,200,5" Height="35" HorizontalAlignment="Right" Content="Audit Log" Grid.Row="2"/>
+                            <Button Content="Backup wiederherstellen" x:Name="btnRestore" Margin="0,5,0,5" Height="35" HorizontalAlignment="Left" Grid.Row="2"/>
+                        </Grid>
+                    </Grid>
+                </TabItem>
+            </TabControl>
+        </Grid>
+        <!-- Footer -->
+        <StatusBar Background="LightGray" Grid.Row="2"
+>
+            <StatusBarItem
+>
+                <TextBlock
+><Run Text="easyONBOARDING HR-AL Tool v0.1.1"/></TextBlock>
+            </StatusBarItem>
+            <StatusBarItem HorizontalAlignment="Right"
+/>
+        </StatusBar>
+    </Grid>
+</Window>

@@ -1,0 +1,54 @@
+====================================================
+Active Directory OU Path:
+----------------------------------------------------    
+$Config.ADUserDefaults["DefaultOU"]
+
+====================================================
+User Details:
+====================================================
+First Name:        $($userData.FirstName)
+Last Name:         $($userData.LastName)
+External:          $($userData.External)
+----------------------------------------------------
+Display Name:      $($userData.DisplayName)
+----------------------------------------------------
+SamAccountName:    $($userData.SamAccountName)
+UserPrincipalName: $($userData.UserPrincipalName)
+UPN Format:        $($userData.UPNFormat)
+----------------------------------------------------
+Password Mode:     $($userData.PasswordMode)
+Password (Plain):  $($mainPW)
+----------------------------------------------------
+Account Expiry:    $($userData.Ablaufdatum)
+Account Disabled:  $($userData.AccountDisabled)
+----------------------------------------------------
+HomeDirectory 	=
+ProfilePath 	=
+LogonScript 	=
+----------------------------------------------------
+Email Address:     $($userData.EmailAddress)
+Mail Suffix:       $($userData.MailSuffix)
+ProxyAddress:      $($userData.setProxyMailAddress)
+----------------------------------------------------
+Position:          $($userData.Position)
+Department:        $($userData.DepartmentField)
+Division:          $($userData.Division)
+Office Room:       $($userData.OfficeRoom)
+----------------------------------------------------
+Group Memberships:
+$($userData.ADGroupsSelected)
+----------------------------------------------------
+Team Lead:         $($userData.TL)
+TL Group:          $($userData.TLGroup)
+AL Role:           $($userData.AL)
+----------------------------------------------------
+License:           $($userData.License)
+====================================================
+Additional Passwords:
+====================================================
+$pwLabel1 	: 	$CustomPW1
+$pwLabel2 	: 	$CustomPW2
+$pwLabel3 	: 	$CustomPW3
+$pwLabel4 	: 	$CustomPW4
+$pwLabel5 	: 	$CustomPW5
+
