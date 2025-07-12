@@ -1,0 +1,31 @@
+2025-07-08 16:34:58 [DEBUG] AD groups successfully loaded from INI.
+2025-07-08 17:33:34 [WARN] AD connectivity test failed: Unable to find a default server with Active Directory Web Services running.
+2025-07-08 17:33:47 [WARN] AD connectivity test failed: Unable to find a default server with Active Directory Web Services running.
+2025-07-08 20:24:44 [INFO] ExtendedFunctions module initialized (v1.0.0)
+2025-07-08 20:24:46 [INFO] SettingsGUI module initialized
+2025-07-08 20:32:24 [INFO] ExtendedFunctions module initialized (v1.0.0)
+2025-07-08 20:32:24 [INFO] SettingsGUI module initialized
+2025-07-08 20:32:24 [WARN] Error initializing custom modules functionality: A parameter cannot be found that matches parameter name 'LogFunction'.
+2025-07-08 20:32:24 [INFO] Active Directory connectivity established successfully
+2025-07-08 22:18:31 [INFO] ExtendedFunctions module initialized (v1.0.0)
+2025-07-08 22:18:31 [INFO] SettingsGUI module initialized
+2025-07-08 22:18:32 [ERROR] Error loading custom modules: Cannot bind argument to parameter 'Path' because it is null.
+2025-07-09 15:11:36 [INFO] ExtendedFunctions module initialized (v1.0.0)
+2025-07-09 15:11:36 [INFO] SettingsGUI module initialized
+2025-07-09 15:11:37 [ERROR] Error loading custom modules: Cannot bind argument to parameter 'Path' because it is null.
+2025-07-09 15:55:16 [INFO] ExtendedFunctions module initialized (v1.0.0)
+2025-07-09 15:55:16 [INFO] SettingsGUI module initialized
+2025-07-09 15:55:17 [ERROR] Error loading custom modules: Cannot bind argument to parameter 'Path' because it is null.
+2025-07-09 16:17:44 [INFO] ExtendedFunctions module initialized (v1.0.0)
+2025-07-09 16:17:45 [INFO] SettingsGUI module initialized
+2025-07-09 16:17:45 [ERROR] Error loading custom modules: Cannot bind argument to parameter 'Path' because it is null.
+2025-07-09 16:17:46 [WARN] Error initializing custom modules functionality: A parameter cannot be found that matches parameter name 'LogFunction'.
+2025-07-09 16:17:46 [INFO] Active Directory connectivity established successfully
+2025-07-09 16:18:18 [INFO] Generating Onboarding report for period: Heute in format: HTML
+2025-07-09 16:18:21 [INFO] Generating UserList report for period: Heute in format: HTML
+2025-07-09 16:18:24 [INFO] Generating License report for period: Heute in format: HTML
+2025-07-09 16:18:27 [INFO] Generating GroupMembership report for period: Heute in format: HTML
+2025-07-09 16:18:29 [INFO] Generating InactiveUsers report for period: Heute in format: HTML
+2025-07-09 16:18:32 [INFO] Generating InactiveUsers report for period: Heute in format: HTML
+2025-07-09 16:18:36 [INFO] Generating Onboarding report for period: Heute in format: HTML
+2025-07-09 16:18:39 [INFO] Generating Onboarding report for period: Heute in format: HTML

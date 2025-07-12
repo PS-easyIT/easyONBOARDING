@@ -1,0 +1,280 @@
+<Window
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    Title="Easy Onboarding CSV Generator"
+    Width="950"
+    Height="998"
+    Background="#F0F0F0"
+    ResizeMode="NoResize"
+    WindowStartupLocation="CenterScreen">
+    <Window.Resources>
+        <!-- Reduced shadow effect -->
+        <DropShadowEffect x:Key="SoftShadow" BlurRadius="4" ShadowDepth="1" Direction="270" Opacity="0.05" Color="#707070"/>
+
+        <!-- Style for standard TextBox -->
+        <Style TargetType="TextBox">
+            <Setter Property="Height" Value="32" />
+            <Setter Property="Margin" Value="0,5,0,10" />
+            <Setter Property="Padding" Value="12,5" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="Background" Value="#FAFAFA" />
+            <Setter Property="BorderBrush" Value="#D0D0D0" />
+            <Setter Property="BorderThickness" Value="1" />
+            <!-- Removed shadow effect -->
+        </Style>
+
+        <!-- Style for Labels -->
+        <Style TargetType="Label">
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="Foreground" Value="#606060" />
+            <Setter Property="FontWeight" Value="Medium" />
+            <Setter Property="Padding" Value="0,5,0,2" />
+            <Setter Property="Margin" Value="0,2,0,0" />
+        </Style>
+
+        <!-- Style for GroupBox -->
+        <Style TargetType="GroupBox">
+            <Setter Property="Padding" Value="15,10" />
+            <Setter Property="Margin" Value="0,0,0,15" />
+            <Setter Property="FontSize" Value="14" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Foreground" Value="#5B87A9" />
+            <Setter Property="BorderBrush" Value="#D0D0D0" />
+            <Setter Property="BorderThickness" Value="1" />
+        </Style>
+
+        <!-- Style for CheckBox -->
+        <Style TargetType="CheckBox">
+            <Setter Property="Margin" Value="0,5,0,8" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="Foreground" Value="#606060" />
+        </Style>
+
+        <!-- Style for Buttons -->
+        <Style TargetType="Button">
+            <Setter Property="Height" Value="45" />
+            <Setter Property="Padding" Value="15,0" />
+            <Setter Property="Margin" Value="0,8" />
+            <Setter Property="FontSize" Value="14" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Background" Value="#5B87A9" />
+            <Setter Property="Foreground" Value="White" />
+            <!-- Reduced shadow effect -->
+            <Setter Property="Effect">
+                <Setter.Value>
+                    <DropShadowEffect BlurRadius="3" ShadowDepth="1" Direction="270" Opacity="0.1" Color="#707070"/>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Style for Border -->
+        <Style TargetType="Border">
+            <Setter Property="CornerRadius" Value="8" />
+            <Setter Property="Background" Value="#FAFAFA" />
+            <Setter Property="Padding" Value="20" />
+            <Setter Property="Margin" Value="10" />
+            <Setter Property="BorderBrush" Value="#D0D0D0" />
+            <Setter Property="BorderThickness" Value="1" />
+            <!-- Reduced shadow effect -->
+            <Setter Property="Effect">
+                <Setter.Value>
+                    <DropShadowEffect BlurRadius="4" ShadowDepth="1" Direction="270" Opacity="0.05" Color="#707070"/>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Style for DatePicker -->
+        <Style TargetType="DatePicker">
+            <Setter Property="Height" Value="32" />
+            <Setter Property="Margin" Value="0,5,0,10" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="BorderBrush" Value="#D0D0D0" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Padding" Value="12,5" />
+        </Style>
+
+        <!-- Style for TextBlock -->
+        <Style TargetType="TextBlock">
+            <Setter Property="Margin" Value="0,5,0,10" />
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="Foreground" Value="#606060" />
+        </Style>
+
+        <Style TargetType="ComboBox">
+            <Setter Property="Height" Value="32" />
+            <Setter Property="Margin" Value="0,5,0,10" />
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="Foreground" Value="#606060" />
+            <Setter Property="Padding" Value="12,5" />
+            <Setter Property="BorderBrush" Value="#D0D0D0" />
+        </Style>
+    </Window.Resources>
+
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="*" />
+        </Grid.ColumnDefinitions>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="120px" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <!-- Header Panel -->
+        <Border Grid.Column="0" Grid.Row="0" Grid.ColumnSpan="3" Background="#FAFAFA" Margin="10,5,10,5">
+            <DockPanel LastChildFill="False">
+                <StackPanel DockPanel.Dock="Left" Orientation="Horizontal" VerticalAlignment="Center">
+                    <TextBlock Text="Easy Onboarding" FontSize="24" FontWeight="SemiBold" Foreground="#5B87A9" Margin="10,0,0,0" VerticalAlignment="Center"/>
+                    <TextBlock Text="CSV Generator" FontSize="18" Foreground="#606060" Margin="10,0,0,0" VerticalAlignment="Center"/>
+                </StackPanel>
+                <Image 
+                    x:Name="picLogo"
+                    DockPanel.Dock="Right"
+                    Height="60"
+                    Stretch="Uniform" 
+                    Source="pack://application:,,,/Resources/logo.png"
+                    Margin="0,0,10,0"
+                    VerticalAlignment="Center" />
+            </DockPanel>
+        </Border>
+
+        <!-- Left Panel: Core Information -->
+        <Border Grid.Column="0" Grid.Row="1" Margin="10,5,5,0" Height="610" VerticalAlignment="Top">
+            <StackPanel>
+                <GroupBox Header="Basic Information">
+                    <StackPanel>
+                        <Label Content="First Name" />
+                        <TextBox x:Name="txtFirstName" />
+                        <Label Content="Last Name" />
+                        <TextBox x:Name="txtLastName" />
+                    </StackPanel>
+                </GroupBox>
+
+                <GroupBox Header="External Employee" Height="140">
+                    <StackPanel>
+                        <CheckBox x:Name="chkExternal" Content="External Employee" />
+                        <Label Content="Company Name" />
+                        <TextBox x:Name="txtExtCompany" />
+                    </StackPanel>
+                </GroupBox>
+
+                <GroupBox Header="Description - Ticket ID" Height="200">
+                    <StackPanel>
+                        <Label Content="Description" />
+                        <TextBox x:Name="txtDescription" Height="50" TextWrapping="Wrap" AcceptsReturn="True" VerticalContentAlignment="Top" />
+                        <Label Content="Ticket ID" />
+                        <TextBox x:Name="txtPersonalNumber" />
+                    </StackPanel>
+                </GroupBox>
+            </StackPanel>
+        </Border>
+
+        <!-- Middle Panel: Contact & Role -->
+        <Border Grid.Column="1" Grid.Row="1" Margin="5,5,5,0" Height="610" VerticalAlignment="Top">
+            <StackPanel>
+                <GroupBox Header="Contact Information">
+                    <StackPanel>
+                        <Label Content="Phone" />
+                        <TextBox x:Name="txtPhone" />
+                        <Label Content="Mobile" />
+                        <TextBox x:Name="txtMobile" />
+                        <Label Content="Email" />
+                        <TextBox x:Name="txtMail" />
+                    </StackPanel>
+                </GroupBox>
+
+                <GroupBox Header="Position Information">
+                    <StackPanel>
+                        <Label Content="Position" />
+                        <TextBox x:Name="txtPosition" />
+                        <Label Content="Department" />
+                        <ComboBox x:Name="cmbBusinessUnit" SelectedIndex="0">
+                            <ComboBoxItem Content="HR" />
+                            <ComboBoxItem Content="Finance" />
+                            <ComboBoxItem Content="OPM" />
+                            <ComboBoxItem Content="Customer Care" />
+                            <ComboBoxItem Content="DEV" />
+                            <ComboBoxItem Content="PM" />
+                            <ComboBoxItem Content="ODS" />
+                            <ComboBoxItem Content="IT" />
+                        </ComboBox>
+
+                        <Label Content="Office" />
+                        <ComboBox x:Name="cmbOffice" SelectedIndex="0">
+                            <ComboBoxItem Content="REMOTE" />
+                            <ComboBoxItem Content="HYBRID" />
+                            <ComboBoxItem Content="ON-SITE" />
+                        </ComboBox>
+                    </StackPanel>
+                </GroupBox>
+            </StackPanel>
+        </Border>
+
+        <!-- Right Panel -->
+        <Border Grid.Column="2" Grid.Row="1" Margin="5,5,10,0" Height="610" VerticalAlignment="Top">
+            <DockPanel LastChildFill="True">
+                <!-- Date Fields Section -->
+                <StackPanel DockPanel.Dock="Top" Margin="0,0,0,0">
+                    <GroupBox Header="Extra Role">
+                        <StackPanel>
+                            <CheckBox x:Name="chkTL" Content="Team Leader" />
+                            <CheckBox x:Name="chkAL" Content="Department Head" />
+                        </StackPanel>
+                    </GroupBox>
+
+                    <!-- Status Information -->
+                    <GroupBox Header="Extra">
+                        <StackPanel>
+                            <CheckBox x:Name="chkProcessed" Content="Adminkonto?" />
+                            <Label Content="Notizen" />
+                            <TextBox x:Name="txtNotes" Height="90" TextWrapping="Wrap" AcceptsReturn="True" VerticalContentAlignment="Top" />
+                        </StackPanel>
+                    </GroupBox>
+
+                    <GroupBox Header="Start?">
+                        <StackPanel>
+                            <DatePicker x:Name="dtpStartWorkDate" Width="Auto" SelectedDateFormat="Short" SelectedDate="{Binding RelativeSource={RelativeSource Self}, Path=DisplayDate}" />
+                        </StackPanel>
+                    </GroupBox>
+
+                    <GroupBox Header="End?">
+                        <StackPanel>
+                            <DatePicker x:Name="dtpTermination" Width="Auto" SelectedDateFormat="Short" />
+                        </StackPanel>
+                    </GroupBox>
+                </StackPanel>
+            </DockPanel>
+        </Border>
+
+        <!-- Footer Panel for Buttons -->
+        <Border Grid.Column="0" Grid.Row="2" Grid.ColumnSpan="3" Margin="10,0,10,5" Background="#FFF0F0F0" BorderBrush="#FFF0F0F0">
+            <StackPanel Margin="10">
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,0,0,5">
+                    <Button
+                        x:Name="btnSave"
+                        Background="#10893E"
+                        Content="Save to CSV"
+                        Width="180"
+                        Margin="10,8" />
+                    <Button
+                        x:Name="btnClose"
+                        Background="#D83B01"
+                        Content="Close"
+                        Width="180"
+                        Margin="10,8" />
+                </StackPanel>
+
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0">
+                    <TextBlock Text="Version 0.1.4  |  Andreas Hepp  |  License: MIT  |  www.psscripts.de" Margin="0,2" />
+                </StackPanel>
+            </StackPanel>
+        </Border>
+    </Grid>
+</Window>
