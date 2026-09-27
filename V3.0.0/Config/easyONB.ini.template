@@ -1,0 +1,310 @@
+; ==============================================================================
+; easyONBOARDING 3.x - Beispielkonfiguration
+; ------------------------------------------------------------------------------
+; 1. Diese Datei nach Config\easyONB.ini kopieren und anpassen.
+; 2. Alle Werte sind neutrale Beispieldaten (example.com / example.local).
+; 3. KEINE Kennwörter, Tokens oder Webhook-URLs eintragen. Secrets werden erkannt
+;    und ignoriert.
+; 4. Relative Pfade beziehen sich auf den Anwendungsordner (V3.0.0).
+;    Umgebungsvariablen wie %ProgramData% oder $env:ProgramData sind erlaubt.
+; 5. Weitere Unternehmen: Config\companies\*.ini, Vorlagen: Config\templates\*.ini
+; 6. Validierung ohne GUI:  pwsh -File .\Start-easyONBOARDING.ps1 -CheckOnly
+; Dokumentation: docs\CONFIGURATION.md
+; ==============================================================================
+
+[Logging]
+; Verzeichnis für Textlogs
+LogFile=Logs
+; Verzeichnis für Audit-Logs (leer = Logs\audit)
+AuditDirectory=
+; Debug, Information, Warning, Error, Critical
+MinimumLevel=Information
+; 1 = Debug-Einträge protokollieren
+DebugMode=0
+; Aufbewahrung Textlogs (Tage)
+RetentionDays=90
+; Aufbewahrung Audit-Logs (Tage, 0 = unbegrenzt)
+AuditRetentionDays=0
+MaxFileSizeMB=20
+
+[ActiveDirectory]
+; Fester, beschreibbarer DC (leer = automatische Auswahl)
+PreferredDomainController=
+; Optionale Einschränkung der Benutzersuche
+SearchBase=
+MaxSearchResults=50
+
+[WPFGUI]
+APPName=easyONBOARDING
+; Link hinter dem Logo (nur https)
+LogoURL=https://www.example.com
+FooterText=
+FooterWebseite=www.example.com
+
+[WPFGUITypography]
+DefaultFontFamily=Segoe UI
+DefaultFontSize=13
+HeaderFontSize=20
+FooterFontSize=11
+
+[UI]
+; Light oder Dark
+Theme=Light
+; Akzentfarbe (Branding)
+AccentColor=#0F6CBD
+; Optionales Logo (PNG/JPG)
+LogoPath=
+
+[Security]
+; Neue Vorgänge starten im Simulationsmodus (empfohlen)
+SimulationByDefault=1
+; Manuelle Kennworteingabe je Vorgang erlauben
+AllowManualPassword=1
+; Generiertes Kennwort einmalig anzeigen
+ShowPasswordOnce=1
+; Zugangsdatenblatt direkt aus dem Speicher drucken (wird nicht gespeichert)
+AllowCredentialPrint=1
+; Zwischenablage nach N Sekunden leeren (0 = Kopieren deaktiviert)
+ClipboardClearSeconds=30
+; Zusätzliche geschützte Gruppen (Name, DN oder SID; durch ; getrennt).
+; Eingebaute privilegierte Gruppen (Domain Admins, Enterprise Admins, Schema Admins, ...)
+; werden unabhängig davon immer über ihre SID erkannt.
+ProtectedGroups=
+ProtectedGroupPatterns=*Admin*
+; Konten, die nie bearbeitet werden (SamAccountName oder SID)
+ProtectedAccounts=
+BreakGlassAccounts=
+ServiceAccountPatterns=svc_*;svc-*;*_svc;sa_*
+; OUs, deren Konten nie bearbeitet werden (DN; durch ; getrennt)
+ProtectedOUs=
+; Offboarding privilegierter Konten nach gesonderter Bestätigung erlauben
+AllowPrivilegedOffboarding=0
+UseDomainPasswordPolicy=1
+
+[Paths]
+DataDirectory=Data
+SnapshotDirectory=Reports\Offboarding
+
+[Report]
+ReportPath=Reports
+ReportTitle=easyONBOARDING Bericht
+ReportHeader=Willkommen bei Example GmbH
+ReportFooter=Example GmbH - IT-Service
+; Html, Json, Csv, Txt, Pdf (durch ; getrennt)
+Formats=Html;Json
+; Auto, Edge, Wkhtmltopdf, None
+PdfEngine=Auto
+; Willkommensdokument aus der HTML-Vorlage (enthält nie ein Kennwort)
+CreateWelcomeDocument=1
+TemplatePathHTML=ReportTemplates\HTMLTemplate.txt
+TemplateLogo=
+; Optional: Legacy-PDF-Engine
+wkhtmltopdfPath=
+
+[Websites]
+; Format: Bezeichnung | URL | Beschreibung
+EmployeeLink1=Intranet | https://intranet.example.com | Unternehmensintranet
+EmployeeLink2=Service-Portal | https://support.example.com | IT-Support
+
+[ReportPlaceholders]
+; Weitere Platzhalter der HTML-Vorlage ({{Name}}). Werte werden HTML-kodiert.
+CompanyWebsite=https://www.example.com
+CompanyWikiURL=https://wiki.example.com
+CompanyIntranetURL=https://intranet.example.com
+CompanyHREmail=personal@example.com
+CompanyHRPhone=+49 30 1234567-200
+CompanyFounded=
+CompanyLocations=Musterstadt
+CompanyEmployees=
+CompanyMission=
+FAQURL=https://support.example.com/faq
+ITTrainingURL=https://lernen.example.com
+AdminPortalURL=
+
+[ADUserDefaults]
+; Standard-Ziel-OU (DN)
+DefaultOU=OU=Mitarbeiter,OU=Benutzer,DC=example,DC=local
+; Neue Konten deaktiviert anlegen (Aktivierung bei Übergabe)
+AccountDisabled=True
+PasswordNeverExpires=False
+MustChangePasswordAtLogon=True
+SmartcardLogonRequired=False
+HomeLWLetter=H
+; %username% wird durch den SamAccountName ersetzt
+HomeDirectory=
+ProfilePath=
+LogonScript=
+
+[DisplayNameUPNTemplates]
+DefaultDisplayNameFormat={first} {last}
+DisplayNameTemplate1=Nachname, Vorname|{last}, {first}
+DisplayNameTemplate2=Extern|EXT {first} {last}
+; UPN: FIRSTNAME.LASTNAME, F.LASTNAME, FIRSTNAMELASTNAME, FLASTNAME, LASTNAME.FIRSTNAME ...
+; oder Platzhalter: {first} {last} {f} {l} {first:3} {last:5}
+DefaultUserPrincipalNameFormat=FIRSTNAME.LASTNAME
+
+[Identity]
+SamAccountNameFormat={f}{last}
+; Lokaler Teil der E-Mail-Adresse (leer = wie UPN)
+MailFormat=
+; AppendNumber oder Fail
+CollisionStrategy=AppendNumber
+CollisionStartNumber=2
+MaxCollisionAttempts=20
+LowerCaseIdentifiers=1
+MaxSamAccountNameLength=20
+
+[NameNormalization]
+; Zusätzliche Ersetzungen (Umlaute und Akzente werden automatisch behandelt)
+Transliteration=
+KeepHyphen=1
+
+[PasswordFixGenerate]
+DefaultPasswordLength=16
+MinUpperCase=2
+MinLowerCase=2
+MinDigits=2
+MinSpecialChars=1
+MinNonAlpha=2
+IncludeSpecialChars=True
+AvoidAmbiguousChars=True
+SpecialCharacters=!#%*+-=?@_
+MinManualPasswordLength=12
+
+[Company]
+CompanyNameFirma=Example GmbH
+; UPN-Suffix
+CompanyActiveDirectoryDomain=example.com
+; Optional: firmenspezifische Ziel-OU (sonst ADUserDefaults.DefaultOU)
+CompanyActiveDirectoryOU=
+CompanyMailDomain=@example.com
+CompanyMS365Domain=@example.onmicrosoft.com
+CompanyDomain=www.example.com
+CompanyStrasse=Beispielstraße 1
+CompanyPLZ=12345
+CompanyOrt=Musterstadt
+CompanyTelefon=+49 30 1234567-0
+CompanyCountry=DE
+
+[CompanyHelpdesk]
+CompanyITMitarbeiter=IT-Service
+CompanyHelpdeskMail=helpdesk@example.com
+CompanyHelpdeskTel=+49 30 1234567-100
+
+[CompanyWLAN]
+CompanySSID=EXAMPLE-CORP
+CompanySSIDbyod=EXAMPLE-BYOD
+CompanySSIDGuest=EXAMPLE-GUEST
+
+[CompanyVPN]
+CompanyVPNDomain=vpn.example.com
+CompanyVPNUser=Windows-Anmeldename
+
+[MailEndungen]
+Domain1=@example.com
+Domain2=@example.net
+
+[UserCreationDefaults]
+; Gruppen für jeden neuen Benutzer (durch ; getrennt)
+InitialGroupMembership=GRP-Alle-Mitarbeiter
+DefaultLicense=KEINE
+DefaultTLGroup=
+
+[ActivateUserMS365ADSync]
+ADSync=0
+ADSyncADGroup=GRP-M365-Sync
+
+[LicensesGroups]
+; Bezeichnung=AD-Gruppe (gruppenbasierte Lizenzierung)
+KEINE=
+MS365_E3=GRP-Lizenz-M365-E3
+MS365_E5=GRP-Lizenz-M365-E5
+MS365_BUSINESS-PREM=GRP-Lizenz-M365-BP
+
+[TLGroups]
+IT=GRP-Teamleitung-IT
+VERTRIEB=GRP-Teamleitung-Vertrieb
+
+[ALGroup]
+Group=GRP-Abteilungsleitung
+
+[ADGroups]
+; Bezeichnung=AD-Gruppe (Auswahl in der Oberfläche)
+Vertrieb=GRP-Vertrieb
+Buchhaltung=GRP-Buchhaltung
+IT=GRP-IT
+VPN=GRP-VPN-Benutzer
+
+[CustomAttributeMappings]
+; AD-Attribut=Feld der Anfrage (EmployeeType, CostCenter, ...)
+; extensionAttribute1=EmployeeType
+
+[EmailSettings]
+; SMTP-Relay für Welcome-Mail (enthält nie ein Kennwort)
+SMTPServer=
+SMTPPort=25
+UseSSL=1
+UseDefaultCredentials=0
+FromAddress=it-service@example.com
+CopyAddress=
+SendWelcomeEmail=0
+WelcomeEmailSubject=Willkommen bei Example GmbH
+WelcomeEmailTemplate=
+
+[ADSync]
+EnableADSync=0
+ADSyncServer=
+; Delta oder Initial
+PolicyType=Delta
+AutoSyncNewUsers=0
+
+[OnboardingExtensions]
+CreateHomeDirectory=0
+; Muss unter FileServer.AllowedRoots liegen
+HomeDirectoryPath=\\fileserver.example.local\home$\%username%
+SetUserPhoto=0
+DefaultPhotoPath=
+CreateMailbox=0
+MailboxDatabase=
+
+[ValidationRules]
+FirstNameMinLength=1
+FirstNameMaxLength=64
+LastNameMinLength=1
+LastNameMaxLength=64
+EmailPattern=
+PhonePattern=
+
+[FileServer]
+; Stammpfade für Home-/Profilverzeichnisse (durch ; getrennt)
+AllowedRoots=\\fileserver.example.local\home$
+ArchiveRoot=\\fileserver.example.local\home$\_Archiv
+
+[Offboarding]
+DefaultTemplate=Standard
+DisabledUsersOU=OU=Ausgeschieden,OU=Benutzer,DC=example,DC=local
+RequireTicket=1
+RequireReason=0
+; Gruppen, aus denen nie entfernt wird (primäre Gruppe wird automatisch beibehalten)
+KeepGroups=
+; Platzhalter: {ExitDate} {Ticket} {Actor} {Reason} {Date}
+DescriptionTemplate=Ausgetreten {ExitDate} | Ticket {Ticket} | {Actor}
+AutoReplyMessage=Vielen Dank für Ihre Nachricht. Die Person ist nicht mehr im Unternehmen tätig. Bitte wenden Sie sich an info@example.com.
+
+[Bulk]
+MaxRows=500
+ConfirmationThreshold=25
+; Auto, Semicolon, Comma
+Delimiter=Auto
+; Discard (Kennwort bei Übergabe zurücksetzen) oder Print
+PasswordDelivery=Discard
+
+[Exchange]
+; None, Online, OnPremises, Hybrid
+Mode=None
+OnPremisesUri=
+RemoteRoutingDomain=
+
+[Graph]
+Enabled=0
+TenantId=

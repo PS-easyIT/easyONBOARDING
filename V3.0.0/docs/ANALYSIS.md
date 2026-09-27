@@ -22,8 +22,8 @@ Klassifizierung: **Critical**, **High**, **Medium**, **Low**, **Recommendation**
 
 **Ergebnis:** Letzte als final markierte Version ist **1.3.10**. `V1.4.XX` ist ein
 Entwicklungsstand (1.4.23), dessen GUI-Workflow nicht funktionsfähig ist (siehe F-02).
-Es gab keine zentrale Versionsquelle. Neue Source of Truth: Datei `VERSION` im Root (2.0.0),
-geprüft durch einen Pester-Test gegen Modulmanifeste und `CHANGELOG.md`.
+Es gab keine zentrale Versionsquelle. Neue Source of Truth: Datei `V3.0.0/VERSION` (3.0.0),
+geprüft durch einen Pester-Test gegen Modulmanifeste und `V3.0.0/CHANGELOG.md`.
 
 ## 2. Tatsächliche Projektstruktur (vor der Modernisierung)
 

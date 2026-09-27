@@ -1,5 +1,7 @@
 # Architektur und Architekturentscheidungen
 
+Alle Pfade in diesem Dokument sind relativ zum Versionsordner `V3.0.0`.
+
 ## Überblick
 
 ```
@@ -35,15 +37,16 @@ Formular/CSV → Request → Test-*Request (Feldfehler)
 
 ## Entscheidungen (ADR)
 
-**ADR-01 – Neue Anwendung im Root, Legacy unverändert.** Die signierten Legacy-Ordner bleiben als
-Rückfallebene erhalten und werden als veraltet markiert. Begründung: Monolith in Kernpfaden defekt,
-kritische Sicherheitsmängel, Signaturen.
+**ADR-01 – Neue Anwendung im Versionsordner `V3.0.0`, Legacy unverändert.** Die Anwendung folgt der
+bestehenden Konvention (ein Ordner je Version). Die signierten Legacy-Ordner bleiben als Rückfallebene
+erhalten und werden als veraltet markiert. Begründung: Monolith in Kernpfaden defekt, kritische
+Sicherheitsmängel, Signaturen. Nur `.github/workflows` liegt technisch bedingt im Repository-Root.
 
 **ADR-02 – Module mit Präfix `Eob`.** Alle öffentlichen Funktionen verwenden genehmigte Verben und
 das Präfix `Eob`, um Kollisionen mit AD-/Exchange-Cmdlets und Legacy-Funktionen zu vermeiden.
 Jedes Modul besitzt ein Manifest (`.psd1`) mit expliziten Exporten.
 
-**ADR-03 – Eine Versionsquelle.** `VERSION` im Root. Manifeste und `CHANGELOG.md` werden per Test
+**ADR-03 – Eine Versionsquelle.** `V3.0.0/VERSION`. Manifeste und `CHANGELOG.md` werden per Test
 gegen diese Datei geprüft.
 
 **ADR-04 – INI bleibt Primärformat.** Bestehende INI-Dateien werden weiter gelesen. Ein Schema
