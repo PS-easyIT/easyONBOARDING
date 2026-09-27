@@ -1,0 +1,333 @@
+<!--
+    Onboarding-Assistent (8 Schritte): Unternehmen und Vorlage, Person, Konto, Organisation,
+    Gruppen und Lizenz, Optionen, Vorschau, Ausführung und Ergebnis.
+-->
+<UserControl xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <DockPanel>
+        <!-- Kopf mit Schrittanzeige -->
+        <StackPanel DockPanel.Dock="Top" Margin="24,20,24,8">
+            <TextBlock Style="{StaticResource HeadingTextStyle}" Text="Onboarding" />
+            <TextBlock Style="{StaticResource CaptionTextStyle}" Text="Neues Benutzerkonto in acht Schritten anlegen. Jede Ausführung wird vorher vollständig als Vorschau angezeigt." Margin="0,0,0,12" />
+            <WrapPanel x:Name="OnbStepper" AutomationProperties.Name="Fortschritt des Assistenten">
+                <TextBlock x:Name="OnbStep1" Text="1  Unternehmen" Margin="0,0,18,4" />
+                <TextBlock x:Name="OnbStep2" Text="2  Person" Margin="0,0,18,4" />
+                <TextBlock x:Name="OnbStep3" Text="3  Konto" Margin="0,0,18,4" />
+                <TextBlock x:Name="OnbStep4" Text="4  Organisation" Margin="0,0,18,4" />
+                <TextBlock x:Name="OnbStep5" Text="5  Gruppen und Lizenz" Margin="0,0,18,4" />
+                <TextBlock x:Name="OnbStep6" Text="6  Optionen" Margin="0,0,18,4" />
+                <TextBlock x:Name="OnbStep7" Text="7  Vorschau" Margin="0,0,18,4" />
+                <TextBlock x:Name="OnbStep8" Text="8  Ausführung" Margin="0,0,18,4" />
+            </WrapPanel>
+        </StackPanel>
+
+        <!-- Fußleiste -->
+        <Border DockPanel.Dock="Bottom" Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource DividerBrush}" BorderThickness="0,1,0,0" Padding="24,10">
+            <DockPanel>
+                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                    <Button x:Name="OnbBackButton" Content="_Zurück" />
+                    <Button x:Name="OnbNextButton" Style="{StaticResource PrimaryButtonStyle}" Content="_Weiter" IsDefault="True" />
+                    <Button x:Name="OnbExecuteButton" Style="{StaticResource PrimaryButtonStyle}" Content="_Ausführen" Visibility="Collapsed" />
+                    <Button x:Name="OnbCancelRunButton" Content="Abbre_chen" Visibility="Collapsed" />
+                    <Button x:Name="OnbNewButton" Content="_Neuer Vorgang" Visibility="Collapsed" Margin="0" />
+                </StackPanel>
+                <TextBlock x:Name="OnbValidationText" Foreground="{DynamicResource ErrorBrush}" TextWrapping="Wrap" VerticalAlignment="Center" Margin="0,0,16,0" />
+            </DockPanel>
+        </Border>
+
+        <ScrollViewer x:Name="OnbScroll" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+            <Grid Margin="24,8,24,24">
+                <!-- Schritt 1: Unternehmen und Vorlage -->
+                <StackPanel x:Name="OnbPanel1">
+                    <Border Style="{StaticResource CardStyle}">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="24" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Grid.Column="0">
+                                <TextBlock Style="{StaticResource SubheadingTextStyle}" Text="Unternehmen und Vorlagen" />
+                                <TextBlock Style="{StaticResource FieldLabelStyle}" Text="Unternehmen *" />
+                                <ComboBox x:Name="OnbCompanyCombo" AutomationProperties.Name="Unternehmen" />
+                                <TextBlock x:Name="OnbCompanyError" Style="{StaticResource FieldErrorStyle}" />
+                                <TextBlock Style="{StaticResource FieldLabelStyle}" Text="Rollenvorlage" />
+                                <ComboBox x:Name="OnbRoleTemplateCombo" AutomationProperties.Name="Rollenvorlage" />
+                                <TextBlock x:Name="OnbRoleTemplateInfo" Style="{StaticResource CaptionTextStyle}" Margin="0,4,0,0" />
+                                <TextBlock Style="{StaticResource FieldLabelStyle}" Text="Anzeigenamen-Vorlage" />
+                                <ComboBox x:Name="OnbDisplayNameTemplateCombo" AutomationProperties.Name="Anzeigenamen-Vorlage" />
+                            </StackPanel>
+                            <StackPanel Grid.Column="2">
+                                <TextBlock Style="{StaticResource SubheadingTextStyle}" Text="Art der Beschäftigung" />
+                                <CheckBox x:Name="OnbExternalCheck" Content="Externe Person (Dienstleister, Praktikum)" />
+                                <TextBlock Style="{StaticResource FieldLabelStyle}" Text="Referenzbenutzer (Gruppen übernehmen, optional)" />
+                                <TextBox x:Name="OnbReferenceUserText" AutomationProperties.Name="Referenzbenutzer" ToolTip="Anmeldename, UPN oder E-Mail eines Benutzers mit vergleichbaren Aufgaben" />
+                                <TextBlock Style="{StaticResource CaptionTextStyle}" Margin="0,4,0,0"
+                                           Text="Aus Referenzbenutzern werden nur nicht privilegierte Gruppen übernommen. Privilegierte Gruppen (z. B. Domain Admins) werden nie automatisch zugewiesen." />
+                                <TextBlock x:Name="OnbReferenceUserError" Style="{StaticResource FieldErrorStyle}" />
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+                </StackPanel>
+
+                <!-- Schritt 2: Person -->
+                <StackPanel x:Name="OnbPanel2" Visibility="Collapsed">
+                    <Border Style="{StaticResource CardStyle}">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="24" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Grid.Column="0">
+                                <TextBlock Style="{StaticResource SubheadingTextStyle}" Text="Person" />
+                                <TextBlock Style="{StaticResource FieldLabelStyle}" Text="Vorname *" />
+                                <TextBox x:Name="OnbGivenNameText" AutomationProperties.Name="Vorname" />
+                                <TextBlock x:Name="OnbGivenNameError" Style="{StaticResource FieldErrorStyle}" />
+                                <TextBlock Style="{StaticResource FieldLabelStyle}" Text="Nachname *" />
+                                <TextBox x:Name="OnbSurnameText" AutomationProperties.Name="Nachname" />
+                                <TextBlock x:Name="OnbSurnameError" Style="{StaticResource FieldErrorStyle}" />
+                                <TextBlock Style="{StaticResource FieldLabelStyle}" Text="Anzeigename (leer = aus Vorlage)" />
+                                <TextBox x:Name="OnbDisplayNameText" AutomationProperties.Name="Anzeigename" />
+                                <TextBlock x:Name="OnbDisplayNameError" Style="{StaticResource FieldErrorStyle}" />
+                            </StackPanel>
+                            <StackPanel Grid.Column="2">
+                                <TextBlock Style="{StaticResource SubheadingTextStyle}" Text="Beschäftigung" />
+                                <TextBlock Style="{StaticResource FieldLabelStyle}" Text="Personalnummer" />
+                                <TextBox x:Name="OnbEmployeeIdText" AutomationProperties.Name="Personalnummer" />
+                                <TextBlock x:Name="OnbEmployeeIdError" Style="{StaticResource FieldErrorStyle}" />
+                                <TextBlock Style="{StaticResource FieldLabelStyle}" Text="Beschäftigungsart (employeeType)" />
+                                <TextBox x:Name="OnbEmployeeTypeText" AutomationProperties.Name="Beschäftigungsart" />
+                                <TextBlock Style="{StaticResource FieldLabelStyle}" Text="Eintrittsdatum" />
+                                <DatePicker x:Name="OnbStartDatePicker" AutomationProperties.Name="Eintrittsdatum" SelectedDateFormat="Short" />
+                                <TextBlock x:Name="OnbStartDateError" Style="{StaticResource FieldErrorStyle}" />
+                                <TextBlock Style="{StaticResource FieldLabelStyle}" Text="Befristet bis (letzter Arbeitstag, optional)" />
+                                <DatePicker x:Name="OnbExpirationDatePicker" AutomationProperties.Name="Befristet bis" SelectedDateFormat="Short" />
+                                <TextBlock x:Name="OnbExpirationDateError" Style="{StaticResource FieldErrorStyle}" />
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+                </StackPanel>
+
+                <!-- Schritt 3: Konto und Identität -->
+                <StackPanel x:Name="OnbPanel3" Visibility="Collapsed">
+                    <Border Style="{StaticResource CardStyle}">
+                        <StackPanel>
+                            <TextBlock Style="{StaticResource SubheadingTextStyle}" Text="Konto und Identität" />
+                            <TextBlock Style="{StaticResource CaptionTextStyle}" Text="Die Vorschläge werden aus den Namensvorlagen erzeugt und gegen alle AD-Objekte (Benutzer, Kontakte, Gruppen, Proxyadressen) geprüft. Leere Felder werden automatisch gefüllt." />
+                            <Button x:Name="OnbIdentityPreviewButton" Content="Vorschlag _ermitteln" HorizontalAlignment="Left" Margin="0,10,0,4" />
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="24" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <StackPanel Grid.Column="0">
+                                    <TextBlock Style="{StaticResource FieldLabelStyle}" Text="Anmeldename (sAMAccountName)" />
+                                    <TextBox x:Name="OnbSamText" AutomationProperties.Name="Anmeldename" />
+                                    <TextBlock x:Name="OnbSamError" Style="{StaticResource FieldErrorStyle}" />
+                                    <TextBlock Style="{StaticResource FieldLabelStyle}" Text="UPN-Präfix" />
+                                    <DockPanel>
+                                        <TextBlock x:Name="OnbUpnSuffixText" DockPanel.Dock="Right" VerticalAlignment="Center" Margin="6,0,0,0" Foreground="{DynamicResource TextSecondaryBrush}" />
+                                        <TextBox x:Name="OnbUpnPrefixText" AutomationProperties.Name="UPN-Präfix" />
+                                    </DockPanel>
+                                    <TextBlock x:Name="OnbUpnError" Style="{StaticResource FieldErrorStyle}" />
+                                </StackPanel>
+                                <StackPanel Grid.Column="2">
+                                    <TextBlock Style="{StaticResource FieldLabelStyle}" Text="E-Mail (lokaler Teil)" />
+                                    <TextBox x:Name="OnbMailLocalText" AutomationProperties.Name="E-Mail lokaler Teil" />
+                                    <TextBlock Style="{StaticResource FieldLabelStyle}" Text="E-Mail-Domäne" />
+                                    <ComboBox x:Name="OnbMailDomainCombo" AutomationProperties.Name="E-Mail-Domäne" />
+                                    <TextBlock x:Name="OnbMailError" Style="{StaticResource FieldErrorStyle}" />
+                                </StackPanel>
+                            </Grid>
+                            <Border x:Name="OnbIdentityInfoBanner" Style="{StaticResource InfoBannerStyle}" Margin="0,12,0,0" Visibility="Collapsed">
+                                <TextBlock x:Name="OnbIdentityInfoText" Style="{StaticResource BodyTextStyle}" />
+                            </Border>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+
+                <!-- Schritt 4: Organisation -->
+                <StackPanel x:Name="OnbPanel4" Visibility="Collapsed">
+                    <Border Style="{StaticResource CardStyle}">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="24" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Grid.Column="0">
+                                <TextBlock Style="{StaticResource SubheadingTextStyle}" Text="Organisation" />
+                                <TextBlock Style="{StaticResource FieldLabelStyle}" Text="Ziel-OU *" />
+                                <ComboBox x:Name="OnbTargetOuCombo" AutomationProperties.Name="Ziel-OU" />
+                                <TextBlock x:Name="OnbTargetOuError" Style="{StaticResource FieldErrorStyle}" />
+                                <TextBlock Style="{StaticResource FieldLabelStyle}" Text="Position" />
+                                <TextBox x:Name="OnbTitleText" AutomationProperties.Name="Position" />
+                                <TextBlock x:Name="OnbTitleError" Style="{StaticResource FieldErrorStyle}" />
+                                <TextBlock Style="{StaticResource FieldLabelStyle}" Text="Abteilung" />
+                                <TextBox x:Name="OnbDepartmentText" AutomationProperties.Name="Abteilung" />
+                                <TextBlock x:Name="OnbDepartmentError" Style="{StaticResource FieldErrorStyle}" />
+                                <TextBlock Style="{StaticResource FieldLabelStyle}" Text="Führungskraft (Anmeldename, UPN oder E-Mail)" />
+                                <TextBox x:Name="OnbManagerText" AutomationProperties.Name="Führungskraft" />
+                                <TextBlock x:Name="OnbManagerError" Style="{StaticResource FieldErrorStyle}" />
+                            </StackPanel>
+                            <StackPanel Grid.Column="2">
+                                <TextBlock Style="{StaticResource SubheadingTextStyle}" Text="Kontakt" />
+                                <TextBlock Style="{StaticResource FieldLabelStyle}" Text="Büro / Raum" />
+                                <TextBox x:Name="OnbOfficeText" AutomationProperties.Name="Büro" />
+                                <TextBlock Style="{StaticResource FieldLabelStyle}" Text="Telefon" />
+                                <TextBox x:Name="OnbOfficePhoneText" AutomationProperties.Name="Telefon" />
+                                <TextBlock x:Name="OnbOfficePhoneError" Style="{StaticResource FieldErrorStyle}" />
+                                <TextBlock Style="{StaticResource FieldLabelStyle}" Text="Mobil" />
+                                <TextBox x:Name="OnbMobilePhoneText" AutomationProperties.Name="Mobil" />
+                                <TextBlock x:Name="OnbMobilePhoneError" Style="{StaticResource FieldErrorStyle}" />
+                                <TextBlock Style="{StaticResource FieldLabelStyle}" Text="Beschreibung" />
+                                <TextBox x:Name="OnbDescriptionText" AutomationProperties.Name="Beschreibung" />
+                                <TextBlock x:Name="OnbDescriptionError" Style="{StaticResource FieldErrorStyle}" />
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+                </StackPanel>
+
+                <!-- Schritt 5: Gruppen und Lizenz -->
+                <StackPanel x:Name="OnbPanel5" Visibility="Collapsed">
+                    <Border Style="{StaticResource CardStyle}">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="24" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Grid.Column="0">
+                                <TextBlock Style="{StaticResource SubheadingTextStyle}" Text="Lizenz und Leitung" />
+                                <TextBlock Style="{StaticResource FieldLabelStyle}" Text="Lizenz (gruppenbasiert)" />
+                                <ComboBox x:Name="OnbLicenseCombo" AutomationProperties.Name="Lizenz" />
+                                <CheckBox x:Name="OnbTeamLeadCheck" Content="Teamleitung" Margin="0,12,0,0" />
+                                <ComboBox x:Name="OnbTeamLeadGroupCombo" AutomationProperties.Name="Teamleitungsgruppe" Margin="0,6,0,0" IsEnabled="False" />
+                                <CheckBox x:Name="OnbDepartmentHeadCheck" Content="Abteilungsleitung" Margin="0,12,0,0" />
+                            </StackPanel>
+                            <StackPanel Grid.Column="2">
+                                <TextBlock Style="{StaticResource SubheadingTextStyle}" Text="Gruppen" />
+                                <TextBlock Style="{StaticResource CaptionTextStyle}" Text="Mehrfachauswahl mit Strg bzw. Umschalt. Standardgruppen, Rollen-, Lizenz- und Referenzgruppen werden in der Vorschau ergänzt." />
+                                <ListBox x:Name="OnbGroupsList" SelectionMode="Extended" Height="220" Margin="0,8,0,0" AutomationProperties.Name="Zusätzliche Gruppen" />
+                                <TextBlock x:Name="OnbGroupsInfo" Style="{StaticResource CaptionTextStyle}" Margin="0,6,0,0" />
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+                </StackPanel>
+
+                <!-- Schritt 6: Optionen -->
+                <StackPanel x:Name="OnbPanel6" Visibility="Collapsed">
+                    <Border Style="{StaticResource CardStyle}">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="24" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Grid.Column="0">
+                                <TextBlock Style="{StaticResource SubheadingTextStyle}" Text="Kennwort und Konto" />
+                                <RadioButton x:Name="OnbPasswordGeneratedRadio" GroupName="OnbPasswordMode" Content="Sicheres Kennwort generieren (empfohlen)" IsChecked="True" />
+                                <RadioButton x:Name="OnbPasswordManualRadio" GroupName="OnbPasswordMode" Content="Kennwort manuell vergeben" />
+                                <PasswordBox x:Name="OnbManualPasswordBox" Margin="0,6,0,0" IsEnabled="False" AutomationProperties.Name="Manuelles Kennwort" />
+                                <TextBlock x:Name="OnbPasswordError" Style="{StaticResource FieldErrorStyle}" />
+                                <TextBlock x:Name="OnbPasswordPolicyText" Style="{StaticResource CaptionTextStyle}" Margin="0,4,0,0" />
+                                <CheckBox x:Name="OnbChangePasswordCheck" Content="Kennwortänderung bei der ersten Anmeldung erzwingen" Margin="0,12,0,0" />
+                                <CheckBox x:Name="OnbEnabledCheck" Content="Konto sofort aktivieren (sonst bei Übergabe)" />
+                                <TextBlock Style="{StaticResource FieldLabelStyle}" Text="Ticket / Vorgangsnummer" />
+                                <TextBox x:Name="OnbTicketText" AutomationProperties.Name="Ticketnummer" />
+                                <TextBlock x:Name="OnbTicketError" Style="{StaticResource FieldErrorStyle}" />
+                                <TextBlock Style="{StaticResource FieldLabelStyle}" Text="Bemerkung (nur Bericht)" />
+                                <TextBox x:Name="OnbNotesText" AutomationProperties.Name="Bemerkung" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="60" VerticalContentAlignment="Top" />
+                            </StackPanel>
+                            <StackPanel Grid.Column="2">
+                                <TextBlock Style="{StaticResource SubheadingTextStyle}" Text="Zusätzliche Aktionen" />
+                                <CheckBox x:Name="OnbProxyCheck" Content="E-Mail-Adressen (proxyAddresses) setzen" />
+                                <CheckBox x:Name="OnbHomeDirCheck" Content="Home-Verzeichnis anlegen" />
+                                <CheckBox x:Name="OnbMailboxCheck" Content="Postfach anlegen (Exchange Server/Hybrid)" />
+                                <CheckBox x:Name="OnbWelcomeDocCheck" Content="Willkommensdokument erzeugen (ohne Kennwort)" />
+                                <CheckBox x:Name="OnbWelcomeMailCheck" Content="Welcome-Mail senden (ohne Kennwort)" />
+                                <CheckBox x:Name="OnbSyncCheck" Content="Entra Connect Sync auslösen" />
+                                <TextBlock x:Name="OnbOptionsInfo" Style="{StaticResource CaptionTextStyle}" Margin="0,10,0,0" />
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+                </StackPanel>
+
+                <!-- Schritt 7: Vorschau -->
+                <StackPanel x:Name="OnbPanel7" Visibility="Collapsed">
+                    <Border x:Name="OnbPreviewBanner" Style="{StaticResource InfoBannerStyle}">
+                        <TextBlock x:Name="OnbPreviewBannerText" Style="{StaticResource BodyTextStyle}" />
+                    </Border>
+                    <Border Style="{StaticResource CardStyle}">
+                        <StackPanel>
+                            <TextBlock Style="{StaticResource SubheadingTextStyle}" Text="Zusammenfassung" />
+                            <DataGrid x:Name="OnbPreviewSummaryGrid" MaxHeight="320" AutomationProperties.Name="Zusammenfassung">
+                                <DataGrid.Columns>
+                                    <DataGridTextColumn Header="Eigenschaft" Binding="{Binding Key}" Width="200" />
+                                    <DataGridTextColumn Header="Wert" Binding="{Binding Value}" Width="*" />
+                                </DataGrid.Columns>
+                            </DataGrid>
+                        </StackPanel>
+                    </Border>
+                    <Border Style="{StaticResource CardStyle}">
+                        <StackPanel>
+                            <TextBlock Style="{StaticResource SubheadingTextStyle}" Text="Geplante Schritte" />
+                            <DataGrid x:Name="OnbPreviewStepsGrid" MaxHeight="360" AutomationProperties.Name="Geplante Schritte">
+                                <DataGrid.Columns>
+                                    <DataGridTextColumn Header="#" Binding="{Binding Id}" Width="50" />
+                                    <DataGridTextColumn Header="Schritt" Binding="{Binding Title}" Width="2*" />
+                                    <DataGridTextColumn Header="Risiko" Binding="{Binding RiskText}" Width="90" />
+                                    <DataGridTextColumn Header="Details" Binding="{Binding DetailsText}" Width="3*" />
+                                </DataGrid.Columns>
+                            </DataGrid>
+                        </StackPanel>
+                    </Border>
+                    <Border Style="{StaticResource CardStyle}">
+                        <StackPanel>
+                            <TextBlock Style="{StaticResource SubheadingTextStyle}" Text="Prüfergebnisse" />
+                            <DataGrid x:Name="OnbPreviewFindingsGrid" MaxHeight="260" AutomationProperties.Name="Prüfergebnisse">
+                                <DataGrid.Columns>
+                                    <DataGridTextColumn Header="Schwere" Binding="{Binding SeverityText}" Width="110" />
+                                    <DataGridTextColumn Header="Feld" Binding="{Binding Field}" Width="140" />
+                                    <DataGridTextColumn Header="Meldung" Binding="{Binding Message}" Width="*" />
+                                </DataGrid.Columns>
+                            </DataGrid>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+
+                <!-- Schritt 8: Ausführung und Ergebnis -->
+                <StackPanel x:Name="OnbPanel8" Visibility="Collapsed">
+                    <Border Style="{StaticResource CardStyle}">
+                        <StackPanel>
+                            <TextBlock Style="{StaticResource SubheadingTextStyle}" Text="Ausführung" />
+                            <ProgressBar x:Name="OnbProgressBar" Minimum="0" Maximum="100" Value="0" Margin="0,4,0,6" />
+                            <TextBlock x:Name="OnbProgressText" Style="{StaticResource CaptionTextStyle}" />
+                        </StackPanel>
+                    </Border>
+                    <Border x:Name="OnbResultBanner" Style="{StaticResource InfoBannerStyle}" Visibility="Collapsed">
+                        <StackPanel>
+                            <TextBlock x:Name="OnbResultText" Style="{StaticResource BodyTextStyle}" />
+                            <WrapPanel Margin="0,8,0,0">
+                                <Button x:Name="OnbShowCredentialButton" Style="{StaticResource PrimaryButtonStyle}" Content="_Zugangsdaten anzeigen (einmalig)" Visibility="Collapsed" Margin="0,0,8,0" />
+                                <Button x:Name="OnbOpenReportButton" Content="_Bericht öffnen" Visibility="Collapsed" />
+                            </WrapPanel>
+                        </StackPanel>
+                    </Border>
+                    <Border Style="{StaticResource CardStyle}">
+                        <DataGrid x:Name="OnbResultStepsGrid" MaxHeight="420" AutomationProperties.Name="Ergebnis je Schritt">
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Header="#" Binding="{Binding Id}" Width="50" />
+                                <DataGridTextColumn Header="Schritt" Binding="{Binding Title}" Width="2*" />
+                                <DataGridTextColumn Header="Status" Binding="{Binding StatusText}" Width="130" />
+                                <DataGridTextColumn Header="Meldung" Binding="{Binding Message}" Width="3*" />
+                            </DataGrid.Columns>
+                        </DataGrid>
+                    </Border>
+                </StackPanel>
+            </Grid>
+        </ScrollViewer>
+    </DockPanel>
+</UserControl>

@@ -1,0 +1,30 @@
+<!--
+    Zentraler Bestätigungs- und Meldungsdialog.
+    Optional mit Tippbestätigung (z. B. "LÖSCHEN mmuster"): Die Bestätigen-Schaltfläche wird erst
+    aktiv, wenn der Text exakt übereinstimmt. Abbrechen ist die Standardaktion (Esc).
+-->
+<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="easyONBOARDING" Width="560" SizeToContent="Height" MinHeight="200" MaxHeight="760"
+        WindowStartupLocation="CenterOwner" ResizeMode="NoResize" ShowInTaskbar="False"
+        Background="{DynamicResource WindowBackgroundBrush}" Foreground="{DynamicResource TextPrimaryBrush}"
+        FontFamily="Segoe UI" FontSize="13" UseLayoutRounding="True" TextOptions.TextFormattingMode="Display">
+    <DockPanel Margin="20">
+        <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,16,0,0">
+            <Button x:Name="DlgConfirmButton" Style="{StaticResource PrimaryButtonStyle}" Content="_Bestätigen" />
+            <Button x:Name="DlgCancelButton" Content="Abbrechen" IsCancel="True" IsDefault="True" Margin="0" />
+        </StackPanel>
+        <StackPanel>
+            <DockPanel Margin="0,0,0,8">
+                <TextBlock x:Name="DlgIcon" DockPanel.Dock="Left" Style="{StaticResource IconTextStyle}" FontSize="24" Margin="0,0,12,0" Text="&#xE946;" />
+                <TextBlock x:Name="DlgTitleText" Style="{StaticResource SubheadingTextStyle}" Margin="0" VerticalAlignment="Center" />
+            </DockPanel>
+            <TextBlock x:Name="DlgMessageText" Style="{StaticResource BodyTextStyle}" />
+            <ItemsControl x:Name="DlgDetailsList" Margin="0,10,0,0" Visibility="Collapsed" Focusable="False" />
+            <StackPanel x:Name="DlgTypedPanel" Margin="0,14,0,0" Visibility="Collapsed">
+                <TextBlock x:Name="DlgTypedHintText" Style="{StaticResource BodyTextStyle}" />
+                <TextBox x:Name="DlgTypedText" Margin="0,6,0,0" AutomationProperties.Name="Bestätigungstext" />
+            </StackPanel>
+        </StackPanel>
+    </DockPanel>
+</Window>

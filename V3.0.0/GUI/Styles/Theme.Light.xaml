@@ -1,0 +1,40 @@
+<!--
+    easyONBOARDING - Farbschema "Hell".
+    Alle Farben der Oberfläche sind hier zentral definiert und werden per DynamicResource
+    verwendet. AccentBrush/AccentForegroundBrush werden zur Laufzeit aus [UI] AccentColor gesetzt.
+-->
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <SolidColorBrush x:Key="WindowBackgroundBrush" Color="#F3F3F3" />
+    <SolidColorBrush x:Key="NavBackgroundBrush" Color="#EAEAEA" />
+    <SolidColorBrush x:Key="NavHoverBrush" Color="#DEDEDE" />
+    <SolidColorBrush x:Key="NavSelectedBrush" Color="#FFFFFF" />
+    <SolidColorBrush x:Key="SurfaceBrush" Color="#FFFFFF" />
+    <SolidColorBrush x:Key="SurfaceAltBrush" Color="#F7F7F7" />
+    <SolidColorBrush x:Key="ControlBorderBrush" Color="#D1D1D1" />
+    <SolidColorBrush x:Key="DividerBrush" Color="#E5E5E5" />
+    <SolidColorBrush x:Key="TextPrimaryBrush" Color="#1A1A1A" />
+    <SolidColorBrush x:Key="TextSecondaryBrush" Color="#5C5C5C" />
+    <SolidColorBrush x:Key="DisabledTextBrush" Color="#9E9E9E" />
+    <SolidColorBrush x:Key="InputBackgroundBrush" Color="#FFFFFF" />
+    <SolidColorBrush x:Key="InputBorderBrush" Color="#8A8A8A" />
+    <SolidColorBrush x:Key="InputHoverBorderBrush" Color="#5C5C5C" />
+    <SolidColorBrush x:Key="ButtonBackgroundBrush" Color="#FBFBFB" />
+    <SolidColorBrush x:Key="ButtonHoverBrush" Color="#F0F0F0" />
+    <SolidColorBrush x:Key="ButtonPressedBrush" Color="#E3E3E3" />
+    <SolidColorBrush x:Key="AccentBrush" Color="#0F6CBD" />
+    <SolidColorBrush x:Key="AccentHoverBrush" Color="#115EA3" />
+    <SolidColorBrush x:Key="AccentForegroundBrush" Color="#FFFFFF" />
+    <SolidColorBrush x:Key="SuccessBrush" Color="#0E700E" />
+    <SolidColorBrush x:Key="SuccessBackgroundBrush" Color="#DFF6DD" />
+    <SolidColorBrush x:Key="WarningBrush" Color="#8A5300" />
+    <SolidColorBrush x:Key="WarningBackgroundBrush" Color="#FFF4CE" />
+    <SolidColorBrush x:Key="ErrorBrush" Color="#B10E1C" />
+    <SolidColorBrush x:Key="ErrorBackgroundBrush" Color="#FDE7E9" />
+    <SolidColorBrush x:Key="InfoBrush" Color="#005FB8" />
+    <SolidColorBrush x:Key="InfoBackgroundBrush" Color="#E5F1FB" />
+    <SolidColorBrush x:Key="DangerButtonBrush" Color="#C42B1C" />
+    <SolidColorBrush x:Key="DangerButtonForegroundBrush" Color="#FFFFFF" />
+    <SolidColorBrush x:Key="FocusBrush" Color="#1A1A1A" />
+    <SolidColorBrush x:Key="SelectionBrush" Color="#CCE4F7" />
+</ResourceDictionary>

@@ -1,0 +1,63 @@
+<!--
+    Reports und Audit: erzeugte Berichte öffnen, Audit-Log auswerten und exportieren.
+-->
+<UserControl xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <DockPanel Margin="24,20,24,16">
+        <StackPanel DockPanel.Dock="Top">
+            <TextBlock Style="{StaticResource HeadingTextStyle}" Text="Reports und Audit" />
+            <TextBlock Style="{StaticResource CaptionTextStyle}" Margin="0,0,0,8"
+                       Text="Berichte und Audit-Einträge enthalten keine Kennwörter. Sie enthalten personenbezogene Daten und sind entsprechend zu schützen." />
+        </StackPanel>
+        <TabControl x:Name="ReportsTabs">
+            <TabItem Header="_Berichte">
+                <DockPanel Margin="0,4,0,0">
+                    <WrapPanel DockPanel.Dock="Top" Margin="0,0,0,8">
+                        <TextBlock Text="Zeitraum:" VerticalAlignment="Center" Margin="0,0,8,8" />
+                        <ComboBox x:Name="ReportsDaysCombo" Width="140" Margin="0,0,8,8" AutomationProperties.Name="Zeitraum" />
+                        <Button x:Name="ReportsRefreshButton" Content="_Aktualisieren" Margin="0,0,8,8" />
+                        <Button x:Name="ReportsOpenButton" Style="{StaticResource PrimaryButtonStyle}" Content="Ö_ffnen" Margin="0,0,8,8" />
+                        <Button x:Name="ReportsOpenFolderButton" Content="_Ordner öffnen" Margin="0,0,8,8" />
+                    </WrapPanel>
+                    <TextBlock x:Name="ReportsInfoText" DockPanel.Dock="Bottom" Style="{StaticResource CaptionTextStyle}" Margin="0,8,0,0" />
+                    <DataGrid x:Name="ReportsGrid" AutomationProperties.Name="Berichte">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="Datei" Binding="{Binding Name}" Width="3*" />
+                            <DataGridTextColumn Header="Art" Binding="{Binding Kind}" Width="*" />
+                            <DataGridTextColumn Header="Format" Binding="{Binding Format}" Width="70" />
+                            <DataGridTextColumn Header="Geändert" Binding="{Binding ChangedText}" Width="140" />
+                            <DataGridTextColumn Header="Größe" Binding="{Binding SizeText}" Width="80" />
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </DockPanel>
+            </TabItem>
+            <TabItem Header="A_udit">
+                <DockPanel Margin="0,4,0,0">
+                    <WrapPanel DockPanel.Dock="Top" Margin="0,0,0,8">
+                        <TextBlock Text="Von:" VerticalAlignment="Center" Margin="0,0,6,8" />
+                        <DatePicker x:Name="AuditFromPicker" Width="140" Margin="0,0,12,8" AutomationProperties.Name="Von" />
+                        <TextBlock Text="Bis:" VerticalAlignment="Center" Margin="0,0,6,8" />
+                        <DatePicker x:Name="AuditToPicker" Width="140" Margin="0,0,12,8" AutomationProperties.Name="Bis" />
+                        <TextBox x:Name="AuditFilterText" Width="220" Margin="0,0,8,8" AutomationProperties.Name="Filter (Konto, Aktion, Operation-ID)"
+                                 ToolTip="Filter nach Konto, Aktion oder Operation-ID" />
+                        <Button x:Name="AuditLoadButton" Style="{StaticResource PrimaryButtonStyle}" Content="_Laden" Margin="0,0,8,8" />
+                        <Button x:Name="AuditExportCsvButton" Content="Als _CSV exportieren …" Margin="0,0,8,8" />
+                        <Button x:Name="AuditExportHtmlButton" Content="Als _HTML exportieren …" Margin="0,0,8,8" />
+                    </WrapPanel>
+                    <TextBlock x:Name="AuditSummaryText" DockPanel.Dock="Bottom" Style="{StaticResource CaptionTextStyle}" Margin="0,8,0,0" />
+                    <DataGrid x:Name="AuditGrid" AutomationProperties.Name="Audit-Einträge">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="Zeitpunkt" Binding="{Binding TimeText}" Width="140" />
+                            <DataGridTextColumn Header="Aktion" Binding="{Binding Action}" Width="170" />
+                            <DataGridTextColumn Header="Ziel" Binding="{Binding Target}" Width="*" />
+                            <DataGridTextColumn Header="Ergebnis" Binding="{Binding Result}" Width="110" />
+                            <DataGridTextColumn Header="Akteur" Binding="{Binding Actor}" Width="140" />
+                            <DataGridTextColumn Header="Meldung" Binding="{Binding Message}" Width="2*" />
+                            <DataGridTextColumn Header="Operation-ID" Binding="{Binding OperationId}" Width="120" />
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </DockPanel>
+            </TabItem>
+        </TabControl>
+    </DockPanel>
+</UserControl>

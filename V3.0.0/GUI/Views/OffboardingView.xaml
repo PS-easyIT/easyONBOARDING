@@ -1,0 +1,217 @@
+<!--
+    Offboarding: Assistent (Benutzer, Vorlage und Angaben, Vorschau, Ausführung) und Warteschlange
+    der geplanten Folgephasen inklusive Freigabe der endgültigen Löschung.
+-->
+<UserControl xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <DockPanel Margin="24,20,24,0">
+        <StackPanel DockPanel.Dock="Top">
+            <TextBlock Style="{StaticResource HeadingTextStyle}" Text="Offboarding" />
+            <TextBlock Style="{StaticResource CaptionTextStyle}" Margin="0,0,0,8"
+                       Text="Austritte in Phasen: sofort, zum Austritt, Aufbewahrung. Eine endgültige Löschung erfolgt nie automatisch." />
+        </StackPanel>
+        <TabControl x:Name="OffTabs">
+            <TabItem x:Name="OffWizardTab" Header="_Neuer Vorgang">
+                <DockPanel>
+                    <WrapPanel DockPanel.Dock="Top" Margin="0,4,0,8" AutomationProperties.Name="Fortschritt des Assistenten">
+                        <TextBlock x:Name="OffStep1" Text="1  Benutzer" Margin="0,0,18,4" />
+                        <TextBlock x:Name="OffStep2" Text="2  Vorlage und Angaben" Margin="0,0,18,4" />
+                        <TextBlock x:Name="OffStep3" Text="3  Vorschau" Margin="0,0,18,4" />
+                        <TextBlock x:Name="OffStep4" Text="4  Ausführung" Margin="0,0,18,4" />
+                    </WrapPanel>
+                    <Border DockPanel.Dock="Bottom" Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource DividerBrush}" BorderThickness="0,1,0,0" Padding="0,10" Margin="-24,0">
+                        <DockPanel Margin="24,0">
+                            <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                                <Button x:Name="OffBackButton" Content="_Zurück" />
+                                <Button x:Name="OffNextButton" Style="{StaticResource PrimaryButtonStyle}" Content="_Weiter" />
+                                <Button x:Name="OffExecuteButton" Style="{StaticResource PrimaryButtonStyle}" Content="_Ausführen" Visibility="Collapsed" />
+                                <Button x:Name="OffCancelRunButton" Content="Abbre_chen" Visibility="Collapsed" />
+                                <Button x:Name="OffNewButton" Content="Neuer _Vorgang" Visibility="Collapsed" Margin="0" />
+                            </StackPanel>
+                            <TextBlock x:Name="OffValidationText" Foreground="{DynamicResource ErrorBrush}" TextWrapping="Wrap" VerticalAlignment="Center" Margin="0,0,16,0" />
+                        </DockPanel>
+                    </Border>
+                    <ScrollViewer x:Name="OffScroll" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                        <Grid Margin="0,0,0,16">
+                            <!-- Schritt 1: Benutzer suchen -->
+                            <StackPanel x:Name="OffPanel1">
+                                <Border Style="{StaticResource CardStyle}">
+                                    <StackPanel>
+                                        <TextBlock Style="{StaticResource SubheadingTextStyle}" Text="Benutzer suchen" />
+                                        <DockPanel>
+                                            <Button x:Name="OffSearchButton" DockPanel.Dock="Right" Content="_Suchen" Margin="8,0,0,0" />
+                                            <TextBox x:Name="OffSearchText" AutomationProperties.Name="Suchbegriff (Name, Anmeldename, UPN oder E-Mail)"
+                                                     ToolTip="Name, Anmeldename, UPN oder E-Mail (mindestens 2 Zeichen)" />
+                                        </DockPanel>
+                                        <TextBlock x:Name="OffSearchInfo" Style="{StaticResource CaptionTextStyle}" Margin="0,6,0,6" />
+                                        <DataGrid x:Name="OffSearchResultsGrid" MaxHeight="340" AutomationProperties.Name="Suchergebnisse">
+                                            <DataGrid.Columns>
+                                                <DataGridTextColumn Header="Name" Binding="{Binding DisplayName}" Width="2*" />
+                                                <DataGridTextColumn Header="Anmeldename" Binding="{Binding SamAccountName}" Width="*" />
+                                                <DataGridTextColumn Header="UPN" Binding="{Binding UserPrincipalName}" Width="2*" />
+                                                <DataGridTextColumn Header="Abteilung" Binding="{Binding Department}" Width="*" />
+                                                <DataGridTextColumn Header="Aktiv" Binding="{Binding EnabledText}" Width="60" />
+                                                <DataGridTextColumn Header="Letzte Anmeldung" Binding="{Binding LastLogonText}" Width="130" />
+                                            </DataGrid.Columns>
+                                        </DataGrid>
+                                        <TextBlock x:Name="OffSelectedUserText" Style="{StaticResource BodyTextStyle}" FontWeight="SemiBold" Margin="0,10,0,0" />
+                                    </StackPanel>
+                                </Border>
+                            </StackPanel>
+
+                            <!-- Schritt 2: Vorlage und Angaben -->
+                            <StackPanel x:Name="OffPanel2" Visibility="Collapsed">
+                                <Border Style="{StaticResource CardStyle}">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="24" />
+                                            <ColumnDefinition Width="*" />
+                                        </Grid.ColumnDefinitions>
+                                        <StackPanel Grid.Column="0">
+                                            <TextBlock Style="{StaticResource SubheadingTextStyle}" Text="Vorlage und Termine" />
+                                            <TextBlock Style="{StaticResource FieldLabelStyle}" Text="Offboarding-Vorlage *" />
+                                            <ComboBox x:Name="OffTemplateCombo" AutomationProperties.Name="Offboarding-Vorlage" />
+                                            <TextBlock x:Name="OffTemplateDescriptionText" Style="{StaticResource CaptionTextStyle}" Margin="0,4,0,0" />
+                                            <TextBlock Style="{StaticResource FieldLabelStyle}" Text="Austrittsdatum (letzter Arbeitstag) *" />
+                                            <DatePicker x:Name="OffExitDatePicker" AutomationProperties.Name="Austrittsdatum" SelectedDateFormat="Short" />
+                                            <TextBlock x:Name="OffExitDateError" Style="{StaticResource FieldErrorStyle}" />
+                                            <TextBlock Style="{StaticResource FieldLabelStyle}" Text="Ticket / Vorgangsnummer" />
+                                            <TextBox x:Name="OffTicketText" AutomationProperties.Name="Ticketnummer" />
+                                            <TextBlock x:Name="OffTicketError" Style="{StaticResource FieldErrorStyle}" />
+                                            <TextBlock Style="{StaticResource FieldLabelStyle}" Text="Grund" />
+                                            <TextBox x:Name="OffReasonText" AutomationProperties.Name="Grund" />
+                                            <TextBlock x:Name="OffReasonError" Style="{StaticResource FieldErrorStyle}" />
+                                            <Border x:Name="OffPrivilegedPanel" Style="{StaticResource WarningBannerStyle}" Margin="0,12,0,0" Visibility="Collapsed">
+                                                <StackPanel>
+                                                    <TextBlock x:Name="OffPrivilegedText" Style="{StaticResource BodyTextStyle}" />
+                                                    <CheckBox x:Name="OffAcknowledgePrivilegedCheck" Content="Ich bestätige das Offboarding dieses privilegierten Kontos." />
+                                                </StackPanel>
+                                            </Border>
+                                        </StackPanel>
+                                        <StackPanel Grid.Column="2">
+                                            <TextBlock Style="{StaticResource SubheadingTextStyle}" Text="Postfach und Übergabe" />
+                                            <TextBlock Style="{StaticResource FieldLabelStyle}" Text="Weiterleitung an (interne Adresse, optional)" />
+                                            <TextBox x:Name="OffForwardToText" AutomationProperties.Name="Weiterleitung an" />
+                                            <TextBlock x:Name="OffForwardError" Style="{StaticResource FieldErrorStyle}" />
+                                            <TextBlock Style="{StaticResource FieldLabelStyle}" Text="Abwesenheitsnotiz (leer = Vorlage)" />
+                                            <TextBox x:Name="OffAutoReplyText" AutomationProperties.Name="Abwesenheitsnotiz" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="60" VerticalContentAlignment="Top" />
+                                            <TextBlock Style="{StaticResource FieldLabelStyle}" Text="Zurückzugebendes Inventar (eine Zeile je Gerät)" />
+                                            <TextBox x:Name="OffAssetsText" AutomationProperties.Name="Inventar" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="60" VerticalContentAlignment="Top" />
+                                            <TextBlock Style="{StaticResource FieldLabelStyle}" Text="Bemerkung (nur Bericht)" />
+                                            <TextBox x:Name="OffNotesText" AutomationProperties.Name="Bemerkung" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="48" VerticalContentAlignment="Top" />
+                                            <TextBlock x:Name="OffNotesError" Style="{StaticResource FieldErrorStyle}" />
+                                        </StackPanel>
+                                    </Grid>
+                                </Border>
+                            </StackPanel>
+
+                            <!-- Schritt 3: Vorschau -->
+                            <StackPanel x:Name="OffPanel3" Visibility="Collapsed">
+                                <Border x:Name="OffPreviewBanner" Style="{StaticResource InfoBannerStyle}">
+                                    <TextBlock x:Name="OffPreviewBannerText" Style="{StaticResource BodyTextStyle}" />
+                                </Border>
+                                <Border Style="{StaticResource CardStyle}">
+                                    <StackPanel>
+                                        <TextBlock Style="{StaticResource SubheadingTextStyle}" Text="Zusammenfassung und Termine" />
+                                        <DataGrid x:Name="OffPreviewSummaryGrid" MaxHeight="360" AutomationProperties.Name="Zusammenfassung">
+                                            <DataGrid.Columns>
+                                                <DataGridTextColumn Header="Eigenschaft" Binding="{Binding Key}" Width="200" />
+                                                <DataGridTextColumn Header="Wert" Binding="{Binding Value}" Width="*" />
+                                            </DataGrid.Columns>
+                                        </DataGrid>
+                                    </StackPanel>
+                                </Border>
+                                <Border Style="{StaticResource CardStyle}">
+                                    <StackPanel>
+                                        <TextBlock Style="{StaticResource SubheadingTextStyle}" Text="Aktionen nach Phase" />
+                                        <DataGrid x:Name="OffPreviewStepsGrid" MaxHeight="420" AutomationProperties.Name="Aktionen nach Phase">
+                                            <DataGrid.Columns>
+                                                <DataGridTextColumn Header="Phase" Binding="{Binding PhaseText}" Width="130" />
+                                                <DataGridTextColumn Header="Fällig" Binding="{Binding DueText}" Width="95" />
+                                                <DataGridTextColumn Header="Schritt" Binding="{Binding Title}" Width="2*" />
+                                                <DataGridTextColumn Header="Risiko" Binding="{Binding RiskText}" Width="90" />
+                                                <DataGridTextColumn Header="Details" Binding="{Binding DetailsText}" Width="3*" />
+                                            </DataGrid.Columns>
+                                        </DataGrid>
+                                    </StackPanel>
+                                </Border>
+                                <Border Style="{StaticResource CardStyle}">
+                                    <StackPanel>
+                                        <TextBlock Style="{StaticResource SubheadingTextStyle}" Text="Prüfergebnisse" />
+                                        <DataGrid x:Name="OffPreviewFindingsGrid" MaxHeight="260" AutomationProperties.Name="Prüfergebnisse">
+                                            <DataGrid.Columns>
+                                                <DataGridTextColumn Header="Schwere" Binding="{Binding SeverityText}" Width="110" />
+                                                <DataGridTextColumn Header="Code" Binding="{Binding Code}" Width="200" />
+                                                <DataGridTextColumn Header="Meldung" Binding="{Binding Message}" Width="*" />
+                                            </DataGrid.Columns>
+                                        </DataGrid>
+                                    </StackPanel>
+                                </Border>
+                            </StackPanel>
+
+                            <!-- Schritt 4: Ausführung -->
+                            <StackPanel x:Name="OffPanel4" Visibility="Collapsed">
+                                <Border Style="{StaticResource CardStyle}">
+                                    <StackPanel>
+                                        <TextBlock Style="{StaticResource SubheadingTextStyle}" Text="Ausführung" />
+                                        <ProgressBar x:Name="OffProgressBar" Minimum="0" Maximum="100" Value="0" Margin="0,4,0,6" />
+                                        <TextBlock x:Name="OffProgressText" Style="{StaticResource CaptionTextStyle}" />
+                                    </StackPanel>
+                                </Border>
+                                <Border x:Name="OffResultBanner" Style="{StaticResource InfoBannerStyle}" Visibility="Collapsed">
+                                    <StackPanel>
+                                        <TextBlock x:Name="OffResultText" Style="{StaticResource BodyTextStyle}" />
+                                        <Button x:Name="OffOpenReportButton" Content="_Bericht öffnen" HorizontalAlignment="Left" Margin="0,8,0,0" Visibility="Collapsed" />
+                                    </StackPanel>
+                                </Border>
+                                <Border Style="{StaticResource CardStyle}">
+                                    <DataGrid x:Name="OffResultStepsGrid" MaxHeight="420" AutomationProperties.Name="Ergebnis je Schritt">
+                                        <DataGrid.Columns>
+                                            <DataGridTextColumn Header="Phase" Binding="{Binding PhaseText}" Width="130" />
+                                            <DataGridTextColumn Header="Schritt" Binding="{Binding Title}" Width="2*" />
+                                            <DataGridTextColumn Header="Status" Binding="{Binding StatusText}" Width="130" />
+                                            <DataGridTextColumn Header="Meldung" Binding="{Binding Message}" Width="3*" />
+                                        </DataGrid.Columns>
+                                    </DataGrid>
+                                </Border>
+                            </StackPanel>
+                        </Grid>
+                    </ScrollViewer>
+                </DockPanel>
+            </TabItem>
+
+            <TabItem x:Name="OffQueueTab" Header="_Warteschlange">
+                <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                    <StackPanel Margin="0,4,0,16">
+                        <Border Style="{StaticResource InfoBannerStyle}">
+                            <TextBlock Style="{StaticResource BodyTextStyle}"
+                                       Text="Folgephasen werden hier oder per geplanter Aufgabe (Scripts\Invoke-DueOffboardingPhases.ps1) ausgeführt. Eine endgültige Löschung ist nur nach Ablauf der Aufbewahrungsfrist, mit Zustandsbericht, Vorschau und Tippbestätigung möglich." />
+                        </Border>
+                        <WrapPanel Margin="0,0,0,8">
+                            <Button x:Name="OffQueueRefreshButton" Content="_Aktualisieren" Margin="0,0,8,8" />
+                            <Button x:Name="OffQueueRunDueButton" Style="{StaticResource PrimaryButtonStyle}" Content="_Fällige Phase ausführen" Margin="0,0,8,8" />
+                            <Button x:Name="OffQueueDeletionButton" Style="{StaticResource DangerButtonStyle}" Content="_Löschung prüfen …" Margin="0,0,8,8" />
+                            <Button x:Name="OffQueueCancelButton" Content="Vorgang a_bbrechen …" Margin="0,0,8,8" />
+                            <Button x:Name="OffQueueOpenSnapshotButton" Content="_Zustandsberichte öffnen" Margin="0,0,8,8" />
+                        </WrapPanel>
+                        <CheckBox x:Name="OffQueueShowClosedCheck" Content="Abgeschlossene und abgebrochene Vorgänge anzeigen" Margin="0,0,0,8" />
+                        <DataGrid x:Name="OffQueueGrid" MinHeight="200" MaxHeight="520" AutomationProperties.Name="Offboarding-Warteschlange">
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Header="Konto" Binding="{Binding Account}" Width="2*" />
+                                <DataGridTextColumn Header="Vorlage" Binding="{Binding Template}" Width="*" />
+                                <DataGridTextColumn Header="Austritt" Binding="{Binding ExitText}" Width="90" />
+                                <DataGridTextColumn Header="Status" Binding="{Binding StatusText}" Width="160" />
+                                <DataGridTextColumn Header="Nächste Phase" Binding="{Binding NextPhaseText}" Width="130" />
+                                <DataGridTextColumn Header="Fällig am" Binding="{Binding DueText}" Width="90" />
+                                <DataGridTextColumn Header="Löschung ab" Binding="{Binding DeletionText}" Width="95" />
+                                <DataGridTextColumn Header="Hinweis" Binding="{Binding NoteText}" Width="2*" />
+                            </DataGrid.Columns>
+                        </DataGrid>
+                        <TextBlock x:Name="OffQueueInfoText" Style="{StaticResource CaptionTextStyle}" Margin="0,8,0,0" />
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+        </TabControl>
+    </DockPanel>
+</UserControl>
