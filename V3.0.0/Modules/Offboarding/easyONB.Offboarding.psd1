@@ -9,6 +9,7 @@
     PowerShellVersion    = '7.2'
     CompatiblePSEditions = @('Core')
     FunctionsToExport    = @(
+        'Complete-EobOffboardingRun'
         'ConvertTo-EobOffboardingRequest'
         'Export-EobOffboardingBatchResult'
         'Export-EobOffboardingMailboxPermission'
@@ -16,6 +17,7 @@
         'Get-EobDeletionConfirmationText'
         'Get-EobOffboardingDuePhase'
         'Get-EobOffboardingGroupClassification'
+        'Get-EobOffboardingIncludePhase'
         'Get-EobOffboardingPhaseDate'
         'Get-EobOffboardingQueue'
         'Get-EobOffboardingTemplate'
@@ -32,6 +34,7 @@
         'New-EobOffboardingPlanFromQueue'
         'Save-EobOffboardingQueueEntry'
         'Save-EobOffboardingSnapshot'
+        'Select-EobOffboardingPhase'
         'Stop-EobOffboardingQueueEntry'
         'Test-EobOffboardingRequest'
     )
