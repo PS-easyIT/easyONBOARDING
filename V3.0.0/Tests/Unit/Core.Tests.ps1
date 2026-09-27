@@ -22,6 +22,12 @@ BeforeAll {
             $script:Calls.Add([pscustomobject]@{ Name = $Name; WhatIf = $false; SecretType = $null })
             return New-EobResult -Status Warning -Message "gelesen: $Name"
         }
+        function Invoke-EobTestConfig {
+            [CmdletBinding()]
+            param([object]$Config)
+            $script:Calls.Add([pscustomobject]@{ Name = 'Config'; WhatIf = $false; SecretType = if ($null -ne $Config) { [string]$Config.Marker } else { $null } })
+            return New-EobResult -Status Succeeded -Message 'Konfiguration erhalten'
+        }
         function Get-EobTestCall { return $script:Calls }
         function Clear-EobTestCall { $script:Calls.Clear() }
         Export-ModuleMember -Function *
@@ -131,6 +137,26 @@ Describe 'Konvertierungen' {
         ConvertTo-EobDate -Value '31.02.2027' | Should -BeNullOrEmpty
         ConvertTo-EobDate -Value 'morgen' | Should -BeNullOrEmpty
         ConvertTo-EobDate -Value '' | Should -BeNullOrEmpty
+    }
+
+    It 'kodiert HTML-Sonderzeichen' {
+        ConvertTo-EobHtmlEncoded -Value '<script>alert("x")</script> & Co' | Should -BeExactly '&lt;script&gt;alert(&quot;x&quot;)&lt;/script&gt; &amp; Co'
+        ConvertTo-EobHtmlEncoded -Value $null | Should -BeExactly ''
+    }
+
+    It 'schützt CSV-Werte vor Formel-Injektion: <Value>' -ForEach @(
+        @{ Value = '=HYPERLINK("http://x")'; Expected = '''=HYPERLINK("http://x")' }, @{ Value = '+1'; Expected = '''+1' }
+        @{ Value = '-2'; Expected = '''-2' }, @{ Value = '@SUM(A1)'; Expected = '''@SUM(A1)' }, @{ Value = "`tx"; Expected = "'`tx" }
+        @{ Value = 'Max Mustermann'; Expected = 'Max Mustermann' }, @{ Value = ''; Expected = '' }
+    ) {
+        ConvertTo-EobCsvSafeValue -Value $Value | Should -BeExactly $Expected
+    }
+
+    It 'lässt Nicht-Texte in CSV-Objekten unverändert' {
+        $row = [pscustomobject]@{ Name = '=1+1'; Count = -5; Flag = $true } | ConvertTo-EobCsvSafeObject
+        $row.Name | Should -BeExactly '''=1+1'
+        $row.Count | Should -Be -5
+        $row.Flag | Should -BeTrue
     }
 
     It 'liest Eigenschaften sicher unter StrictMode' {
@@ -329,6 +355,13 @@ Describe 'Plan-Engine' {
         $step.Parameters['Secret'] | Should -Be '@Secret:InitialPassword'
         $null = Invoke-EobPlan -Plan $script:Plan -Confirm:$false
         (Get-EobTestCall)[0].SecretType | Should -Be 'SecureString'
+    }
+
+    It 'übergibt die Plan-Konfiguration an Parameter mit dem Wert @Config' {
+        $plan = New-EobPlan -Kind 'Test' -Context $script:Context -Config ([pscustomobject]@{ Marker = 'cfg-1' })
+        $null = Add-EobPlanStep -Plan $plan -Action 'C' -Title 'C' -Handler 'Invoke-EobTestConfig' -Parameters @{ Config = '@Config' }
+        $null = Invoke-EobPlan -Plan $plan -Confirm:$false
+        (Get-EobTestCall)[0].SecretType | Should -Be 'cfg-1'
     }
 
     It 'lässt den Schritt fehlschlagen, wenn ein Secret fehlt' {

@@ -865,7 +865,7 @@ function New-EobOnboardingPlan {
     )
 
     $context = New-EobOperationContext -Kind 'Onboarding' -Simulation:$Simulation
-    $plan = New-EobPlan -Kind 'Onboarding' -Context $context -Simulation:$Simulation
+    $plan = New-EobPlan -Kind 'Onboarding' -Context $context -Config $Config -Simulation:$Simulation
     foreach ($finding in @(Test-EobOnboardingRequest -Request $Request -Config $Config)) {
         $plan.Findings.Add($finding)
     }
@@ -1116,7 +1116,7 @@ function New-EobOnboardingPlan {
         $templatePath = Get-EobConfigValue -Config $Config -Section 'Report' -Key 'TemplatePathHTML' -As Path
         if ($templatePath -and (Test-Path -LiteralPath $templatePath -PathType Leaf)) {
             $null = Add-EobPlanStep -Plan $plan -Action 'WelcomeDocument' -Title 'Willkommensdokument erzeugen (ohne Kennwort)' -Target $sam -Handler 'New-EobWelcomeDocument' -DependsOn $create.Id -Parameters @{
-                SamAccountName = $sam; TemplatePath = $templatePath; OperationId = $plan.OperationId
+                SamAccountName = $sam; TemplatePath = $templatePath; OperationId = $plan.OperationId; Config = '@Config'
                 Values = @{
                     Vorname = $Request.GivenName; Nachname = $Request.Surname; DisplayName = $proposal.DisplayName; LoginName = $sam
                     UPN = $proposal.UserPrincipalName; MailAddress = $proposal.Mail; Position = $Request.Title; Abteilung = $Request.Department
@@ -1130,7 +1130,7 @@ function New-EobOnboardingPlan {
     if ($Request.SendWelcomeMail -and $proposal.Mail) {
         $null = Add-EobPlanStep -Plan $plan -Action 'WelcomeMail' -Title "Welcome-Mail senden (ohne Kennwort) an $($proposal.Mail)" -Target $sam -Handler 'Send-EobWelcomeMail' -DependsOn $create.Id -Parameters @{
             To = $proposal.Mail; DisplayName = $proposal.DisplayName; SamAccountName = $sam; UserPrincipalName = $proposal.UserPrincipalName
-            StartDate = $Request.StartDate
+            StartDate = $Request.StartDate; CompanyId = $company.Id; Config = '@Config'
         }
     }
     if ($Request.TriggerSync -and (Get-EobConfigValue -Config $Config -Section 'ADSync' -Key 'EnableADSync' -As Bool)) {
@@ -1290,7 +1290,7 @@ function New-EobUserUpdatePlan {
     )
 
     $context = New-EobOperationContext -Kind 'UserUpdate' -Simulation:$Simulation
-    $plan = New-EobPlan -Kind 'UserUpdate' -Context $context -Simulation:$Simulation
+    $plan = New-EobPlan -Kind 'UserUpdate' -Context $context -Config $Config -Simulation:$Simulation
     try {
         $user = Get-EobAdUser -Identity $Identity
     }
@@ -1410,7 +1410,7 @@ function New-EobPasswordResetPlan {
     )
 
     $context = New-EobOperationContext -Kind 'PasswordReset' -Simulation:$Simulation
-    $plan = New-EobPlan -Kind 'PasswordReset' -Context $context -Simulation:$Simulation
+    $plan = New-EobPlan -Kind 'PasswordReset' -Context $context -Config $Config -Simulation:$Simulation
     try {
         $user = Get-EobAdUser -Identity $Identity
     }
@@ -1730,7 +1730,7 @@ function Export-EobBatchResult {
     $directory = Split-Path -Parent $Path
     if ($directory -and -not (Test-Path -LiteralPath $directory)) { $null = New-Item -ItemType Directory -Path $directory -Force }
     if ($Format -eq 'Csv') {
-        $rows | Export-Csv -LiteralPath $Path -NoTypeInformation -Delimiter ';' -Encoding utf8BOM
+        $rows | ConvertTo-EobCsvSafeObject | Export-Csv -LiteralPath $Path -NoTypeInformation -Delimiter ';' -Encoding utf8BOM
     }
     else {
         [System.IO.File]::WriteAllText($Path, (@($rows) | ConvertTo-Json -Depth 4), [System.Text.UTF8Encoding]::new($false))

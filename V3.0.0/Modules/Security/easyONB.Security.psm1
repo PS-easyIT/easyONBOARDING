@@ -327,17 +327,31 @@ function Get-EobPasswordPolicyText {
     <#
     .SYNOPSIS
         Beschreibt die Richtlinie in lesbarer Form (z. B. für das Willkommensdokument).
+    .PARAMETER Language
+        de (Standard) oder en.
     #>
     [CmdletBinding()]
     [OutputType([string[]])]
-    param([Parameter(Mandatory)][pscustomobject]$Policy)
+    param(
+        [Parameter(Mandatory)][pscustomobject]$Policy,
+        [ValidateSet('de', 'en')][string]$Language = 'de'
+    )
 
     $lines = [System.Collections.Generic.List[string]]::new()
-    $lines.Add("Mindestlänge: $($Policy.MinManualLength) Zeichen")
-    if ($Policy.ComplexityEnabled) {
-        $lines.Add('Zeichen aus mindestens drei Kategorien: Großbuchstaben, Kleinbuchstaben, Ziffern, Sonderzeichen')
+    if ($Language -eq 'en') {
+        $lines.Add("Minimum length: $($Policy.MinManualLength) characters")
+        if ($Policy.ComplexityEnabled) {
+            $lines.Add('Characters from at least three categories: upper case, lower case, digits, special characters')
+        }
+        $lines.Add('No parts of your name and not your user name')
     }
-    $lines.Add('Keine Namensbestandteile und nicht der Benutzername')
+    else {
+        $lines.Add("Mindestlänge: $($Policy.MinManualLength) Zeichen")
+        if ($Policy.ComplexityEnabled) {
+            $lines.Add('Zeichen aus mindestens drei Kategorien: Großbuchstaben, Kleinbuchstaben, Ziffern, Sonderzeichen')
+        }
+        $lines.Add('Keine Namensbestandteile und nicht der Benutzername')
+    }
     return $lines.ToArray()
 }
 
