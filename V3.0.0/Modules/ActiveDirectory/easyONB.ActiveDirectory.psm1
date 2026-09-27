@@ -939,6 +939,7 @@ function Set-EobAdUserManager {
     param(
         [Parameter(Mandatory)][string]$Identity,
         [string]$ManagerDistinguishedName,
+        [switch]$AllowPrivileged,
         [switch]$SkipTargetCheck
     )
 
@@ -947,7 +948,7 @@ function Set-EobAdUserManager {
         return New-EobNotProcessedResult -Message "$action"
     }
     Assert-EobAdConnected
-    if (-not $SkipTargetCheck) { $null = Assert-EobAdTargetAllowed -Identity $Identity }
+    if (-not $SkipTargetCheck) { $null = Assert-EobAdTargetAllowed -Identity $Identity -AllowPrivileged:$AllowPrivileged }
     $parameters = Get-EobAdServerParameter
     try {
         if ($ManagerDistinguishedName) {
@@ -1116,13 +1117,16 @@ function Set-EobAdUserPasswordChangeRequired {
     #>
     [CmdletBinding(SupportsShouldProcess, ConfirmImpact = 'Medium')]
     [OutputType([pscustomobject])]
-    param([Parameter(Mandatory)][string]$Identity)
+    param(
+        [Parameter(Mandatory)][string]$Identity,
+        [switch]$AllowPrivileged
+    )
 
     if (-not $PSCmdlet.ShouldProcess($Identity, 'Kennwortänderung erzwingen')) {
         return New-EobNotProcessedResult -Message 'Kennwortänderung würde erzwungen.'
     }
     Assert-EobAdConnected
-    $null = Assert-EobAdTargetAllowed -Identity $Identity
+    $null = Assert-EobAdTargetAllowed -Identity $Identity -AllowPrivileged:$AllowPrivileged
     try {
         $server = Get-EobAdServerParameter
         Set-ADUser -Identity $Identity -ChangePasswordAtLogon $true @server -ErrorAction Stop

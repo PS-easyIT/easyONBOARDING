@@ -415,6 +415,16 @@ function Export-EobReport {
         $BaseName = "{0}_{1}_{2}{3}" -f $stamp, $name, ([string]$Report.OperationId).Split('-')[0], $suffix
     }
     $BaseName = Get-EobSafeFileName -Name $BaseName -MaxLength 120
+    # Mehrere Berichte desselben Vorgangs in derselben Sekunde dürfen sich nicht überschreiben.
+    if (-not $PSBoundParameters.ContainsKey('BaseName') -and (Test-Path -LiteralPath $Directory -PathType Container)) {
+        $candidate = $BaseName
+        $counter = 2
+        while (@(Get-ChildItem -LiteralPath $Directory -File -Filter "$candidate.*" -ErrorAction SilentlyContinue).Count -gt 0) {
+            $candidate = "{0}_{1}" -f $BaseName, $counter
+            $counter++
+        }
+        $BaseName = $candidate
+    }
 
     if (-not $PSCmdlet.ShouldProcess($Directory, "Bericht '$BaseName' ($($Format -join ', ')) schreiben")) {
         return
@@ -647,9 +657,12 @@ function ConvertTo-EobPdf {
         if ($engine.Name -eq 'Edge') {
             $profileDirectory = Join-Path -Path ([System.IO.Path]::GetTempPath()) -ChildPath ("easyONB-pdf-" + [guid]::NewGuid().ToString('N'))
             $null = New-Item -ItemType Directory -Path $profileDirectory -Force
+            # Isoliertes Profil, keine Hintergrundverbindungen (Berichte enthalten personenbezogene Daten).
             $arguments = @(
                 '--headless', '--disable-gpu', '--no-first-run', '--no-default-browser-check', '--disable-extensions',
-                '--disable-sync', '--no-pdf-header-footer', '--print-to-pdf-no-header', "--user-data-dir=$profileDirectory", "--print-to-pdf=$pdfFull",
+                '--disable-sync', '--disable-background-networking', '--disable-component-update', '--disable-default-apps',
+                '--disable-domain-reliability', '--no-pings', '--no-pdf-header-footer', '--print-to-pdf-no-header',
+                "--user-data-dir=$profileDirectory", "--print-to-pdf=$pdfFull",
                 [System.Uri]::new($htmlFull, [System.UriKind]::Absolute).AbsoluteUri
             )
         }
