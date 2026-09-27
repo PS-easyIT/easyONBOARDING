@@ -1,4 +1,4 @@
-# Konfigurationsschema für easyONBOARDING (INI-Format)
+﻿# Konfigurationsschema für easyONBOARDING (INI-Format)
 #
 # Typen: String, Int, Bool, Path, Dn, Domain, MailDomain, Email, Url, Enum, List, Template, Color, Regex
 # Eigenschaften je Schlüssel: Type, Default, Description, Required, Secret, Deprecated, Replacement,
@@ -209,7 +209,7 @@
                 Enabled             = @{ Type = 'Bool'; Unused = $true; Description = 'Veraltet: Normalisierung ist immer aktiv.' }
                 ReplaceSpecialChars = @{ Type = 'String'; Default = ''; Description = 'Legacy-Ersetzungen im Format a=b;c=d (werden zusätzlich angewendet).' }
                 NormalizeCase       = @{ Type = 'Bool'; Deprecated = $true; Replacement = 'Identity.LowerCaseIdentifiers'; Description = 'Veraltet.' }
-                Transliteration     = @{ Type = 'String'; Default = ''; Description = 'Zusätzliche/abweichende Ersetzungen im Format ä=ae;ø=oe.' }
+                Transliteration     = @{ Type = 'String'; Default = ''; Description = 'Zusätzliche/abweichende Ersetzungen im Format ä=ae;ø=oe. Für einzelne Kleinbuchstaben wird die Großschreibung automatisch ergänzt, sofern nicht explizit angegeben.' }
                 KeepHyphen          = @{ Type = 'Bool'; Default = '1'; Description = 'Bindestriche in Kontonamen beibehalten.' }
             }
         }
