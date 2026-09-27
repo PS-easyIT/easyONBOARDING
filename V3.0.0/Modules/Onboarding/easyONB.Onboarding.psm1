@@ -1,4 +1,4 @@
-#Requires -Version 7.2
+﻿#Requires -Version 7.2
 <#
     easyONB.Onboarding
     Identitäten (Transliteration, Vorlagen, Kollisionen), Onboarding-Anfragen und -Pläne,
@@ -310,6 +310,7 @@ function New-EobIdentityProposal {
     .PARAMETER Attempt
         0 = Basisname; ab 1 wird eine Zahl angehängt (Kollisionsauflösung).
     #>
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseShouldProcessForStateChangingFunctions', '', Justification = 'Erzeugt nur ein Objekt im Speicher; keine Systemänderung.')]
     [CmdletBinding()]
     [OutputType([pscustomobject])]
     param(
@@ -853,6 +854,7 @@ function New-EobOnboardingPlan {
     .PARAMETER DomainPasswordPolicy
         Domänenrichtlinie (Get-EobAdPasswordPolicy).
     #>
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseShouldProcessForStateChangingFunctions', '', Justification = 'Erzeugt nur ein Objekt im Speicher; keine Systemänderung.')]
     [CmdletBinding()]
     [OutputType([pscustomobject])]
     param(
@@ -861,7 +863,7 @@ function New-EobOnboardingPlan {
         [switch]$Simulation,
         [switch]$SkipDirectoryCheck,
         [System.Collections.Generic.HashSet[string]]$ReservedIdentities,
-        [AllowNull()][object]$DomainPasswordPolicy
+        [AllowNull()][pscustomobject]$DomainPasswordPolicy
     )
 
     $context = New-EobOperationContext -Kind 'Onboarding' -Simulation:$Simulation
@@ -1170,6 +1172,9 @@ function Invoke-EobOnboardingPlan {
     <#
     .SYNOPSIS
         Führt einen Onboarding-Plan aus (oder simuliert ihn mit -WhatIf).
+    .DESCRIPTION
+        Live-Ausführungen werden einmalig bestätigt (ConfirmImpact High); die Oberfläche bestätigt
+        selbst und ruft mit -Confirm:$false auf.
     #>
     [CmdletBinding(SupportsShouldProcess, ConfirmImpact = 'High')]
     [OutputType([pscustomobject])]
@@ -1177,7 +1182,15 @@ function Invoke-EobOnboardingPlan {
 
     if ($Plan.Kind -ne 'Onboarding') { throw 'Kein Onboarding-Plan.' }
     if (@($Plan.Findings | Where-Object Code -EQ 'ONB_OFFLINE').Count -gt 0) { $Plan.Simulation = $true }
-    return Invoke-EobPlan -Plan $Plan -WhatIf:$WhatIfPreference -Confirm:$false
+    if ($WhatIfPreference) { $Plan.Simulation = $true }
+    if (-not $Plan.Simulation -and (Test-EobPlanExecutable -Plan $Plan)) {
+        $target = [string](Get-EobPropertyValue -InputObject $Plan.Subject -Name 'SamAccountName' -Default $Plan.OperationId)
+        if (-not $PSCmdlet.ShouldProcess($target, "Onboarding ausführen ($($Plan.Steps.Count) Schritte)")) {
+            $Plan.Status = 'Cancelled'
+            return $Plan
+        }
+    }
+    return Invoke-EobPlan -Plan $Plan -WhatIf:$Plan.Simulation -Confirm:$false
 }
 
 function Get-EobPlanCredential {
@@ -1279,6 +1292,7 @@ function New-EobUserUpdatePlan {
     .PARAMETER RemoveGroups
         Zu entfernende Gruppen.
     #>
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseShouldProcessForStateChangingFunctions', '', Justification = 'Erzeugt nur ein Objekt im Speicher; keine Systemänderung.')]
     [CmdletBinding()]
     [OutputType([pscustomobject])]
     param(
@@ -1399,6 +1413,7 @@ function New-EobPasswordResetPlan {
     .PARAMETER ChangePasswordAtLogon
         Änderung bei der nächsten Anmeldung erzwingen.
     #>
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseShouldProcessForStateChangingFunctions', '', Justification = 'Erzeugt nur ein Objekt im Speicher; keine Systemänderung.')]
     [CmdletBinding()]
     [OutputType([pscustomobject])]
     param(
@@ -1406,7 +1421,7 @@ function New-EobPasswordResetPlan {
         [AllowNull()][System.Security.SecureString]$ManualPassword,
         [bool]$ChangePasswordAtLogon = $true,
         [AllowNull()][pscustomobject]$Config,
-        [AllowNull()][object]$DomainPasswordPolicy,
+        [AllowNull()][pscustomobject]$DomainPasswordPolicy,
         [switch]$AllowPrivileged,
         [switch]$Simulation
     )
@@ -1606,6 +1621,7 @@ function New-EobOnboardingBatch {
         Erkennt Duplikate (gleiche Personalnummer bzw. gleicher Name) und reserviert vergebene
         Kontonamen innerhalb des Stapels. Zeilen mit Fehlern werden nicht ausgeführt.
     #>
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseShouldProcessForStateChangingFunctions', '', Justification = 'Erzeugt nur ein Objekt im Speicher; keine Systemänderung.')]
     [CmdletBinding()]
     [OutputType([pscustomobject])]
     param(
@@ -1613,7 +1629,7 @@ function New-EobOnboardingBatch {
         [AllowNull()][pscustomobject]$Config,
         [switch]$Simulation,
         [switch]$SkipDirectoryCheck,
-        [AllowNull()][object]$DomainPasswordPolicy
+        [AllowNull()][pscustomobject]$DomainPasswordPolicy
     )
 
     $reserved = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)

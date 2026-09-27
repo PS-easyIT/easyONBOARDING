@@ -1,4 +1,4 @@
-#Requires -Modules @{ ModuleName = 'Pester'; ModuleVersion = '5.3.0' }
+﻿#Requires -Modules @{ ModuleName = 'Pester'; ModuleVersion = '5.3.0' }
 
 BeforeAll {
     . (Join-Path -Path $PSScriptRoot -ChildPath '../TestHelpers.ps1')
@@ -326,7 +326,7 @@ Describe 'Onboarding-Plan' {
 
     It 'prüft manuelle Kennwörter ohne sie auszugeben' {
         $secret = 'mustermann'
-        $request = New-TestRequest -Data @{ PasswordMode = 'Manual'; ManualPassword = (ConvertTo-SecureString $secret -AsPlainText -Force) }
+        $request = New-TestRequest -Data @{ PasswordMode = 'Manual'; ManualPassword = (New-EobTestSecureString -Value $secret) }
         $plan = New-EobOnboardingPlan -Request $request -Config $script:Config
         $plan.Findings.Code | Should -Contain 'ONB_PASSWORD_POLICY'
         (($plan.Findings.Message -join ' ').Contains($secret)) | Should -BeFalse
@@ -393,7 +393,8 @@ Describe 'Benutzer aktualisieren und Kennwort zurücksetzen' {
             [pscustomobject]@{ SamAccountName = 'mmuster'; UserPrincipalName = 'mmuster@example.com'; DisplayName = 'Max Muster'; GivenName = 'Max'; Surname = 'Muster'
                 Title = 'Alt'; Department = 'IT'; Company = ''; Office = ''; OfficePhone = ''; MobilePhone = ''; Description = 'Beschreibung'; EmployeeId = ''; EmployeeNumber = ''
                 Manager = ''; MemberOf = @('CN=GRP-Vertrieb,OU=Gruppen,DC=example,DC=local'); DistinguishedName = 'CN=Max Muster,OU=Mitarbeiter,DC=example,DC=local'
-                ObjectGuid = '11111111-2222-3333-4444-555555555555'; Sid = 'S-1-5-21-1-2-3-1500'; AdminCount = 0; PrimaryGroupId = 513; ObjectClass = 'user' }
+                ObjectGuid = '11111111-2222-3333-4444-555555555555'; Sid = 'S-1-5-21-1-2-3-1500'; AdminCount = 0; PrimaryGroupId = 513; ObjectClass = 'user'
+            }
         }
         Mock -ModuleName $script:OnbModule Get-EobAdPrivilegedMembership { @() }
         Mock -ModuleName $script:OnbModule Get-EobCurrentIdentity { [pscustomobject]@{ Name = 'EXAMPLE\admin'; Sid = 'S-1-5-21-1-2-3-4242' } }

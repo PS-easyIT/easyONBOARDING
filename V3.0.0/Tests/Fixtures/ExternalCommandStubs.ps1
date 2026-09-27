@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Stub-Funktionen für externe Cmdlets (ActiveDirectory, Exchange, Microsoft Graph, Entra Connect).
 
@@ -7,7 +7,16 @@
     (Funktionen haben Vorrang vor Cmdlets). Ein nicht gemockter Aufruf führt zu einer Exception.
     Die Parameterlisten decken alle von easyONBOARDING verwendeten Parameter ab, damit Pester-Mocks
     mit ParameterFilter arbeiten können.
+
+    Die Analyzer-Ausnahmen gelten nur für diese Datei: Die Stubs bilden die Signaturen der echten
+    Cmdlets nach (einschließlich -WhatIf/-Confirm und Parameternamen wie ChangePasswordAtLogon),
+    verwenden die Parameter aber bewusst nicht.
 #>
+[Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSReviewUnusedParameter', '', Justification = 'Signaturen der nachgebildeten Cmdlets.')]
+[Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSShouldProcess', '', Justification = 'Stubs werfen bei jedem nicht gemockten Aufruf.')]
+[Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingPlainTextForPassword', '', Justification = 'Nur Schalter wie ChangePasswordAtLogon, keine Kennwörter.')]
+[Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingUsernameAndPasswordParams', '', Justification = 'Signatur von New-ADUser; Kennwort als SecureString.')]
+param()
 
 function global:Invoke-EobUnmockedStub {
     param([string]$Name)

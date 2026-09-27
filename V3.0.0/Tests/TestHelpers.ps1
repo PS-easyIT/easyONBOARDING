@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Gemeinsame Hilfsfunktionen für alle Pester-Tests.
 
@@ -35,7 +35,12 @@ function Import-EobTestModule {
 function New-EobTestSecureString {
     <#
         Erzeugt einen SecureString für Tests, ohne einen Klartextwert auszugeben.
+        Einzige Stelle der Tests, an der ein SecureString aus Klartext entsteht (Testwerte).
     #>
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingConvertToSecureStringWithPlainText', '', Justification = 'Nur Testwerte, keine echten Kennwörter.')]
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseShouldProcessForStateChangingFunctions', '', Justification = 'Erzeugt nur einen Wert im Speicher.')]
+    [CmdletBinding()]
+    [OutputType([System.Security.SecureString])]
     param([string]$Value = ('T3st!' + [guid]::NewGuid().ToString('N').Substring(0, 12)))
 
     return (ConvertTo-SecureString -String $Value -AsPlainText -Force)

@@ -1,4 +1,4 @@
-#Requires -Version 7.2
+﻿#Requires -Version 7.2
 <#
     easyONB.Exchange
     Optionaler Exchange-Adapter (Exchange Online, Exchange Server, Hybrid): Status, Verbindung,
@@ -30,6 +30,7 @@ $script:OnPremisesCommands = @(
 #region Hilfsfunktionen
 
 function New-EobNotProcessedResult {
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseShouldProcessForStateChangingFunctions', '', Justification = 'Erzeugt nur ein Objekt im Speicher; keine Systemänderung.')]
     [CmdletBinding()]
     [OutputType([pscustomobject])]
     param([Parameter(Mandatory)][string]$Message)
@@ -308,7 +309,7 @@ function Enable-EobExchangeMailbox {
 
     if ($Mode -eq 'Hybrid') {
         if (-not (Test-EobDomainName -Value $RemoteRoutingDomain)) {
-            throw 'Für Hybrid ist [Exchange] RemoteRoutingDomain (z. B. contoso.mail.onmicrosoft.com) erforderlich.'
+            throw 'Für Hybrid ist [Exchange] RemoteRoutingDomain (z. B. <Mandant>.mail.onmicrosoft.com) erforderlich.'
         }
         $local = if ($Alias) { $Alias } else { $Identity }
         $routing = "$local@$RemoteRoutingDomain"

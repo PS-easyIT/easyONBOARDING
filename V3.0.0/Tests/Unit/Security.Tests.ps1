@@ -1,4 +1,4 @@
-#Requires -Modules @{ ModuleName = 'Pester'; ModuleVersion = '5.3.0' }
+﻿#Requires -Modules @{ ModuleName = 'Pester'; ModuleVersion = '5.3.0' }
 
 # Hinweis: Kennwörter werden ausschließlich über boolesche Ausdrücke geprüft. Dadurch enthalten auch
 # Fehlermeldungen von Pester niemals einen Kennwortwert.
@@ -8,6 +8,7 @@ BeforeAll {
     Import-EobTestModule
 
     function New-TestConfig {
+        [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseShouldProcessForStateChangingFunctions', '', Justification = 'Testhilfe im TestDrive bzw. im Speicher.')]
         param([string]$Content)
         $path = Join-Path $TestDrive ([guid]::NewGuid().ToString('N') + '.ini')
         Set-Content -LiteralPath $path -Value $Content -Encoding utf8
@@ -28,14 +29,16 @@ Describe 'Kennwortgenerierung' {
         $allValid = $true
         $duplicates = 0
         for ($i = 0; $i -lt 200; $i++) {
-            $pw = New-EobPassword -Policy $policy -AsPlainText
-            $valid = ($pw.Length -eq $policy.Length) -and
-                (([regex]::Matches($pw, '[A-Z]')).Count -ge $policy.MinUpperCase) -and
-                (([regex]::Matches($pw, '[a-z]')).Count -ge $policy.MinLowerCase) -and
-                (([regex]::Matches($pw, '[0-9]')).Count -ge $policy.MinDigits) -and
-                (([regex]::Matches($pw, '[^A-Za-z0-9]')).Count -ge $policy.MinSpecialChars) -and
+            $pw = ConvertTo-EobPlainText -SecureString (New-EobPassword -Policy $policy)
+            $checks = @(
+                ($pw.Length -eq $policy.Length)
+                (([regex]::Matches($pw, '[A-Z]')).Count -ge $policy.MinUpperCase)
+                (([regex]::Matches($pw, '[a-z]')).Count -ge $policy.MinLowerCase)
+                (([regex]::Matches($pw, '[0-9]')).Count -ge $policy.MinDigits)
+                (([regex]::Matches($pw, '[^A-Za-z0-9]')).Count -ge $policy.MinSpecialChars)
                 (([regex]::Matches($pw, '[^A-Za-z]')).Count -ge $policy.MinNonAlpha)
-            if (-not $valid) { $allValid = $false }
+            )
+            if ($checks -contains $false) { $allValid = $false }
             if (-not $seen.Add($pw)) { $duplicates++ }
         }
         $allValid | Should -BeTrue
@@ -47,7 +50,7 @@ Describe 'Kennwortgenerierung' {
         $policy.ExcludeAmbiguous | Should -BeTrue
         $found = $false
         for ($i = 0; $i -lt 100; $i++) {
-            if ((New-EobPassword -Policy $policy -AsPlainText) -cmatch '[Il1O0o]') { $found = $true }
+            if ((ConvertTo-EobPlainText -SecureString (New-EobPassword -Policy $policy)) -cmatch '[Il1O0o]') { $found = $true }
         }
         $found | Should -BeFalse
     }
@@ -57,14 +60,15 @@ Describe 'Kennwortgenerierung' {
         $policy = Get-EobPasswordPolicy -Config $config
         $found = $false
         for ($i = 0; $i -lt 50; $i++) {
-            if ((New-EobPassword -Policy $policy -AsPlainText) -match '[^A-Za-z0-9]') { $found = $true }
+            if ((ConvertTo-EobPlainText -SecureString (New-EobPassword -Policy $policy)) -match '[^A-Za-z0-9]') { $found = $true }
         }
         $found | Should -BeFalse
     }
 
     It 'verweigert unerfüllbare Richtlinien' {
         $policy = [pscustomobject]@{ Length = 12; MinUpperCase = 5; MinLowerCase = 5; MinDigits = 5; MinSpecialChars = 0; MinNonAlpha = 0
-            IncludeSpecialChars = $false; SpecialCharacters = ''; ExcludeAmbiguous = $false }
+            IncludeSpecialChars = $false; SpecialCharacters = ''; ExcludeAmbiguous = $false
+        }
         { New-EobPassword -Policy $policy } | Should -Throw '*Mindestanzahlen*'
     }
 
@@ -82,9 +86,15 @@ Describe 'Kennwortgenerierung' {
     }
 
     It 'wandelt SecureStrings für die einmalige Anzeige verlustfrei um' {
-        $plain = New-EobPassword -AsPlainText
-        $secure = ConvertTo-SecureString -String $plain -AsPlainText -Force
-        ((ConvertTo-EobPlainText -SecureString $secure) -ceq $plain) | Should -BeTrue
+        $secure = New-EobPassword
+        $plain = ConvertTo-EobPlainText -SecureString $secure
+        $plain.Length | Should -Be $secure.Length
+        ((ConvertTo-EobPlainText -SecureString (New-EobTestSecureString -Value $plain)) -ceq $plain) | Should -BeTrue
+    }
+
+    It 'bietet keine Klartextausgabe bei der Kennwortgenerierung an' {
+        (Get-Command -Name 'New-EobPassword').Parameters.Keys | Should -Not -Contain 'AsPlainText'
+        (Get-Command -Name 'Test-EobPasswordPolicy').Parameters['Password'].ParameterType | Should -Be ([System.Security.SecureString])
     }
 }
 
@@ -100,7 +110,7 @@ Describe 'Kennwortprüfung' {
         @{ Name = 'enthaltene Namensbestandteile'; Password = 'Mustermann#2026a'; Expected = 'Namensbestandteile' }
         @{ Name = 'verbreitete Kennwörter'; Password = 'Willkommen1!'; Expected = 'verbreitet' }
     ) {
-        $secure = ConvertTo-SecureString -String $Password -AsPlainText -Force
+        $secure = New-EobTestSecureString -Value $Password
         $result = Test-EobPasswordPolicy -Password $secure -Policy $script:Policy -SamAccountName 'mmuster' -DisplayName 'Max Mustermann'
         $result.IsValid | Should -BeFalse
         ($result.Violations -join ' ') | Should -Match $Expected
@@ -160,6 +170,7 @@ ServiceAccountPatterns=svc_*
 ProtectedOUs=OU=Admins,DC=example,DC=local
 '@
         function New-TestUser {
+            [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseShouldProcessForStateChangingFunctions', '', Justification = 'Testhilfe im TestDrive bzw. im Speicher.')]
             param([string]$Sam = 'mmuster', [string]$Sid = 'S-1-5-21-1-2-3-1500', [string]$Dn = 'CN=Max,OU=Mitarbeiter,DC=example,DC=local',
                 [int]$AdminCount = 0, [object]$ObjectClass = 'user', [bool]$Critical = $false)
             [pscustomobject]@{ SamAccountName = $Sam; SID = $Sid; DistinguishedName = $Dn; AdminCount = $AdminCount; ObjectClass = $ObjectClass; IsCriticalSystemObject = $Critical }
@@ -201,7 +212,7 @@ Describe 'Escaping' {
     It 'maskiert LDAP-Sonderzeichen nach RFC 4515' {
         ConvertTo-EobLdapFilterValue -Value '*)(uid=*))(|(uid=*' | Should -Be '\2a\29\28uid=\2a\29\29\28|\28uid=\2a'
         ConvertTo-EobLdapFilterValue -Value 'a\b' | Should -Be 'a\5cb'
-        ConvertTo-EobLdapFilterValue -Value ("x" + [char]0) | Should -Be 'x\00'
+        ConvertTo-EobLdapFilterValue -Value ('x' + [char]0) | Should -Be 'x\00'
         ConvertTo-EobLdapFilterValue -Value 'Müller' | Should -Be 'Müller'
     }
 
@@ -247,5 +258,19 @@ Describe 'Eingabeformate' {
         Test-EobSafeText -Value "Abteilung`u{0007}" | Should -BeFalse
         Test-EobSafeText -Value "Zeile 1`r`nZeile 2" | Should -BeTrue
         Test-EobSafeText -Value ('x' * 2000) -MaxLength 1024 | Should -BeFalse
+    }
+}
+
+Describe 'Bestätigung kritischer Vorgänge' {
+    It '<Name> bestätigt Live-Ausführungen (SupportsShouldProcess, ConfirmImpact High)' -ForEach @(
+        @{ Name = 'Invoke-EobPlan' }
+        @{ Name = 'Invoke-EobOnboardingPlan' }
+        @{ Name = 'Invoke-EobOffboardingPlan' }
+        @{ Name = 'Invoke-EobOffboardingFinalDeletion' }
+        @{ Name = 'Remove-EobAdUserAccount' }
+    ) {
+        $metadata = [System.Management.Automation.CommandMetadata]::new((Get-Command -Name $Name))
+        $metadata.SupportsShouldProcess | Should -BeTrue
+        $metadata.ConfirmImpact | Should -Be ([System.Management.Automation.ConfirmImpact]::High)
     }
 }

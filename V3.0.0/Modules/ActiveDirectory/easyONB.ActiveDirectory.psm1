@@ -1,4 +1,4 @@
-#Requires -Version 7.2
+﻿#Requires -Version 7.2
 <#
     easyONB.ActiveDirectory
     Adapter für das ActiveDirectory-Modul. Alle Aufrufe verwenden denselben Domänencontroller,
@@ -171,6 +171,7 @@ function Get-EobAdStatus {
     .SYNOPSIS
         Integrationsstatus Active Directory (Dashboard).
     #>
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSReviewUnusedParameter', 'Config', Justification = 'Einheitliche Signatur aller Statusfunktionen (Get-EobIntegrationStatus).')]
     [CmdletBinding()]
     [OutputType([pscustomobject])]
     param([AllowNull()][object]$Config)
@@ -236,6 +237,7 @@ function ConvertTo-EobAdUserInfo {
     .SYNOPSIS
         Normalisiert ein AD-Benutzerobjekt (serialisierbar, StrictMode-sicher).
     #>
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSReviewUnusedParameter', 'AdUser', Justification = 'Wird im Skriptblock verwendet; die Regel wertet verschachtelte Skriptblöcke nicht aus.')]
     [CmdletBinding()]
     [OutputType([pscustomobject])]
     param([Parameter(Mandatory)][object]$AdUser)
@@ -409,7 +411,7 @@ function Get-EobAdIdentityConflict {
     if ($clauses.Count -eq 0) { return }
 
     $parameters = Get-EobAdServerParameter
-    $objects = @(Get-ADObject -LDAPFilter ("(|{0})" -f ($clauses -join '')) -Properties sAMAccountName, userPrincipalName, mail, proxyAddresses @parameters -ErrorAction Stop)
+    $objects = @(Get-ADObject -LDAPFilter ('(|{0})' -f ($clauses -join '')) -Properties sAMAccountName, userPrincipalName, mail, proxyAddresses @parameters -ErrorAction Stop)
     foreach ($object in $objects) {
         $dn = [string](Get-EobPropertyValue -InputObject $object -Name 'DistinguishedName' -Default '')
         $objSam = [string](Get-EobPropertyValue -InputObject $object -Name 'sAMAccountName' -Default '')
@@ -763,6 +765,7 @@ function New-EobNotProcessedResult {
     <#
         Ergebnis, wenn ShouldProcess nicht bestätigt wurde (Simulation oder Ablehnung).
     #>
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseShouldProcessForStateChangingFunctions', '', Justification = 'Erzeugt nur ein Objekt im Speicher; keine Systemänderung.')]
     [CmdletBinding()]
     [OutputType([pscustomobject])]
     param([Parameter(Mandatory)][string]$Message)
@@ -788,10 +791,10 @@ function Assert-EobAdTargetAllowed {
     $privileged = @(Get-EobAdPrivilegedMembership -DistinguishedName $user.DistinguishedName -PrimaryGroupId $user.PrimaryGroupId)
     $protection = Test-EobProtectedAccount -User $user -Config $script:AdState.Config -CurrentUserSid $current.Sid -PrivilegedGroups $privileged
     if ($protection.IsBlocked) {
-        throw ("Änderung blockiert: " + ($protection.BlockReasons -join ' '))
+        throw ('Änderung blockiert: ' + ($protection.BlockReasons -join ' '))
     }
     if ($protection.RequiresAcknowledgement -and -not $AllowPrivileged) {
-        throw ("Änderung blockiert (privilegiertes Konto, gesonderte Bestätigung erforderlich): " + ($protection.AcknowledgementReasons -join ' '))
+        throw ('Änderung blockiert (privilegiertes Konto, gesonderte Bestätigung erforderlich): ' + ($protection.AcknowledgementReasons -join ' '))
     }
     return $user
 }
@@ -1173,6 +1176,7 @@ function Set-EobAdUserLogonHours {
     .SYNOPSIS
         Sperrt alle Anmeldezeiten (logonHours = 21 Null-Bytes).
     #>
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseSingularNouns', '', Justification = 'Name folgt dem AD-Attribut logonHours.')]
     [CmdletBinding(SupportsShouldProcess, ConfirmImpact = 'High')]
     [OutputType([pscustomobject])]
     param(
@@ -1256,7 +1260,7 @@ function Remove-EobAdUserAccount {
     Assert-EobAdConnected
     $user = Assert-EobAdTargetAllowed -Identity $Identity
     if ($user.ObjectGuid -ine $ExpectedObjectGuid) {
-        throw "Löschung abgebrochen: Die ObjectGUID stimmt nicht mit dem Offboarding-Vorgang überein."
+        throw 'Löschung abgebrochen: Die ObjectGUID stimmt nicht mit dem Offboarding-Vorgang überein.'
     }
     if ($user.Enabled) {
         throw 'Löschung abgebrochen: Das Konto ist noch aktiviert.'

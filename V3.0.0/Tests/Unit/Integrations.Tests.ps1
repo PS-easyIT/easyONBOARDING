@@ -1,4 +1,4 @@
-#Requires -Modules @{ ModuleName = 'Pester'; ModuleVersion = '5.3.0' }
+﻿#Requires -Modules @{ ModuleName = 'Pester'; ModuleVersion = '5.3.0' }
 <#
     Tests der optionalen Adapter für Exchange, Microsoft Graph und Entra Connect.
     Alle externen Cmdlets sind Stubs bzw. Mocks; es wird kein reales System angesprochen.

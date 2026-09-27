@@ -1,4 +1,4 @@
-#Requires -Version 7.2
+﻿#Requires -Version 7.2
 <#
     easyONB.Security
     Kennwortgenerierung (CSPRNG) und -prüfung, Erkennung privilegierter Gruppen und geschützter
@@ -146,20 +146,19 @@ function New-EobPassword {
     .SYNOPSIS
         Erzeugt ein Kennwort mit einem kryptografisch sicheren Zufallsgenerator.
     .DESCRIPTION
-        Standardmäßig wird ein SecureString geliefert. Der Klartext entsteht nur mit -AsPlainText
-        (z. B. für die einmalige Anzeige) und wird nie protokolliert.
+        Liefert immer einen schreibgeschützten SecureString. Klartext entsteht nur für die einmalige
+        Anzeige bzw. den Druck über ConvertTo-EobPlainText und wird nie protokolliert.
     .PARAMETER Policy
         Richtlinie (Get-EobPasswordPolicy). Ohne Angabe gelten die Schema-Standards.
     .PARAMETER Length
         Überschreibt die Länge der Richtlinie.
-    .PARAMETER AsPlainText
-        Liefert einen String statt eines SecureString.
     #>
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseShouldProcessForStateChangingFunctions', '', Justification = 'Erzeugt nur einen Wert im Speicher.')]
     [CmdletBinding()]
+    [OutputType([System.Security.SecureString])]
     param(
         [AllowNull()][pscustomobject]$Policy,
-        [ValidateRange(8, 256)][int]$Length,
-        [switch]$AsPlainText
+        [ValidateRange(8, 256)][int]$Length
     )
 
     if ($null -eq $Policy) {
@@ -214,9 +213,6 @@ function New-EobPassword {
     }
 
     try {
-        if ($AsPlainText) {
-            return [string]::new($array)
-        }
         $secure = [System.Security.SecureString]::new()
         foreach ($c in $array) { $secure.AppendChar($c) }
         $secure.MakeReadOnly()
@@ -254,7 +250,7 @@ function Test-EobPasswordPolicy {
     .SYNOPSIS
         Prüft ein Kennwort gegen die Richtlinie, ohne es auszugeben.
     .PARAMETER Password
-        SecureString (bevorzugt) oder String.
+        Zu prüfendes Kennwort als SecureString (Klartext wird nur kurzzeitig im Speicher gehalten).
     .PARAMETER Policy
         Richtlinie (Get-EobPasswordPolicy).
     .PARAMETER SamAccountName
@@ -267,7 +263,7 @@ function Test-EobPasswordPolicy {
     [CmdletBinding()]
     [OutputType([pscustomobject])]
     param(
-        [Parameter(Mandatory)][object]$Password,
+        [Parameter(Mandatory)][System.Security.SecureString]$Password,
         [AllowNull()][pscustomobject]$Policy,
         [string]$SamAccountName,
         [string[]]$DisplayName = @(),
@@ -277,7 +273,7 @@ function Test-EobPasswordPolicy {
     if ($null -eq $Policy) {
         $Policy = Get-EobPasswordPolicy -Config $null
     }
-    $plain = if ($Password -is [System.Security.SecureString]) { ConvertTo-EobPlainText -SecureString $Password } else { [string]$Password }
+    $plain = ConvertTo-EobPlainText -SecureString $Password
     $violations = [System.Collections.Generic.List[string]]::new()
     try {
         $minLength = if ($PSBoundParameters.ContainsKey('MinimumLength')) { $MinimumLength } else { [int]$Policy.MinManualLength }

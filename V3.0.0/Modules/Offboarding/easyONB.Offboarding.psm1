@@ -80,6 +80,7 @@ $script:DefaultAutoReply = 'Vielen Dank für Ihre Nachricht. {DisplayName} ist n
 #region Hilfsfunktionen
 
 function New-EobNotProcessedResult {
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseShouldProcessForStateChangingFunctions', '', Justification = 'Erzeugt nur ein Objekt im Speicher; keine Systemänderung.')]
     [CmdletBinding()]
     [OutputType([pscustomobject])]
     param(
@@ -266,6 +267,7 @@ function ConvertTo-EobOffboardingRequest {
         Hashtable oder Objekt mit Identity, Template, ExitDate, Ticket, Reason, Notes, ForwardTo,
         AutoReplyMessage, TargetOU, KeepGroups, SelectedGroups, Assets, ActionPhases, AcknowledgePrivileged.
     #>
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSReviewUnusedParameter', 'InputObject', Justification = 'Wird im Skriptblock verwendet; die Regel wertet verschachtelte Skriptblöcke nicht aus.')]
     [CmdletBinding()]
     [OutputType([pscustomobject])]
     param(
@@ -480,6 +482,7 @@ function New-EobOffboardingPlan {
     .PARAMETER ExpectedObjectGuid
         Erwartete ObjectGUID (Folgephasen): Abweichungen blockieren den Plan.
     #>
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseShouldProcessForStateChangingFunctions', '', Justification = 'Erzeugt nur ein Objekt im Speicher; keine Systemänderung.')]
     [CmdletBinding()]
     [OutputType([pscustomobject])]
     param(
@@ -921,7 +924,7 @@ function Select-EobOffboardingPhase {
         }
     }
     Write-EobLog -Level Warning -OperationId $Plan.OperationId -Action 'OffboardingPhaseOverride' -Target ([string]$Plan.Subject['SamAccountName']) `
-        -Message ("Phasen manuell ausgewählt: {0}" -f ($selected -join ', '))
+        -Message ('Phasen manuell ausgewählt: {0}' -f ($selected -join ', '))
     return $selected
 }
 
@@ -968,6 +971,8 @@ function Invoke-EobOffboardingPlan {
         vorziehen (z. B. vorzeitiger Austritt); vorherige Phasen müssen erledigt sein oder mit
         ausgeführt werden. FinalDeletion ist nie Teil dieser Ausführung. Nach einer Live-Ausführung
         wird der Vorgang in die Warteschlange übernommen, solange Phasen offen sind.
+        Live-Ausführungen werden einmalig bestätigt (ConfirmImpact High); die Oberfläche und die
+        geplante Ausführung bestätigen selbst und rufen mit -Confirm:$false auf.
     #>
     [CmdletBinding(SupportsShouldProcess, ConfirmImpact = 'High')]
     [OutputType([pscustomobject])]
@@ -986,6 +991,13 @@ function Invoke-EobOffboardingPlan {
     if ($withSteps.Count -eq 0) {
         $Plan.Status = 'Scheduled'
         return (Complete-EobOffboardingRun -Plan $Plan -SelectedPhase $selected -NoQueue:$NoQueue -Confirm:$false)
+    }
+    if (-not $Plan.Simulation -and (Test-EobPlanExecutable -Plan $Plan)) {
+        $target = [string](Get-EobPropertyValue -InputObject $Plan.Subject -Name 'SamAccountName' -Default $Plan.OperationId)
+        if (-not $PSCmdlet.ShouldProcess($target, "Offboarding-Phasen ausführen: $($withSteps -join ', ')")) {
+            $Plan.Status = 'Cancelled'
+            return $Plan
+        }
     }
     $null = Invoke-EobPlan -Plan $Plan -IncludePhase (@($script:AlwaysPhase) + $selected) -WhatIf:$Plan.Simulation -Confirm:$false
     return (Complete-EobOffboardingRun -Plan $Plan -SelectedPhase $selected -NoQueue:$NoQueue -Confirm:$false)
@@ -1056,7 +1068,7 @@ function Save-EobOffboardingQueueEntry {
     $details = $Plan.Offboarding
     if ($null -eq $details.User) { throw 'Der Plan enthält keinen aufgelösten Benutzer.' }
     $directory = Get-EobOffboardingDirectory -Config $Plan.Config -Kind Queue
-    $path = Join-Path -Path $directory -ChildPath ("{0}.json" -f $Plan.OperationId)
+    $path = Join-Path -Path $directory -ChildPath ('{0}.json' -f $Plan.OperationId)
     if (-not $PSCmdlet.ShouldProcess($path, 'Offboarding-Warteschlange aktualisieren')) { return $path }
 
     $existing = $null
@@ -1108,7 +1120,7 @@ function Save-EobOffboardingQueueEntry {
     }
     Write-EobJsonFile -Path $path -InputObject $entry
     Write-EobLog -Level Audit -OperationId $Plan.OperationId -Action 'OffboardingQueued' -Target $details.User.SamAccountName -Result $entry.Status `
-        -Message ("Warteschlange aktualisiert (erledigt: {0})" -f (($entry.CompletedPhases) -join ', '))
+        -Message ('Warteschlange aktualisiert (erledigt: {0})' -f (($entry.CompletedPhases) -join ', '))
     return $path
 }
 
@@ -1207,6 +1219,7 @@ function New-EobOffboardingPlanFromQueue {
     .SYNOPSIS
         Erstellt aus einem Warteschlangeneintrag einen aktuellen Plan für die Folgephasen.
     #>
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseShouldProcessForStateChangingFunctions', '', Justification = 'Erzeugt nur ein Objekt im Speicher; keine Systemänderung.')]
     [CmdletBinding()]
     [OutputType([pscustomobject])]
     param(
@@ -1312,6 +1325,7 @@ function New-EobOffboardingDeletionPlan {
         eindeutig, deaktiviert, nicht geschützt und nicht vor Löschung geschützt. Warnt, wenn der
         AD-Papierkorb deaktiviert ist oder ein synchronisiertes Postfach mitgelöscht würde.
     #>
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseShouldProcessForStateChangingFunctions', '', Justification = 'Erzeugt nur ein Objekt im Speicher; keine Systemänderung.')]
     [CmdletBinding()]
     [OutputType([pscustomobject])]
     param(
@@ -1488,7 +1502,7 @@ function Save-EobOffboardingSnapshot {
     }
     $sam = Get-EobSafeFileName -Name ([string]$snapshot.User.SamAccountName)
     $shortId = if ($OperationId) { $OperationId.Split('-')[0] } else { 'manuell' }
-    $path = Join-Path -Path (Join-Path -Path $Directory -ChildPath $sam) -ChildPath ("{0}_{1}_{2}.json" -f (Get-Date).ToString('yyyyMMdd-HHmmss'), $Label, $shortId)
+    $path = Join-Path -Path (Join-Path -Path $Directory -ChildPath $sam) -ChildPath ('{0}_{1}_{2}.json' -f (Get-Date).ToString('yyyyMMdd-HHmmss'), $Label, $shortId)
     Write-EobJsonFile -Path $path -InputObject $document -Depth 8
     return New-EobResult -Status Succeeded -Message "Zustandsbericht gespeichert: $path" -Data @{ "Snapshot_$Label" = $path }
 }
@@ -1513,7 +1527,7 @@ function Export-EobOffboardingMailboxPermission {
     }
     $permissions = @(Get-EobMailboxPermissionReport -Identity $Identity -Mode $Mode)
     $shortId = if ($OperationId) { $OperationId.Split('-')[0] } else { 'manuell' }
-    $base = Join-Path -Path (Join-Path -Path $Directory -ChildPath (Get-EobSafeFileName -Name $SamAccountName)) -ChildPath ("{0}_postfachberechtigungen_{1}" -f (Get-Date).ToString('yyyyMMdd-HHmmss'), $shortId)
+    $base = Join-Path -Path (Join-Path -Path $Directory -ChildPath (Get-EobSafeFileName -Name $SamAccountName)) -ChildPath ('{0}_postfachberechtigungen_{1}' -f (Get-Date).ToString('yyyyMMdd-HHmmss'), $shortId)
     Write-EobJsonFile -Path "$base.json" -InputObject @($permissions) -Depth 4
     if ($permissions.Count -gt 0) {
         $permissions | ConvertTo-EobCsvSafeObject | Export-Csv -LiteralPath "$base.csv" -NoTypeInformation -Delimiter ';' -Encoding utf8BOM
@@ -1543,7 +1557,7 @@ function Move-EobHomeDirectoryToArchive {
     if (@($AllowedRoots | Where-Object { $_.TrimEnd('\', '/') -ieq $normalizedPath }).Count -gt 0) { throw "Ein Stammpfad selbst wird nie verschoben: $Path" }
     if (Test-EobPathWithin -Path $Path -Root $ArchiveRoot) { throw "Das Verzeichnis liegt bereits im Archiv: $Path" }
 
-    $target = Join-Path -Path $ArchiveRoot -ChildPath ("{0}_{1}" -f (Get-EobSafeFileName -Name $SamAccountName), (Get-Date).ToString('yyyyMMdd-HHmmss'))
+    $target = Join-Path -Path $ArchiveRoot -ChildPath ('{0}_{1}' -f (Get-EobSafeFileName -Name $SamAccountName), (Get-Date).ToString('yyyyMMdd-HHmmss'))
     if (-not $PSCmdlet.ShouldProcess($Path, "Archivieren nach $target")) {
         return New-EobNotProcessedResult -Message "Home-Verzeichnis würde nach $target verschoben."
     }
@@ -1673,6 +1687,7 @@ function New-EobOffboardingBatch {
     .SYNOPSIS
         Erstellt je CSV-Zeile einen geprüften Offboarding-Plan (Duplikate werden blockiert).
     #>
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseShouldProcessForStateChangingFunctions', '', Justification = 'Erzeugt nur ein Objekt im Speicher; keine Systemänderung.')]
     [CmdletBinding()]
     [OutputType([pscustomobject])]
     param(

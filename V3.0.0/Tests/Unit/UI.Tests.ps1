@@ -1,4 +1,4 @@
-#Requires -Modules @{ ModuleName = 'Pester'; ModuleVersion = '5.3.0' }
+﻿#Requires -Modules @{ ModuleName = 'Pester'; ModuleVersion = '5.3.0' }
 <#
     Tests der Oberfläche.
     - Plattformunabhängig: XAML-Regeln, Ressourcen, Farbschemata, Abgleich der im Code verwendeten
@@ -134,6 +134,17 @@ Describe 'Hilfsfunktionen der Oberfläche' {
         { Get-EobAccentPalette -Color 'blau' } | Should -Throw
     }
 
+    It 'zeigt im Testmodus keine modalen Dialoge an' {
+        InModuleScope 'easyONB.UI' {
+            $script:Ui = New-EobUiState
+            $script:Ui.Headless = $true
+            (Show-EobDialog -Title 'Titel' -Message 'Meldung' -Details @('Detail') -Kind Warning).Confirmed | Should -BeFalse
+            $script:Ui.DialogLog[0] | Should -Be '[Warning] Titel: Meldung Detail'
+            Show-EobCredentialDialog -SamAccountName 'mmuster' -Password (New-Object System.Security.SecureString)
+            $script:Ui.DialogLog[1] | Should -Match 'mmuster'
+        }
+    }
+
     It 'meldet die Oberfläche außerhalb von Windows als nicht verfügbar' -Skip:$IsWindows {
         $result = Test-EobGuiEnvironment
         $result.IsSupported | Should -BeFalse
@@ -172,7 +183,8 @@ Describe 'Hilfsfunktionen der Oberfläche' {
             (ConvertTo-EobUiStepRow -Step $step).StatusText | Should -Be 'Nur nach manueller Freigabe'
             (ConvertTo-EobUiFindingRow -Finding ([pscustomobject]@{ Severity = 'Warning'; Code = 'X'; Field = 'F'; Message = 'M' })).SeverityText | Should -Be 'Warnung'
             $queue = [pscustomobject]@{ OperationId = '1'; DisplayName = 'Max'; SamAccountName = 'mmuster'; Template = 'Standard'; ExitDate = [datetime]'2027-03-31'; Status = 'AwaitingDeletion'
-                NextPhase = ''; NextDueDate = $null; DeletionDate = [datetime]'2027-09-27'; IsDue = $false; DeletionDue = $true; Privileged = $false; RequiresIntegration = @() }
+                NextPhase = ''; NextDueDate = $null; DeletionDate = [datetime]'2027-09-27'; IsDue = $false; DeletionDue = $true; Privileged = $false; RequiresIntegration = @()
+            }
             $queueRow = ConvertTo-EobUiQueueRow -Item $queue
             $queueRow.Account | Should -Be 'Max (mmuster)'
             $queueRow.NoteText | Should -Match 'Löschung fällig'
@@ -195,7 +207,7 @@ Describe 'WPF-Ladeprüfung (Windows)' -Tag 'Windows' {
     BeforeAll {
         $script:TestConfigPath = Join-Path $TestDrive 'ui.ini'
         $template = Get-Content -LiteralPath (Join-Path (Get-EobTestRepoRoot) 'Config/easyONB.ini.template') -Raw
-        $template = $template -replace '(?m)^LogFile=.*$', ("LogFile=" + (Join-Path $TestDrive 'logs')) -replace '(?m)^ReportPath=.*$', ("ReportPath=" + (Join-Path $TestDrive 'reports'))
+        $template = $template -replace '(?m)^LogFile=.*$', ('LogFile=' + (Join-Path $TestDrive 'logs')) -replace '(?m)^ReportPath=.*$', ('ReportPath=' + (Join-Path $TestDrive 'reports'))
         Set-Content -LiteralPath $script:TestConfigPath -Value $template -Encoding utf8
         $script:UiConfig = Import-EobConfiguration -Path $script:TestConfigPath -NoIncludes
         $null = Initialize-EobLogging -Directory (Join-Path $TestDrive 'logs') -EnableQueue
@@ -206,6 +218,7 @@ Describe 'WPF-Ladeprüfung (Windows)' -Tag 'Windows' {
             param($Config)
             Import-EobWpfAssembly
             $script:Ui = New-EobUiState
+            $script:Ui.Headless = $true
             $script:Ui.Config = $Config
             Initialize-EobApplication -Theme Light -AccentColor '#0F6CBD'
             foreach ($file in @('MainWindow.xaml', 'Dialogs/ConfirmDialog.xaml', 'Dialogs/CredentialDialog.xaml') + @($script:ViewDefinitions.Values | ForEach-Object File)) {
@@ -215,6 +228,7 @@ Describe 'WPF-Ladeprüfung (Windows)' -Tag 'Windows' {
             }
             Set-EobTheme -Theme Dark -AccentColor '#0F6CBD'
             $script:Ui.Theme | Should -Be 'Dark'
+            @($script:Ui.DialogLog) | Should -BeNullOrEmpty
         }
     }
 
@@ -223,6 +237,7 @@ Describe 'WPF-Ladeprüfung (Windows)' -Tag 'Windows' {
             param($Config, $Path)
             Import-EobWpfAssembly
             $script:Ui = New-EobUiState
+            $script:Ui.Headless = $true
             $script:Ui.Config = $Config
             $script:Ui.ConfigPath = $Path
             Initialize-EobApplication -Theme Light
@@ -237,6 +252,8 @@ Describe 'WPF-Ladeprüfung (Windows)' -Tag 'Windows' {
             }
             Set-EobOnboardingStep -Step 7
             $script:Ui.C.OnbExecuteButton.Visibility | Should -Be 'Visible'
+            # Fehler in Initialisierung oder Aktualisierung würden als Dialog gemeldet.
+            @($script:Ui.DialogLog) | Should -BeNullOrEmpty
             Stop-EobUi
             $script:Ui.Window.Close()
         }

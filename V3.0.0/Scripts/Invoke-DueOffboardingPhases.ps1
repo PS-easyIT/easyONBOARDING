@@ -80,12 +80,12 @@ if ($AllowIntegration) {
     }
 }
 
-Write-EobLog -Level Information -Action 'DueOffboardingRun' -Message ("Verarbeitung fälliger Offboarding-Phasen gestartet (Simulation: {0})." -f [bool]$WhatIfPreference)
+Write-EobLog -Level Information -Action 'DueOffboardingRun' -Message ('Verarbeitung fälliger Offboarding-Phasen gestartet (Simulation: {0}).' -f [bool]$WhatIfPreference)
 $results = @(Invoke-EobDueOffboardingPhase -Config $config -AllowIntegration:$AllowIntegration -WhatIf:$WhatIfPreference -Confirm:$false)
 $results
 
 $problems = @($results | Where-Object { $_.Outcome -in @('Blocked', 'Failed') })
 Write-EobLog -Level Information -Action 'DueOffboardingRun' -Result $(if ($problems.Count -gt 0) { 'Failed' } else { 'Succeeded' }) `
-    -Message ("{0} Vorgang/Vorgänge verarbeitet, {1} mit Problemen, {2} zur manuellen Bearbeitung." -f $results.Count, $problems.Count, @($results | Where-Object { $_.Outcome -in @('ManualRequired', 'ManualApprovalRequired') }).Count)
+    -Message ('{0} Vorgang/Vorgänge verarbeitet, {1} mit Problemen, {2} zur manuellen Bearbeitung.' -f $results.Count, $problems.Count, @($results | Where-Object { $_.Outcome -in @('ManualRequired', 'ManualApprovalRequired') }).Count)
 if ($problems.Count -gt 0) { exit 1 }
 exit 0

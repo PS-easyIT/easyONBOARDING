@@ -1,4 +1,4 @@
-#Requires -Version 7.2
+﻿#Requires -Version 7.2
 <#
     easyONB.Configuration
     Kompatibler INI-Parser, Schema-Validierung, Zusammenführung (templates → companies → Haupt-INI),
@@ -13,6 +13,7 @@ $script:DefaultSchemaPath = Join-Path -Path (Get-EobAppRoot) -ChildPath (Join-Pa
 #region Hilfsfunktionen
 
 function New-EobDictionary {
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseShouldProcessForStateChangingFunctions', '', Justification = 'Erzeugt nur ein Objekt im Speicher; keine Systemänderung.')]
     [CmdletBinding()]
     [OutputType([System.Collections.Specialized.OrderedDictionary])]
     param()
@@ -555,10 +556,10 @@ function Test-EobConfigurationRule {
     }
 
     $length = Get-EobConfigValue -Config $Config -Section 'PasswordFixGenerate' -Key 'DefaultPasswordLength' -As Int
-    $minimum = (Get-EobConfigValue -Config $Config -Section 'PasswordFixGenerate' -Key 'MinUpperCase' -As Int) +
-        (Get-EobConfigValue -Config $Config -Section 'PasswordFixGenerate' -Key 'MinLowerCase' -As Int) +
-        (Get-EobConfigValue -Config $Config -Section 'PasswordFixGenerate' -Key 'MinDigits' -As Int) +
-        (Get-EobConfigValue -Config $Config -Section 'PasswordFixGenerate' -Key 'MinSpecialChars' -As Int)
+    $minimum = 0
+    foreach ($key in @('MinUpperCase', 'MinLowerCase', 'MinDigits', 'MinSpecialChars')) {
+        $minimum += Get-EobConfigValue -Config $Config -Section 'PasswordFixGenerate' -Key $key -As Int
+    }
     if ($minimum -gt $length) {
         New-EobFinding -Severity Error -Code 'CFG_PASSWORD_POLICY' -Field 'PasswordFixGenerate' -Message "Die Summe der Mindestanzahlen ($minimum) übersteigt die Kennwortlänge ($length)."
     }
@@ -900,7 +901,7 @@ function Set-EobIniValue {
         [ValidateRange(0, 50)][int]$KeepBackups = 5
     )
 
-    if ($Value -match "[\r\n]") {
+    if ($Value -match '[\r\n]') {
         throw 'Mehrzeilige Werte sind nicht zulässig.'
     }
     $sectionDefinition = Get-EobSchemaSectionDefinition -Schema (Get-EobConfigSchema) -Name $Section

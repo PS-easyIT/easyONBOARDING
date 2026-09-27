@@ -178,7 +178,8 @@ CompanyActiveDirectoryDomain=example.com
 ; Optional: firmenspezifische Ziel-OU (sonst ADUserDefaults.DefaultOU)
 CompanyActiveDirectoryOU=
 CompanyMailDomain=@example.com
-CompanyMS365Domain=@example.onmicrosoft.com
+; Optional: Microsoft-365-Standarddomäne für die sekundäre Proxyadresse, z. B. @<Mandant>.onmicrosoft.com
+CompanyMS365Domain=
 CompanyDomain=www.example.com
 CompanyStrasse=Beispielstraße 1
 CompanyPLZ=12345

@@ -265,7 +265,7 @@ Describe 'Willkommensdokument' {
 
 Describe 'Welcome-Mail' {
     BeforeAll {
-        $script:MailIni = @"
+        $script:MailIni = @'
 [EmailSettings]
 SMTPServer=smtp.example.local
 SMTPPort=25
@@ -277,7 +277,7 @@ CompanyNameFirma=Example GmbH
 CompanyActiveDirectoryDomain=example.com
 [CompanyHelpdesk]
 CompanyHelpdeskMail=helpdesk@example.com
-"@
+'@
     }
 
     BeforeEach {

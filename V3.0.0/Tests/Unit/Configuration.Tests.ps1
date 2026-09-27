@@ -1,4 +1,4 @@
-#Requires -Modules @{ ModuleName = 'Pester'; ModuleVersion = '5.3.0' }
+﻿#Requires -Modules @{ ModuleName = 'Pester'; ModuleVersion = '5.3.0' }
 
 BeforeAll {
     . (Join-Path -Path $PSScriptRoot -ChildPath '../TestHelpers.ps1')
@@ -8,6 +8,7 @@ BeforeAll {
     $script:TemplatePath = Join-Path $script:AppRoot 'Config/easyONB.ini.template'
 
     function New-TestConfigDirectory {
+        [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseShouldProcessForStateChangingFunctions', '', Justification = 'Testhilfe im TestDrive bzw. im Speicher.')]
         param([string]$MainContent, [hashtable]$Templates = @{}, [hashtable]$Companies = @{})
         $root = Join-Path $TestDrive ([guid]::NewGuid().ToString('N'))
         $null = New-Item -ItemType Directory -Path (Join-Path $root 'templates') -Force
@@ -107,9 +108,8 @@ Describe 'Beispielkonfiguration' {
     It 'lädt die mitgelieferte Vorlage ohne Fehler und Warnungen' {
         $config = Import-EobConfiguration -Path $script:TemplatePath
         $config.Exists | Should -BeTrue
-        $problems = @($config.Findings | Where-Object { $_.Severity -in @('Error', 'Warning') })
-        $problems | ForEach-Object { Write-Host "Befund: [$($_.Severity)] $($_.Code) $($_.Message)" }
-        $problems.Count | Should -Be 0
+        # Die Befunde erscheinen bei einem Fehlschlag direkt in der Pester-Meldung.
+        @($config.Findings | Where-Object { $_.Severity -in @('Error', 'Warning') } | ForEach-Object { "[$($_.Severity)] $($_.Code) $($_.Message)" }) | Should -BeNullOrEmpty
     }
 
     It 'enthält die sieben geforderten Offboarding-Vorlagen' {
