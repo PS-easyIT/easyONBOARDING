@@ -1,4 +1,4 @@
-#Requires -Version 7.2
+﻿#Requires -Version 7.2
 <#
     easyONB.Core
     Basisfunktionen: Version, Pfade, Konvertierungen, strukturiertes Logging mit Audit und
@@ -509,6 +509,7 @@ function New-EobFinding {
     .SYNOPSIS
         Erzeugt ein einheitliches Befundobjekt (Validierung, Konfiguration, Planung).
     #>
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseShouldProcessForStateChangingFunctions', '', Justification = 'Erzeugt nur ein Objekt im Speicher; keine Systemänderung.')]
     [CmdletBinding()]
     [OutputType([pscustomobject])]
     param(
@@ -536,6 +537,7 @@ function New-EobResult {
     .PARAMETER Status
         Succeeded, Skipped oder Warning.
     #>
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseShouldProcessForStateChangingFunctions', '', Justification = 'Erzeugt nur ein Objekt im Speicher; keine Systemänderung.')]
     [CmdletBinding()]
     [OutputType([pscustomobject])]
     param(
@@ -920,7 +922,7 @@ function Get-EobTextLogPath {
     }
     $index = 1
     while ((Test-Path -LiteralPath $current -PathType Leaf) -and ((Get-Item -LiteralPath $current).Length -ge $script:LogState.MaxFileSizeBytes)) {
-        $current = Join-Path -Path $script:LogState.Directory -ChildPath ("easyONB_{0}_{1}.log" -f $dateKey, $index)
+        $current = Join-Path -Path $script:LogState.Directory -ChildPath ('easyONB_{0}_{1}.log' -f $dateKey, $index)
         $index++
         if ($index -gt 999) { break }
     }
@@ -1000,7 +1002,7 @@ function Write-EobLog {
             $entry.Data = Protect-EobSensitiveData -InputObject $Data
         }
 
-        Write-Verbose ("[{0}] {1}" -f $Level, $entry.Message)
+        Write-Verbose ('[{0}] {1}' -f $Level, $entry.Message)
 
         if ($null -ne $script:LogState.Queue) {
             $script:LogState.Queue.Enqueue([pscustomobject]$entry)
@@ -1022,7 +1024,7 @@ function Write-EobLog {
         $parts.Add($entry.Message)
         if ($entry.Error) { $parts.Add("| Error: $($entry.Error)") }
         if ($null -ne $entry.Data) { $parts.Add('| Data: ' + ($entry.Data | ConvertTo-Json -Compress -Depth 5)) }
-        $line = ($parts -join ' ') -replace "[\r\n]+", ' '
+        $line = ($parts -join ' ') -replace '[\r\n]+', ' '
 
         try {
             Write-EobFileLine -Path (Get-EobTextLogPath -Timestamp $timestamp) -Line $line
@@ -1033,7 +1035,7 @@ function Write-EobLog {
 
         if ($isAudit) {
             try {
-                $auditPath = Join-Path -Path $script:LogState.AuditDirectory -ChildPath ("easyONB_audit_{0}.jsonl" -f $timestamp.ToString('yyyyMM'))
+                $auditPath = Join-Path -Path $script:LogState.AuditDirectory -ChildPath ('easyONB_audit_{0}.jsonl' -f $timestamp.ToString('yyyyMM'))
                 Write-EobFileLine -Path $auditPath -Line ($entry | ConvertTo-Json -Compress -Depth 6)
             }
             catch {
@@ -1084,7 +1086,7 @@ function Test-EobAuditWritable {
 
     if (-not $script:LogState.Initialized) { return $false }
     try {
-        $auditPath = Join-Path -Path $script:LogState.AuditDirectory -ChildPath ("easyONB_audit_{0}.jsonl" -f (Get-Date).ToString('yyyyMM'))
+        $auditPath = Join-Path -Path $script:LogState.AuditDirectory -ChildPath ('easyONB_audit_{0}.jsonl' -f (Get-Date).ToString('yyyyMM'))
         $stream = [System.IO.File]::Open($auditPath, [System.IO.FileMode]::Append, [System.IO.FileAccess]::Write, [System.IO.FileShare]::ReadWrite)
         $stream.Dispose()
         return $true
@@ -1170,6 +1172,7 @@ function New-EobOperationContext {
     .SYNOPSIS
         Erzeugt einen Vorgangskontext mit eindeutiger Operation-ID.
     #>
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseShouldProcessForStateChangingFunctions', '', Justification = 'Erzeugt nur ein Objekt im Speicher; keine Systemänderung.')]
     [CmdletBinding()]
     [OutputType([pscustomobject])]
     param(
@@ -1204,6 +1207,7 @@ function New-EobPlan {
     .PARAMETER Config
         Konfiguration; Schrittparameter mit dem Wert '@Config' erhalten sie bei der Ausführung.
     #>
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseShouldProcessForStateChangingFunctions', '', Justification = 'Erzeugt nur ein Objekt im Speicher; keine Systemänderung.')]
     [CmdletBinding()]
     [OutputType([pscustomobject])]
     param(
@@ -1487,7 +1491,7 @@ function Invoke-EobPlanStep {
 
     $logLevel = if ($simulate) { 'Information' } else { 'Audit' }
     Write-EobLog -Level $logLevel -OperationId $Plan.OperationId -Action $Step.Action -Target $Step.Target `
-        -Result $Step.Status -DurationMs $Step.DurationMs -Message ("{0}: {1}" -f $Step.Title, $Step.Message)
+        -Result $Step.Status -DurationMs $Step.DurationMs -Message ('{0}: {1}' -f $Step.Title, $Step.Message)
     if ($Step.Status -eq 'Failed') {
         Write-EobLog -Level 'Error' -OperationId $Plan.OperationId -Action $Step.Action -Target $Step.Target -Result 'Failed' -Message $Step.Message
     }
@@ -1522,6 +1526,7 @@ function Start-EobPlanRun {
         Wird von Invoke-EobPlan und von der kooperativen Ausführung der Oberfläche verwendet.
         Live-Ausführungen setzen ein beschreibbares Audit-Log voraus.
     #>
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseShouldProcessForStateChangingFunctions', '', Justification = 'Setzt nur den Planstatus und protokolliert den Start; bestätigt wird in Invoke-EobPlan bzw. in der Oberfläche.')]
     [CmdletBinding()]
     param(
         [Parameter(Mandatory)][pscustomobject]$Plan,
@@ -1530,7 +1535,7 @@ function Start-EobPlanRun {
 
     if (-not (Test-EobPlanExecutable -Plan $Plan)) {
         $messages = @($Plan.Findings | Where-Object Severity -EQ 'Error' | ForEach-Object Message)
-        throw ("Der Plan kann nicht ausgeführt werden: " + ($messages -join ' | '))
+        throw ('Der Plan kann nicht ausgeführt werden: ' + ($messages -join ' | '))
     }
     if ($Simulation) { $Plan.Simulation = $true }
     if (-not $Plan.Simulation -and -not (Test-EobAuditWritable)) {
@@ -1539,8 +1544,8 @@ function Start-EobPlanRun {
     $Plan.StartedAt = Get-Date
     $Plan.Status = 'Running'
     $level = if ($Plan.Simulation) { 'Information' } else { 'Audit' }
-    Write-EobLog -Level $level -OperationId $Plan.OperationId -Action ("{0}Started" -f $Plan.Kind) -Target (Get-EobPlanSubjectText -Plan $Plan) `
-        -Message ("Plan gestartet ({0} Schritte, Simulation: {1})" -f $Plan.Steps.Count, $Plan.Simulation)
+    Write-EobLog -Level $level -OperationId $Plan.OperationId -Action ('{0}Started' -f $Plan.Kind) -Target (Get-EobPlanSubjectText -Plan $Plan) `
+        -Message ('Plan gestartet ({0} Schritte, Simulation: {1})' -f $Plan.Steps.Count, $Plan.Simulation)
 }
 
 function Complete-EobPlanRun {
@@ -1558,7 +1563,7 @@ function Complete-EobPlanRun {
     $Plan.Status = Get-EobPlanOutcome -Plan $Plan -IncludePhase $IncludePhase
     $level = if ($Plan.Simulation) { 'Information' } else { 'Audit' }
     $duration = if ($null -ne $Plan.StartedAt) { [long]($Plan.CompletedAt - $Plan.StartedAt).TotalMilliseconds } else { 0 }
-    Write-EobLog -Level $level -OperationId $Plan.OperationId -Action ("{0}Completed" -f $Plan.Kind) -Target (Get-EobPlanSubjectText -Plan $Plan) `
+    Write-EobLog -Level $level -OperationId $Plan.OperationId -Action ('{0}Completed' -f $Plan.Kind) -Target (Get-EobPlanSubjectText -Plan $Plan) `
         -Result $Plan.Status -DurationMs $duration -Message 'Plan abgeschlossen.'
 }
 
@@ -1592,13 +1597,13 @@ function Invoke-EobPlan {
 
     if (-not (Test-EobPlanExecutable -Plan $Plan)) {
         $messages = @($Plan.Findings | Where-Object Severity -EQ 'Error' | ForEach-Object Message)
-        throw ("Der Plan kann nicht ausgeführt werden: " + ($messages -join ' | '))
+        throw ('Der Plan kann nicht ausgeführt werden: ' + ($messages -join ' | '))
     }
     if ($WhatIfPreference) {
         $Plan.Simulation = $true
     }
     if (-not $Plan.Simulation) {
-        if (-not $PSCmdlet.ShouldProcess((Get-EobPlanSubjectText -Plan $Plan), ("{0}: {1} Schritt(e) ausführen" -f $Plan.Kind, $Plan.Steps.Count))) {
+        if (-not $PSCmdlet.ShouldProcess((Get-EobPlanSubjectText -Plan $Plan), ('{0}: {1} Schritt(e) ausführen' -f $Plan.Kind, $Plan.Steps.Count))) {
             $Plan.Status = 'Cancelled'
             return $Plan
         }
@@ -1660,6 +1665,7 @@ function New-EobIntegrationStatus {
     .PARAMETER State
         Available, Connected, NotConnected, NotConfigured, NotInstalled, Error, Disabled.
     #>
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseShouldProcessForStateChangingFunctions', '', Justification = 'Erzeugt nur ein Objekt im Speicher; keine Systemänderung.')]
     [CmdletBinding()]
     [OutputType([pscustomobject])]
     param(

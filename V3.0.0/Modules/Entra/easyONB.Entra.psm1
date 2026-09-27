@@ -1,4 +1,4 @@
-#Requires -Version 7.2
+﻿#Requires -Version 7.2
 <#
     easyONB.Entra
     Optionale Anbindung an Microsoft Graph (Sitzungen widerrufen) und Entra Connect Sync
@@ -17,6 +17,7 @@ $script:GraphScopes = @('User.Read.All', 'User.RevokeSessions.All')
 #region Hilfsfunktionen
 
 function New-EobNotProcessedResult {
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseShouldProcessForStateChangingFunctions', '', Justification = 'Erzeugt nur ein Objekt im Speicher; keine Systemänderung.')]
     [CmdletBinding()]
     [OutputType([pscustomobject])]
     param([Parameter(Mandatory)][string]$Message)

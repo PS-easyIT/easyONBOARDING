@@ -1,4 +1,4 @@
-#Requires -Modules @{ ModuleName = 'Pester'; ModuleVersion = '5.3.0' }
+﻿#Requires -Modules @{ ModuleName = 'Pester'; ModuleVersion = '5.3.0' }
 
 BeforeAll {
     . (Join-Path -Path $PSScriptRoot -ChildPath '../TestHelpers.ps1')
@@ -235,7 +235,7 @@ Describe 'Schreibende Operationen' {
     It 'setzt Kennwörter zurück, ohne sie zu protokollieren' {
         $plain = 'Unverwechselbar!Kennwort2026'
         Add-EobRedactionValue -Value $plain
-        $null = Reset-EobAdUserPassword -Identity 'mmuster' -NewPassword (ConvertTo-SecureString $plain -AsPlainText -Force) -ChangePasswordAtLogon $true -Confirm:$false
+        $null = Reset-EobAdUserPassword -Identity 'mmuster' -NewPassword (New-EobTestSecureString -Value $plain) -ChangePasswordAtLogon $true -Confirm:$false
         Should -Invoke -ModuleName $script:ModuleName Set-ADAccountPassword -ParameterFilter { $Reset }
         Should -Invoke -ModuleName $script:ModuleName Set-ADUser -ParameterFilter { $ChangePasswordAtLogon -eq $true }
         $logText = (Get-ChildItem (Join-Path $TestDrive 'logs') -Recurse -File | Get-Content -Raw) -join ''

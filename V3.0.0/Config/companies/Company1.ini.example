@@ -12,7 +12,8 @@ CompanyNameFirma=Example Services GmbH
 CompanyActiveDirectoryDomain=services.example.com
 CompanyActiveDirectoryOU=OU=Mitarbeiter,OU=Services,DC=example,DC=local
 CompanyMailDomain=@services.example.com
-CompanyMS365Domain=@example.onmicrosoft.com
+; Optional: z. B. @<Mandant>.onmicrosoft.com
+CompanyMS365Domain=
 CompanyDomain=www.services.example.com
 CompanyStrasse=Beispielweg 2
 CompanyPLZ=54321

@@ -75,6 +75,7 @@ function New-EobNotProcessedResult {
     <#
         Ergebnis, wenn ShouldProcess die Aktion nicht zulässt (Simulation oder keine Bestätigung).
     #>
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseShouldProcessForStateChangingFunctions', '', Justification = 'Erzeugt nur ein Objekt im Speicher; keine Systemänderung.')]
     [CmdletBinding()]
     [OutputType([pscustomobject])]
     param(
@@ -151,6 +152,7 @@ function New-EobPlanReport {
     .PARAMETER Title
         Optionaler Titel (Standard: Vorgangsart und Konto).
     #>
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseShouldProcessForStateChangingFunctions', '', Justification = 'Erzeugt nur ein Objekt im Speicher; keine Systemänderung.')]
     [CmdletBinding()]
     [OutputType([pscustomobject])]
     param(
@@ -288,7 +290,7 @@ function ConvertTo-EobReportHtml {
     }
     [void]$builder.AppendLine("<tr><th>Ergebnis</th><td><span class=""badge $outcomeClass"">$(& $e (Get-EobStatusText -Status $Report.Outcome))</span></td></tr>")
     $statistic = $Report.Statistic
-    $statText = "{0} Schritte: {1} erfolgreich, {2} simuliert, {3} Warnung, {4} übersprungen, {5} fehlgeschlagen, {6} geplant" -f `
+    $statText = '{0} Schritte: {1} erfolgreich, {2} simuliert, {3} Warnung, {4} übersprungen, {5} fehlgeschlagen, {6} geplant' -f `
         $statistic.Total, $statistic.Succeeded, $statistic.Simulated, $statistic.Warning, $statistic.Skipped, $statistic.Failed, $statistic.Planned
     [void]$builder.AppendLine("<tr><th>Schritte</th><td>$(& $e $statText)</td></tr>")
     [void]$builder.AppendLine('</table>')
@@ -308,8 +310,8 @@ function ConvertTo-EobReportHtml {
         if (@($step.Details).Count -gt 0) {
             $details = '<ul class="details">' + ((@($step.Details) | ForEach-Object { "<li>$(& $e $_)</li>" }) -join '') + '</ul>'
         }
-        [void]$builder.AppendLine(("<tr><td>{0}</td><td>{1}</td><td>{2}{3}</td><td>{4}</td><td>{5}</td><td class=""{6}"">{7}</td><td>{8}</td></tr>" -f `
-                    (& $e $step.Id), (& $e $step.Phase), (& $e $step.Title), $details, (& $e $step.Target), (& $e $step.Risk), $class,
+        [void]$builder.AppendLine(('<tr><td>{0}</td><td>{1}</td><td>{2}{3}</td><td>{4}</td><td>{5}</td><td class="{6}">{7}</td><td>{8}</td></tr>' -f `
+                (& $e $step.Id), (& $e $step.Phase), (& $e $step.Title), $details, (& $e $step.Target), (& $e $step.Risk), $class,
                 (& $e (Get-EobStatusText -Status $step.Status)), (& $e $step.Message)))
     }
     [void]$builder.AppendLine('</tbody></table>')
@@ -318,7 +320,7 @@ function ConvertTo-EobReportHtml {
         [void]$builder.AppendLine('<h2>Hinweise</h2><table><thead><tr><th>Schwere</th><th>Code</th><th>Feld</th><th>Meldung</th></tr></thead><tbody>')
         foreach ($finding in $Report.Findings) {
             $class = switch ($finding.Severity) { 'Error' { 'error' } 'Warning' { 'warn' } default { 'info' } }
-            [void]$builder.AppendLine(("<tr><td class=""{0}"">{1}</td><td>{2}</td><td>{3}</td><td>{4}</td></tr>" -f `
+            [void]$builder.AppendLine(('<tr><td class="{0}">{1}</td><td>{2}</td><td>{3}</td><td>{4}</td></tr>' -f `
                         $class, (& $e $finding.Severity), (& $e $finding.Code), (& $e $finding.Field), (& $e $finding.Message)))
         }
         [void]$builder.AppendLine('</tbody></table>')
@@ -353,20 +355,20 @@ function ConvertTo-EobReportText {
         $lines.Add('')
         $lines.Add('Zusammenfassung')
         $lines.Add('---------------')
-        foreach ($key in $Report.Summary.Keys) { $lines.Add(("{0,-16} {1}" -f "$($key):", $Report.Summary[$key])) }
+        foreach ($key in $Report.Summary.Keys) { $lines.Add(('{0,-16} {1}' -f "$($key):", $Report.Summary[$key])) }
     }
     $lines.Add('')
     $lines.Add('Schritte')
     $lines.Add('--------')
     foreach ($step in $Report.Steps) {
         $phase = if ($step.Phase) { " [$($step.Phase)]" } else { '' }
-        $lines.Add(("{0}{1} {2} -> {3}: {4}" -f $step.Id, $phase, $step.Title, (Get-EobStatusText -Status $step.Status), $step.Message))
+        $lines.Add(('{0}{1} {2} -> {3}: {4}' -f $step.Id, $phase, $step.Title, (Get-EobStatusText -Status $step.Status), $step.Message))
     }
     if (@($Report.Findings).Count -gt 0) {
         $lines.Add('')
         $lines.Add('Hinweise')
         $lines.Add('--------')
-        foreach ($finding in $Report.Findings) { $lines.Add(("[{0}] {1}: {2}" -f $finding.Severity, $finding.Code, $finding.Message)) }
+        foreach ($finding in $Report.Findings) { $lines.Add(('[{0}] {1}: {2}' -f $finding.Severity, $finding.Code, $finding.Message)) }
     }
     $lines.Add('')
     $lines.Add("Erstellt mit $($Report.Tool). Kennwörter sind nicht Bestandteil dieses Berichts.")
@@ -412,7 +414,7 @@ function Export-EobReport {
         $stamp = if ($Report.CreatedAt -is [datetime]) { $Report.CreatedAt.ToString('yyyyMMdd-HHmmss') } else { (Get-Date).ToString('yyyyMMdd-HHmmss') }
         $name = if ($Report.SubjectName) { $Report.SubjectName } else { $Report.Kind }
         $suffix = if ($Report.Simulation) { '_Simulation' } else { '' }
-        $BaseName = "{0}_{1}_{2}{3}" -f $stamp, $name, ([string]$Report.OperationId).Split('-')[0], $suffix
+        $BaseName = '{0}_{1}_{2}{3}' -f $stamp, $name, ([string]$Report.OperationId).Split('-')[0], $suffix
     }
     $BaseName = Get-EobSafeFileName -Name $BaseName -MaxLength 120
     # Mehrere Berichte desselben Vorgangs in derselben Sekunde dürfen sich nicht überschreiben.
@@ -420,7 +422,7 @@ function Export-EobReport {
         $candidate = $BaseName
         $counter = 2
         while (@(Get-ChildItem -LiteralPath $Directory -File -Filter "$candidate.*" -ErrorAction SilentlyContinue).Count -gt 0) {
-            $candidate = "{0}_{1}" -f $BaseName, $counter
+            $candidate = '{0}_{1}' -f $BaseName, $counter
             $counter++
         }
         $BaseName = $candidate
@@ -506,7 +508,7 @@ function Export-EobPlanReport {
     if (-not $PSCmdlet.ShouldProcess($Plan.OperationId, 'Vorgangsbericht schreiben')) { return }
     $files = @(Export-EobReport @parameters)
     Write-EobLog -Level Information -OperationId $Plan.OperationId -Action 'ReportWritten' -Target $report.SubjectName `
-        -Message ("Bericht geschrieben: {0}" -f ((@($files | Where-Object Path) | ForEach-Object Path) -join ', '))
+        -Message ('Bericht geschrieben: {0}' -f ((@($files | Where-Object Path) | ForEach-Object Path) -join ', '))
     return $files
 }
 
@@ -655,7 +657,7 @@ function ConvertTo-EobPdf {
     $profileDirectory = $null
     try {
         if ($engine.Name -eq 'Edge') {
-            $profileDirectory = Join-Path -Path ([System.IO.Path]::GetTempPath()) -ChildPath ("easyONB-pdf-" + [guid]::NewGuid().ToString('N'))
+            $profileDirectory = Join-Path -Path ([System.IO.Path]::GetTempPath()) -ChildPath ('easyONB-pdf-' + [guid]::NewGuid().ToString('N'))
             $null = New-Item -ItemType Directory -Path $profileDirectory -Force
             # Isoliertes Profil, keine Hintergrundverbindungen (Berichte enthalten personenbezogene Daten).
             $arguments = @(
@@ -824,6 +826,7 @@ function Expand-EobTemplate {
     .OUTPUTS
         Objekt mit Content, MissingPlaceholders, SecretPlaceholders und Warnings.
     #>
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSReviewUnusedParameter', 'SecretHint', Justification = 'Wird im MatchEvaluator verwendet; die Regel wertet verschachtelte Skriptblöcke nicht aus.')]
     [CmdletBinding()]
     [OutputType([pscustomobject])]
     param(
@@ -909,7 +912,7 @@ function New-EobWelcomeDocument {
     $rendered = Expand-EobTemplate -Template $template -Values $placeholderValues -SecretHint $hint
 
     if (-not $OutputDirectory) { $OutputDirectory = Get-EobReportDirectory -Config $Config -Kind 'Welcome' }
-    $baseName = Get-EobSafeFileName -Name ("{0}_Willkommen_{1}" -f $SamAccountName, (Get-Date).ToString('yyyyMMdd-HHmmss'))
+    $baseName = Get-EobSafeFileName -Name ('{0}_Willkommen_{1}' -f $SamAccountName, (Get-Date).ToString('yyyyMMdd-HHmmss'))
     $htmlPath = Join-Path -Path $OutputDirectory -ChildPath "$baseName.html"
 
     $notes = [System.Collections.Generic.List[string]]::new()
@@ -1178,11 +1181,11 @@ function Export-EobAuditReport {
             $builder = [System.Text.StringBuilder]::new()
             [void]$builder.AppendLine('<!DOCTYPE html><html lang="de"><head><meta charset="utf-8"><title>Audit-Export</title>')
             [void]$builder.AppendLine('<style>body{font-family:"Segoe UI",Arial,sans-serif;font-size:12px;margin:20px}table{border-collapse:collapse;width:100%}th,td{border-bottom:1px solid #d0d7de;padding:4px 6px;text-align:left;vertical-align:top}th{background:#f6f8fa}</style></head><body>')
-            [void]$builder.AppendLine(("<h1>Audit-Export</h1><p>{0} bis {1}, {2} Einträge</p>" -f (ConvertTo-EobHtmlEncoded -Value (Format-EobReportDate -Value $From)), (ConvertTo-EobHtmlEncoded -Value (Format-EobReportDate -Value $To)), $entries.Count))
+            [void]$builder.AppendLine(('<h1>Audit-Export</h1><p>{0} bis {1}, {2} Einträge</p>' -f (ConvertTo-EobHtmlEncoded -Value (Format-EobReportDate -Value $From)), (ConvertTo-EobHtmlEncoded -Value (Format-EobReportDate -Value $To)), $entries.Count))
             [void]$builder.AppendLine('<table><thead><tr><th>Zeitpunkt</th><th>Operation</th><th>Akteur</th><th>Aktion</th><th>Ziel</th><th>Ergebnis</th><th>Meldung</th></tr></thead><tbody>')
             foreach ($row in $rows) {
-                [void]$builder.AppendLine(("<tr><td>{0}</td><td>{1}</td><td>{2}</td><td>{3}</td><td>{4}</td><td>{5}</td><td>{6}</td></tr>" -f `
-                            (ConvertTo-EobHtmlEncoded -Value $row.Zeitpunkt), (ConvertTo-EobHtmlEncoded -Value $row.OperationId), (ConvertTo-EobHtmlEncoded -Value $row.Akteur),
+                [void]$builder.AppendLine(('<tr><td>{0}</td><td>{1}</td><td>{2}</td><td>{3}</td><td>{4}</td><td>{5}</td><td>{6}</td></tr>' -f `
+                        (ConvertTo-EobHtmlEncoded -Value $row.Zeitpunkt), (ConvertTo-EobHtmlEncoded -Value $row.OperationId), (ConvertTo-EobHtmlEncoded -Value $row.Akteur),
                         (ConvertTo-EobHtmlEncoded -Value $row.Aktion), (ConvertTo-EobHtmlEncoded -Value $row.Ziel), (ConvertTo-EobHtmlEncoded -Value $row.Ergebnis), (ConvertTo-EobHtmlEncoded -Value $row.Meldung)))
             }
             [void]$builder.AppendLine('</tbody></table></body></html>')
@@ -1239,7 +1242,7 @@ function Get-EobSmtpStatus {
     if (-not $setting.From) {
         return New-EobIntegrationStatus -Name 'SMTP' -State NotConfigured -Detail "Relay $($setting.Server), aber keine Absenderadresse." -Hint '[EmailSettings] FromAddress setzen.'
     }
-    $detail = "{0}:{1}{2}" -f $setting.Server, $setting.Port, $(if ($setting.UseSsl) { ' (TLS)' } else { ' (ohne TLS)' })
+    $detail = '{0}:{1}{2}' -f $setting.Server, $setting.Port, $(if ($setting.UseSsl) { ' (TLS)' } else { ' (ohne TLS)' })
     if (-not $TestConnection) {
         return New-EobIntegrationStatus -Name 'SMTP' -State Available -Detail $detail -Hint 'Verbindung nicht geprüft.'
     }
@@ -1277,13 +1280,13 @@ function Get-EobFileServerStatus {
         return New-EobIntegrationStatus -Name 'Dateiserver' -State NotConfigured -Detail 'Keine freigegebenen Stammpfade.' -Hint 'Home-Verzeichnisse werden nur unter [FileServer] AllowedRoots angelegt oder archiviert.'
     }
     if (-not $TestConnection) {
-        return New-EobIntegrationStatus -Name 'Dateiserver' -State Available -Detail ("{0} Stammpfad(e) konfiguriert" -f $roots.Count) -Hint 'Erreichbarkeit nicht geprüft.'
+        return New-EobIntegrationStatus -Name 'Dateiserver' -State Available -Detail ('{0} Stammpfad(e) konfiguriert' -f $roots.Count) -Hint 'Erreichbarkeit nicht geprüft.'
     }
     $unreachable = @($roots | Where-Object { -not (Test-Path -LiteralPath $_ -PathType Container) })
     if ($unreachable.Count -eq 0) {
-        return New-EobIntegrationStatus -Name 'Dateiserver' -State Connected -Detail ("{0} Stammpfad(e) erreichbar" -f $roots.Count)
+        return New-EobIntegrationStatus -Name 'Dateiserver' -State Connected -Detail ('{0} Stammpfad(e) erreichbar' -f $roots.Count)
     }
-    return New-EobIntegrationStatus -Name 'Dateiserver' -State Error -Detail ("Nicht erreichbar: {0}" -f ($unreachable -join ', ')) -Hint 'Freigabe, Berechtigungen und Netzwerk prüfen.'
+    return New-EobIntegrationStatus -Name 'Dateiserver' -State Error -Detail ('Nicht erreichbar: {0}' -f ($unreachable -join ', ')) -Hint 'Freigabe, Berechtigungen und Netzwerk prüfen.'
 }
 
 function Get-EobPdfEngineStatus {

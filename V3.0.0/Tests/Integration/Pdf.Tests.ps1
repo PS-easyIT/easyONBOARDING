@@ -1,4 +1,4 @@
-#Requires -Modules @{ ModuleName = 'Pester'; ModuleVersion = '5.3.0' }
+﻿#Requires -Modules @{ ModuleName = 'Pester'; ModuleVersion = '5.3.0' }
 <#
     Integrationstest der PDF-Erzeugung mit einem echten Browser.
     - Windows: Microsoft Edge aus dem Standard-Installationspfad (z. B. GitHub-Runner windows-latest).

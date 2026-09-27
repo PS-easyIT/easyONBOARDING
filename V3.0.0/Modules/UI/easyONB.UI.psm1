@@ -15,7 +15,12 @@
     - Pläne werden per DispatcherTimer Schritt für Schritt ausgeführt (ADR-09); Abbrechen ist
       zwischen zwei Schritten möglich.
     - Kennwörter werden nur im Zugangsdatendialog angezeigt, danach aus dem Speicher entfernt.
+    - Die Funktionen ändern ausschließlich den Zustand der Oberfläche. Systemverändernde Aktionen
+      laufen über die Fachmodule (ShouldProcess) und werden vorher im Dialog bestätigt; daher gilt
+      die Analyzer-Regel PSUseShouldProcessForStateChangingFunctions hier nicht.
 #>
+[Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseShouldProcessForStateChangingFunctions', '', Justification = 'Nur Zustand der Oberfläche; Systemänderungen laufen über die Fachmodule.')]
+param()
 
 Set-StrictMode -Version 1.0
 
@@ -119,6 +124,9 @@ function New-EobUiState {
         Offboarding    = @{}
         Update         = @{}
         Bulk           = @{}
+        # Nur für automatisierte Tests: Dialoge werden protokolliert statt modal angezeigt.
+        Headless       = $false
+        DialogLog      = [System.Collections.Generic.List[string]]::new()
     }
 }
 
@@ -154,7 +162,7 @@ function Get-EobXamlText {
     $text = [System.IO.File]::ReadAllText($path, [System.Text.Encoding]::UTF8)
     $problems = @(Test-EobXamlContent -Xaml $text)
     if ($problems.Count -gt 0) {
-        throw ("XAML-Datei {0} ist ungültig: {1}" -f $RelativePath, ($problems -join ' | '))
+        throw ('XAML-Datei {0} ist ungültig: {1}' -f $RelativePath, ($problems -join ' | '))
     }
     return $text
 }
@@ -509,7 +517,7 @@ function Get-EobXamlControlMap {
         if ($null -eq $control) { $missing.Add($name) } else { $map[$name] = $control }
     }
     if ($missing.Count -gt 0) {
-        throw ("Steuerelemente nicht gefunden: " + ($missing -join ', '))
+        throw ('Steuerelemente nicht gefunden: ' + ($missing -join ', '))
     }
     return $map
 }
@@ -643,7 +651,7 @@ function Invoke-EobUiSafely {
     }
 }
 
-function Set-EobComboItems {
+function Set-EobComboSource {
     [CmdletBinding()]
     param(
         [Parameter(Mandatory)][object]$Combo,
@@ -672,7 +680,7 @@ function Get-EobComboValue {
     return $null
 }
 
-function Set-EobListItems {
+function Set-EobListSource {
     [CmdletBinding()]
     param(
         [Parameter(Mandatory)][object]$List,
@@ -723,7 +731,7 @@ function Set-EobBanner {
     $Border.Visibility = if ($Text) { 'Visible' } else { 'Collapsed' }
 }
 
-function Set-EobGridItems {
+function Set-EobGridSource {
     [CmdletBinding()]
     param(
         [Parameter(Mandatory)][object]$Grid,
@@ -816,6 +824,10 @@ function Show-EobDialog {
         [string]$InputPrompt = ''
     )
 
+    if ($null -ne $script:Ui -and $script:Ui.Headless) {
+        $script:Ui.DialogLog.Add("[$Kind] $($Title): $Message $($Details -join ' | ')".TrimEnd())
+        return [pscustomobject]@{ Confirmed = $false; Text = '' }
+    }
     $loaded = Import-EobXamlWithControl -RelativePath 'Dialogs/ConfirmDialog.xaml'
     $dialog = $loaded.Root
     $c = $loaded.Controls
@@ -1001,6 +1013,10 @@ function Show-EobCredentialDialog {
         [Parameter(Mandatory)][System.Security.SecureString]$Password
     )
 
+    if ($script:Ui.Headless) {
+        $script:Ui.DialogLog.Add("[Credential] Zugangsdaten für $SamAccountName (Anzeige im Testmodus unterdrückt)")
+        return
+    }
     $config = $script:Ui.Config
     $clearSeconds = [int](Get-EobConfigValue -Config $config -Section 'Security' -Key 'ClipboardClearSeconds' -As Int)
     $allowPrint = [bool](Get-EobConfigValue -Config $config -Section 'Security' -Key 'AllowCredentialPrint' -As Bool)
@@ -1083,7 +1099,7 @@ function Start-EobGui {
     Initialize-EobMainWindow
     Show-EobView -Name 'Dashboard'
     Start-EobLogPump
-    Write-EobLog -Level Information -Action 'GuiStarted' -Message ("Oberfläche gestartet (Simulation: {0}, Farbschema: {1})." -f $script:Ui.Simulation, $Theme)
+    Write-EobLog -Level Information -Action 'GuiStarted' -Message ('Oberfläche gestartet (Simulation: {0}, Farbschema: {1}).' -f $script:Ui.Simulation, $Theme)
     try {
         $null = $script:Ui.Window.ShowDialog()
     }
@@ -1113,6 +1129,7 @@ function Stop-EobUi {
 }
 
 function Initialize-EobMainWindow {
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSReviewUnusedParameter', 'source', Justification = 'Signatur von WPF-Ereignishandlern (Sender, EventArgs); der Sender wird nicht benötigt.')]
     [CmdletBinding()]
     param()
 
@@ -1500,14 +1517,14 @@ function Update-EobDashboardView {
     $c.DashQueueState.Text = "$($due.Count) fällig"
     $c.DashQueueDetail.Text = "$($queue.Count) offene Vorgänge · $($deletions.Count) Löschung(en) zur Freigabe"
     Set-EobBrush -Element $c.DashQueueState -Property Foreground -Key $(if ($due.Count -gt 0 -or $deletions.Count -gt 0) { 'WarningBrush' } else { 'TextPrimaryBrush' })
-    Set-EobGridItems -Grid $c.DashQueueGrid -Items @($queue | Sort-Object -Property @{ Expression = { -not ($_.IsDue -or $_.DeletionDue) } }, NextDueDate | Select-Object -First 20 |
+    Set-EobGridSource -Grid $c.DashQueueGrid -Items @($queue | Sort-Object -Property @{ Expression = { -not ($_.IsDue -or $_.DeletionDue) } }, NextDueDate | Select-Object -First 20 |
             ForEach-Object { ConvertTo-EobUiQueueRow -Item $_ })
 
     $summary = Get-EobAuditSummary -From (Get-Date).AddDays(-30) -To (Get-Date)
     $c.DashStatsState.Text = [string]$summary.OperationCount
     $parts = foreach ($kind in $summary.ByKind.Keys) { "$(Get-EobUiText -Map $script:KindTexts -Key $kind): $($summary.ByKind[$kind])" }
     $c.DashStatsDetail.Text = ((@($parts) + "Fehlgeschlagen: $($summary.FailedOperations)") -join ' · ')
-    Set-EobGridItems -Grid $c.DashOperationsGrid -Items @($summary.LastOperations | ForEach-Object {
+    Set-EobGridSource -Grid $c.DashOperationsGrid -Items @($summary.LastOperations | ForEach-Object {
             [pscustomobject]@{
                 TimeText   = ConvertTo-EobUiDateText -Value $_.Timestamp -WithTime
                 Kind       = Get-EobUiText -Map $script:KindTexts -Key $_.Kind
@@ -1534,7 +1551,7 @@ function Update-EobDashboardView {
         $c.DashConfigBanner.Visibility = 'Collapsed'
     }
 
-    Set-EobGridItems -Grid $c.DashIntegrationGrid -Items @(Get-EobIntegrationStatus -Config $config | ForEach-Object { ConvertTo-EobUiIntegrationRow -Status $_ })
+    Set-EobGridSource -Grid $c.DashIntegrationGrid -Items @(Get-EobIntegrationStatus -Config $config | ForEach-Object { ConvertTo-EobUiIntegrationRow -Status $_ })
 }
 
 #endregion
@@ -1549,16 +1566,16 @@ function Initialize-EobOnboardingView {
     $config = $script:Ui.Config
     $script:Ui.Onboarding = @{ Step = 1; Plan = $null; CredentialPending = $false; ReportPath = ''; AutoIdentity = @{} }
 
-    Set-EobComboItems -Combo $c.OnbCompanyCombo -Items @(Get-EobCompany -Config $config | ForEach-Object { [pscustomobject]@{ Text = $_.DisplayName; Value = $_.Id } })
-    Set-EobComboItems -Combo $c.OnbRoleTemplateCombo -Items (@([pscustomobject]@{ Text = '(keine)'; Value = '' }) + @(Get-EobRoleTemplate -Config $config | ForEach-Object {
+    Set-EobComboSource -Combo $c.OnbCompanyCombo -Items @(Get-EobCompany -Config $config | ForEach-Object { [pscustomobject]@{ Text = $_.DisplayName; Value = $_.Id } })
+    Set-EobComboSource -Combo $c.OnbRoleTemplateCombo -Items (@([pscustomobject]@{ Text = '(keine)'; Value = '' }) + @(Get-EobRoleTemplate -Config $config | ForEach-Object {
                 [pscustomobject]@{ Text = if ($_.DisplayName) { $_.DisplayName } else { $_.Name }; Value = $_.Name; ToolTip = $_.Description }
             }))
-    Set-EobComboItems -Combo $c.OnbDisplayNameTemplateCombo -Items @(Get-EobDisplayNameTemplate -Config $config | ForEach-Object { [pscustomobject]@{ Text = $_.Label; Value = $_.Id } })
+    Set-EobComboSource -Combo $c.OnbDisplayNameTemplateCombo -Items @(Get-EobDisplayNameTemplate -Config $config | ForEach-Object { [pscustomobject]@{ Text = $_.Label; Value = $_.Id } })
     $defaults = ConvertTo-EobOnboardingRequest -InputObject @{} -Config $config
-    Set-EobComboItems -Combo $c.OnbLicenseCombo -SelectedValue $defaults.LicenseKey -Items @((Get-EobConfigSection -Config $config -Name 'LicensesGroups').Keys | ForEach-Object {
+    Set-EobComboSource -Combo $c.OnbLicenseCombo -SelectedValue $defaults.LicenseKey -Items @((Get-EobConfigSection -Config $config -Name 'LicensesGroups').Keys | ForEach-Object {
             [pscustomobject]@{ Text = $_; Value = $_ }
         })
-    Set-EobComboItems -Combo $c.OnbTeamLeadGroupCombo -Items @((Get-EobConfigSection -Config $config -Name 'TLGroups').Keys | ForEach-Object { [pscustomobject]@{ Text = $_; Value = $_ } })
+    Set-EobComboSource -Combo $c.OnbTeamLeadGroupCombo -Items @((Get-EobConfigSection -Config $config -Name 'TLGroups').Keys | ForEach-Object { [pscustomobject]@{ Text = $_; Value = $_ } })
 
     $groups = [System.Collections.Generic.List[object]]::new()
     $hidden = 0
@@ -1569,7 +1586,7 @@ function Initialize-EobOnboardingView {
         if ((Test-EobPrivilegedGroup -Group $groupName -Config $config).IsProtected) { $hidden++; continue }
         $groups.Add([pscustomobject]@{ Text = $key; Value = $key; ToolTip = $groupName })
     }
-    Set-EobListItems -List $c.OnbGroupsList -Items $groups.ToArray()
+    Set-EobListSource -List $c.OnbGroupsList -Items $groups.ToArray()
     $c.OnbGroupsInfo.Text = if ($hidden -gt 0) { "$hidden privilegierte Gruppe(n) aus [ADGroups] ausgeblendet: Sie werden nie automatisch zugewiesen." } else { '' }
 
     $c.OnbEnabledCheck.IsChecked = [bool]$defaults.Enabled
@@ -1623,7 +1640,7 @@ function Update-EobOnboardingCompanyDependent {
     $config = $script:Ui.Config
     $companyId = [string](Get-EobComboValue -Combo $c.OnbCompanyCombo)
     $company = Get-EobCompany -Config $config -Id $companyId | Select-Object -First 1
-    Set-EobComboItems -Combo $c.OnbMailDomainCombo -Items @(Get-EobMailDomain -Config $config -CompanyId $companyId | ForEach-Object { [pscustomobject]@{ Text = "@$_"; Value = $_ } })
+    Set-EobComboSource -Combo $c.OnbMailDomainCombo -Items @(Get-EobMailDomain -Config $config -CompanyId $companyId | ForEach-Object { [pscustomobject]@{ Text = "@$_"; Value = $_ } })
     $c.OnbUpnSuffixText.Text = if ($null -ne $company -and $company.UpnSuffix) { "@$($company.UpnSuffix)" } else { '' }
 
     $ous = [System.Collections.Generic.List[object]]::new()
@@ -1640,7 +1657,7 @@ function Update-EobOnboardingCompanyDependent {
             Write-EobLog -Level Warning -Action 'UI' -Message "OUs konnten nicht gelesen werden: $($_.Exception.Message)"
         }
     }
-    Set-EobComboItems -Combo $c.OnbTargetOuCombo -Items $ous.ToArray() -SelectedValue $defaultOu
+    Set-EobComboSource -Combo $c.OnbTargetOuCombo -Items $ous.ToArray() -SelectedValue $defaultOu
     $script:Ui.Onboarding.AutoIdentity = @{}
 }
 
@@ -1856,9 +1873,9 @@ function Show-EobOnboardingPreview {
     $plan = New-EobOnboardingPlan -Request $request -Config $script:Ui.Config -Simulation:$script:Ui.Simulation -SkipDirectoryCheck:(-not $online) -DomainPasswordPolicy $domainPolicy
     $state.Plan = $plan
 
-    Set-EobGridItems -Grid $c.OnbPreviewSummaryGrid -Items @(ConvertTo-EobUiSummaryRow -Summary $plan.Summary)
-    Set-EobGridItems -Grid $c.OnbPreviewStepsGrid -Items @($plan.Steps | ForEach-Object { ConvertTo-EobUiStepRow -Step $_ })
-    Set-EobGridItems -Grid $c.OnbPreviewFindingsGrid -Items @($plan.Findings | Sort-Object -Property @{ Expression = { @('Error', 'Warning', 'Information').IndexOf([string]$_.Severity) } } |
+    Set-EobGridSource -Grid $c.OnbPreviewSummaryGrid -Items @(ConvertTo-EobUiSummaryRow -Summary $plan.Summary)
+    Set-EobGridSource -Grid $c.OnbPreviewStepsGrid -Items @($plan.Steps | ForEach-Object { ConvertTo-EobUiStepRow -Step $_ })
+    Set-EobGridSource -Grid $c.OnbPreviewFindingsGrid -Items @($plan.Findings | Sort-Object -Property @{ Expression = { @('Error', 'Warning', 'Information').IndexOf([string]$_.Severity) } } |
             ForEach-Object { ConvertTo-EobUiFindingRow -Finding $_ })
 
     $errors = @($plan.Findings | Where-Object Severity -EQ 'Error')
@@ -1899,7 +1916,7 @@ function Invoke-EobOnboardingExecution {
     $c.OnbResultBanner.Visibility = 'Collapsed'
     $c.OnbShowCredentialButton.Visibility = 'Collapsed'
     $c.OnbOpenReportButton.Visibility = 'Collapsed'
-    Set-EobGridItems -Grid $c.OnbResultStepsGrid -Items @($plan.Steps | ForEach-Object { ConvertTo-EobUiStepRow -Step $_ })
+    Set-EobGridSource -Grid $c.OnbResultStepsGrid -Items @($plan.Steps | ForEach-Object { ConvertTo-EobUiStepRow -Step $_ })
     Start-EobUiPlanExecution -Plan $plan -OnProgress 'Update-EobOnboardingProgress' -OnComplete 'Complete-EobOnboardingExecution'
     Set-EobOnboardingStep -Step 8
 }
@@ -1911,7 +1928,7 @@ function Update-EobOnboardingProgress {
     $c = $script:Ui.C
     $c.OnbProgressBar.Value = [Math]::Round(100.0 * $Done / [Math]::Max(1, $Total))
     $c.OnbProgressText.Text = "Schritt $Done von $($Total): $($Step.Title) - $(Get-EobUiText -Map $script:StatusTexts -Key $Step.Status)"
-    Set-EobGridItems -Grid $c.OnbResultStepsGrid -Items @($Plan.Steps | ForEach-Object { ConvertTo-EobUiStepRow -Step $_ })
+    Set-EobGridSource -Grid $c.OnbResultStepsGrid -Items @($Plan.Steps | ForEach-Object { ConvertTo-EobUiStepRow -Step $_ })
 }
 
 function Complete-EobOnboardingExecution {
@@ -1922,7 +1939,7 @@ function Complete-EobOnboardingExecution {
     $state = $script:Ui.Onboarding
     $c.OnbProgressBar.Value = 100
     $c.OnbProgressText.Text = "Abgeschlossen: $(Get-EobUiText -Map $script:StatusTexts -Key $Plan.Status)"
-    Set-EobGridItems -Grid $c.OnbResultStepsGrid -Items @($Plan.Steps | ForEach-Object { ConvertTo-EobUiStepRow -Step $_ })
+    Set-EobGridSource -Grid $c.OnbResultStepsGrid -Items @($Plan.Steps | ForEach-Object { ConvertTo-EobUiStepRow -Step $_ })
     $state.ReportPath = Export-EobUiPlanReport -Plan $Plan
     $c.OnbOpenReportButton.Visibility = if ($state.ReportPath) { 'Visible' } else { 'Collapsed' }
 
@@ -1987,6 +2004,7 @@ function Reset-EobOnboardingView {
 #region Offboarding
 
 function Initialize-EobOffboardingView {
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSReviewUnusedParameter', 'source', Justification = 'Signatur von WPF-Ereignishandlern (Sender, EventArgs); der Sender wird nicht benötigt.')]
     [CmdletBinding()]
     param()
 
@@ -1994,7 +2012,7 @@ function Initialize-EobOffboardingView {
     $config = $script:Ui.Config
     $script:Ui.Offboarding = @{ Step = 1; User = $null; Plan = $null; FromQueue = $false; ReportPath = ''; SelectedPhases = @() }
     $default = [string](Get-EobConfigValue -Config $config -Section 'Offboarding' -Key 'DefaultTemplate')
-    Set-EobComboItems -Combo $c.OffTemplateCombo -SelectedValue $default -Items @(Get-EobOffboardingTemplate -Config $config | ForEach-Object {
+    Set-EobComboSource -Combo $c.OffTemplateCombo -SelectedValue $default -Items @(Get-EobOffboardingTemplate -Config $config | ForEach-Object {
             [pscustomobject]@{ Text = $_.DisplayName; Value = $_.Name; ToolTip = $_.Description }
         })
     $c.OffExitDatePicker.SelectedDate = (Get-Date).Date
@@ -2072,7 +2090,7 @@ function Invoke-EobOffboardingSearch {
     if ($text.Length -lt 2) { $c.OffSearchInfo.Text = 'Bitte mindestens 2 Zeichen eingeben.'; return }
     if (-not (Get-EobAdConnectionInfo).Connected) { throw 'Keine Verbindung zum Active Directory (siehe Tools > AD neu verbinden).' }
     $users = @(Find-EobAdUser -SearchText $text)
-    Set-EobGridItems -Grid $c.OffSearchResultsGrid -Items @($users | ForEach-Object { ConvertTo-EobUiUserRow -User $_ })
+    Set-EobGridSource -Grid $c.OffSearchResultsGrid -Items @($users | ForEach-Object { ConvertTo-EobUiUserRow -User $_ })
     $c.OffSearchInfo.Text = if ($users.Count -eq 0) { 'Keine Treffer.' } else { "$($users.Count) Treffer. Bitte das Konto auswählen." }
     $script:Ui.Offboarding.User = $null
     $c.OffSelectedUserText.Text = ''
@@ -2199,9 +2217,9 @@ function Show-EobOffboardingPreview {
         $due = @(Get-EobOffboardingDuePhase -Plan $plan)
         $summary['Jetzt fällig'] = if ($due.Count -gt 0) { ($due | ForEach-Object { Get-EobUiText -Map $script:PhaseTexts -Key $_ }) -join ', ' } else { 'keine Phase (wird geplant)' }
     }
-    Set-EobGridItems -Grid $c.OffPreviewSummaryGrid -Items @(ConvertTo-EobUiSummaryRow -Summary $summary)
-    Set-EobGridItems -Grid $c.OffPreviewStepsGrid -Items @($plan.Steps | ForEach-Object { ConvertTo-EobUiStepRow -Step $_ })
-    Set-EobGridItems -Grid $c.OffPreviewFindingsGrid -Items @($plan.Findings | Sort-Object -Property @{ Expression = { @('Error', 'Warning', 'Information').IndexOf([string]$_.Severity) } } |
+    Set-EobGridSource -Grid $c.OffPreviewSummaryGrid -Items @(ConvertTo-EobUiSummaryRow -Summary $summary)
+    Set-EobGridSource -Grid $c.OffPreviewStepsGrid -Items @($plan.Steps | ForEach-Object { ConvertTo-EobUiStepRow -Step $_ })
+    Set-EobGridSource -Grid $c.OffPreviewFindingsGrid -Items @($plan.Findings | Sort-Object -Property @{ Expression = { @('Error', 'Warning', 'Information').IndexOf([string]$_.Severity) } } |
             ForEach-Object { ConvertTo-EobUiFindingRow -Finding $_ })
     $errors = @($plan.Findings | Where-Object Severity -EQ 'Error')
     if ($errors.Count -gt 0) {
@@ -2244,7 +2262,7 @@ function Invoke-EobOffboardingExecution {
         Complete-EobOffboardingExecution -Plan $plan
         return
     }
-    Set-EobGridItems -Grid $c.OffResultStepsGrid -Items @($plan.Steps | ForEach-Object { ConvertTo-EobUiStepRow -Step $_ })
+    Set-EobGridSource -Grid $c.OffResultStepsGrid -Items @($plan.Steps | ForEach-Object { ConvertTo-EobUiStepRow -Step $_ })
     Start-EobUiPlanExecution -Plan $plan -IncludePhase (Get-EobOffboardingIncludePhase -SelectedPhase $selected) -OnProgress 'Update-EobOffboardingProgress' -OnComplete 'Complete-EobOffboardingExecution'
     Set-EobOffboardingStep -Step 4
 }
@@ -2256,7 +2274,7 @@ function Update-EobOffboardingProgress {
     $c = $script:Ui.C
     $c.OffProgressBar.Value = [Math]::Round(100.0 * $Done / [Math]::Max(1, $Total))
     $c.OffProgressText.Text = "Schritt $Done von $($Total): $($Step.Title) - $(Get-EobUiText -Map $script:StatusTexts -Key $Step.Status)"
-    Set-EobGridItems -Grid $c.OffResultStepsGrid -Items @($Plan.Steps | ForEach-Object { ConvertTo-EobUiStepRow -Step $_ })
+    Set-EobGridSource -Grid $c.OffResultStepsGrid -Items @($Plan.Steps | ForEach-Object { ConvertTo-EobUiStepRow -Step $_ })
 }
 
 function Complete-EobOffboardingExecution {
@@ -2273,7 +2291,7 @@ function Complete-EobOffboardingExecution {
     }
     $c.OffProgressBar.Value = 100
     $c.OffProgressText.Text = "Abgeschlossen: $(Get-EobUiText -Map $script:StatusTexts -Key $Plan.Status)"
-    Set-EobGridItems -Grid $c.OffResultStepsGrid -Items @($Plan.Steps | Where-Object { $_.Status -ne 'Planned' -or $_.Phase -in $state.SelectedPhases } | ForEach-Object { ConvertTo-EobUiStepRow -Step $_ })
+    Set-EobGridSource -Grid $c.OffResultStepsGrid -Items @($Plan.Steps | Where-Object { $_.Status -ne 'Planned' -or $_.Phase -in $state.SelectedPhases } | ForEach-Object { ConvertTo-EobUiStepRow -Step $_ })
     $state.ReportPath = Export-EobUiPlanReport -Plan $Plan
     $c.OffOpenReportButton.Visibility = if ($state.ReportPath) { 'Visible' } else { 'Collapsed' }
     $banner = Get-EobOutcomeBanner -Plan $Plan -Subject "Offboarding von $($Plan.Subject['SamAccountName'])"
@@ -2294,7 +2312,7 @@ function Update-EobOffboardingQueue {
     $c = $script:Ui.C
     $statuses = if ($c.OffQueueShowClosedCheck.IsChecked) { @('Open', 'AwaitingDeletion', 'Completed', 'Cancelled', 'Deleted') } else { @('Open', 'AwaitingDeletion') }
     $items = @(Get-EobOffboardingQueue -Config $script:Ui.Config -Status $statuses)
-    Set-EobGridItems -Grid $c.OffQueueGrid -Items @($items | ForEach-Object { ConvertTo-EobUiQueueRow -Item $_ })
+    Set-EobGridSource -Grid $c.OffQueueGrid -Items @($items | ForEach-Object { ConvertTo-EobUiQueueRow -Item $_ })
     $c.OffQueueInfoText.Text = "$($items.Count) Vorgang/Vorgänge · $(@($items | Where-Object IsDue).Count) fällig · $(@($items | Where-Object DeletionDue).Count) Löschung(en) zur Freigabe"
 }
 
@@ -2395,6 +2413,7 @@ function Open-EobOffboardingSnapshotFolder {
 #region Benutzer aktualisieren
 
 function Initialize-EobUserUpdateView {
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSReviewUnusedParameter', 'source', Justification = 'Signatur von WPF-Ereignishandlern (Sender, EventArgs); der Sender wird nicht benötigt.')]
     [CmdletBinding()]
     param()
 
@@ -2420,7 +2439,7 @@ function Invoke-EobUserUpdateSearch {
     if ($text.Length -lt 2) { $c.UpdSearchInfo.Text = 'Bitte mindestens 2 Zeichen eingeben.'; return }
     if (-not (Get-EobAdConnectionInfo).Connected) { throw 'Keine Verbindung zum Active Directory (siehe Tools > AD neu verbinden).' }
     $users = @(Find-EobAdUser -SearchText $text)
-    Set-EobGridItems -Grid $c.UpdResultsGrid -Items @($users | ForEach-Object { ConvertTo-EobUiUserRow -User $_ })
+    Set-EobGridSource -Grid $c.UpdResultsGrid -Items @($users | ForEach-Object { ConvertTo-EobUiUserRow -User $_ })
     $c.UpdSearchInfo.Text = if ($users.Count -eq 0) { 'Keine Treffer.' } else { "$($users.Count) Treffer." }
 }
 
@@ -2455,13 +2474,13 @@ function Select-EobUserUpdateUser {
     $state.ManagerText = $c.UpdManagerText.Text
 
     $memberships = @(Get-EobAdUserGroupMembership -User $user | Where-Object { -not $_.IsPrimary })
-    Set-EobListItems -List $c.UpdCurrentGroupsList -Items @($memberships | Sort-Object -Property Name | ForEach-Object {
+    Set-EobListSource -List $c.UpdCurrentGroupsList -Items @($memberships | Sort-Object -Property Name | ForEach-Object {
             $privileged = (Test-EobPrivilegedGroup -Group $_ -Config $script:Ui.Config).IsProtected
             [pscustomobject]@{ Text = if ($privileged) { "$($_.Name)  [privilegiert]" } else { $_.Name }; Value = $_.DistinguishedName; ToolTip = $_.DistinguishedName }
         })
     $memberNames = @($memberships | ForEach-Object { $_.Name; $_.SamAccountName })
     $section = Get-EobConfigSection -Config $script:Ui.Config -Name 'ADGroups'
-    Set-EobListItems -List $c.UpdAddGroupsList -Items @($section.Keys | ForEach-Object {
+    Set-EobListSource -List $c.UpdAddGroupsList -Items @($section.Keys | ForEach-Object {
             $groupName = [string]$section[$_]
             if ($groupName -and $groupName -notin $memberNames -and -not (Test-EobPrivilegedGroup -Group $groupName -Config $script:Ui.Config).IsProtected) {
                 [pscustomobject]@{ Text = $_; Value = $_; ToolTip = $groupName }
@@ -2470,8 +2489,8 @@ function Select-EobUserUpdateUser {
     $c.UpdEditCard.IsEnabled = $true
     $c.UpdExecuteButton.IsEnabled = $false
     $c.UpdResultBanner.Visibility = 'Collapsed'
-    Set-EobGridItems -Grid $c.UpdPreviewStepsGrid -Items @()
-    Set-EobGridItems -Grid $c.UpdPreviewFindingsGrid -Items @()
+    Set-EobGridSource -Grid $c.UpdPreviewStepsGrid -Items @()
+    Set-EobGridSource -Grid $c.UpdPreviewFindingsGrid -Items @()
 }
 
 function Show-EobUserUpdatePreview {
@@ -2494,8 +2513,8 @@ function Show-EobUserUpdatePreview {
     $plan = New-EobUserUpdatePlan @parameters
     if ($c.UpdTicketText.Text) { $plan.Summary['Ticket'] = $c.UpdTicketText.Text }
     $state.Plan = $plan
-    Set-EobGridItems -Grid $c.UpdPreviewStepsGrid -Items @($plan.Steps | ForEach-Object { ConvertTo-EobUiStepRow -Step $_ })
-    Set-EobGridItems -Grid $c.UpdPreviewFindingsGrid -Items @($plan.Findings | ForEach-Object { ConvertTo-EobUiFindingRow -Finding $_ })
+    Set-EobGridSource -Grid $c.UpdPreviewStepsGrid -Items @($plan.Steps | ForEach-Object { ConvertTo-EobUiStepRow -Step $_ })
+    Set-EobGridSource -Grid $c.UpdPreviewFindingsGrid -Items @($plan.Findings | ForEach-Object { ConvertTo-EobUiFindingRow -Finding $_ })
     $executable = (Test-EobPlanExecutable -Plan $plan) -and $plan.Steps.Count -gt 0
     $c.UpdExecuteButton.IsEnabled = $executable
     $text = if (-not (Test-EobPlanExecutable -Plan $plan)) { 'Die Änderungen enthalten Fehler (siehe Prüfergebnisse).' } elseif ($plan.Steps.Count -eq 0) { 'Keine Änderungen gegenüber dem aktuellen Stand.' } else { "$($plan.Steps.Count) Änderung(en) geplant." }
@@ -2524,7 +2543,10 @@ function Update-EobUserUpdateProgress {
     [CmdletBinding()]
     param($Plan, [int]$Done, [int]$Total, $Step)
 
-    Set-EobGridItems -Grid $script:Ui.C.UpdPreviewStepsGrid -Items @($Plan.Steps | ForEach-Object { ConvertTo-EobUiStepRow -Step $_ })
+    $c = $script:Ui.C
+    $text = "Schritt $Done von $($Total): $($Step.Title) - $(Get-EobUiText -Map $script:StatusTexts -Key $Step.Status)"
+    Set-EobBanner -Border $c.UpdResultBanner -TextBlock $c.UpdResultText -Kind Info -Text $text
+    Set-EobGridSource -Grid $c.UpdPreviewStepsGrid -Items @($Plan.Steps | ForEach-Object { ConvertTo-EobUiStepRow -Step $_ })
 }
 
 function Complete-EobUserUpdateExecution {
@@ -2532,7 +2554,7 @@ function Complete-EobUserUpdateExecution {
     param($Plan)
 
     $c = $script:Ui.C
-    Set-EobGridItems -Grid $c.UpdPreviewStepsGrid -Items @($Plan.Steps | ForEach-Object { ConvertTo-EobUiStepRow -Step $_ })
+    Set-EobGridSource -Grid $c.UpdPreviewStepsGrid -Items @($Plan.Steps | ForEach-Object { ConvertTo-EobUiStepRow -Step $_ })
     $report = Export-EobUiPlanReport -Plan $Plan
     $banner = Get-EobOutcomeBanner -Plan $Plan -Subject "Aktualisierung von $($Plan.Subject['SamAccountName'])"
     Set-EobBanner -Border $c.UpdResultBanner -TextBlock $c.UpdResultText -Kind $banner.Kind -Text ($banner.Text + $(if ($report) { " Bericht: $report" }))
@@ -2542,7 +2564,7 @@ function Complete-EobUserUpdateExecution {
         $keep = $c.UpdResultText.Text
         Select-EobUserUpdateUser -Identity $identity
         Set-EobBanner -Border $c.UpdResultBanner -TextBlock $c.UpdResultText -Kind $banner.Kind -Text $keep
-        Set-EobGridItems -Grid $c.UpdPreviewStepsGrid -Items @($Plan.Steps | ForEach-Object { ConvertTo-EobUiStepRow -Step $_ })
+        Set-EobGridSource -Grid $c.UpdPreviewStepsGrid -Items @($Plan.Steps | ForEach-Object { ConvertTo-EobUiStepRow -Step $_ })
     }
 }
 
@@ -2614,7 +2636,7 @@ function Update-EobBulkMode {
     $state = $script:Ui.Bulk
     $state.Mode = if ($c.BulkModeOffboardingRadio.IsChecked) { 'Offboarding' } else { 'Onboarding' }
     $state.Batch = $null
-    Set-EobGridItems -Grid $c.BulkItemsGrid -Items @()
+    Set-EobGridSource -Grid $c.BulkItemsGrid -Items @()
     $c.BulkExecuteButton.IsEnabled = $false
     $c.BulkExportButton.IsEnabled = $false
     $c.BulkSummaryBanner.Visibility = 'Collapsed'
@@ -2681,7 +2703,7 @@ function Update-EobBulkGrid {
             MessagesText = (@($item.Messages) -join ' | ')
         }
     }
-    Set-EobGridItems -Grid $script:Ui.C.BulkItemsGrid -Items @($rows)
+    Set-EobGridSource -Grid $script:Ui.C.BulkItemsGrid -Items @($rows)
 }
 
 function Start-EobBulkExecution {
@@ -2811,7 +2833,7 @@ function Export-EobBulkResult {
 
     $state = $script:Ui.Bulk
     if ($null -eq $state.Batch) { return }
-    $file = Select-EobSaveFile -Filter 'CSV (*.csv)|*.csv|JSON (*.json)|*.json' -Title 'Ergebnis exportieren' -FileName ("easyONB_{0}_{1}.csv" -f $state.Mode, (Get-Date).ToString('yyyyMMdd-HHmm'))
+    $file = Select-EobSaveFile -Filter 'CSV (*.csv)|*.csv|JSON (*.json)|*.json' -Title 'Ergebnis exportieren' -FileName ('easyONB_{0}_{1}.csv' -f $state.Mode, (Get-Date).ToString('yyyyMMdd-HHmm'))
     if (-not $file) { return }
     $format = if ([System.IO.Path]::GetExtension($file) -ieq '.json') { 'Json' } else { 'Csv' }
     $path = if ($state.Mode -eq 'Onboarding') { Export-EobBatchResult -Batch $state.Batch -Path $file -Format $format -Confirm:$false } else { Export-EobOffboardingBatchResult -Batch $state.Batch -Path $file -Format $format -Confirm:$false }
@@ -2827,7 +2849,7 @@ function Initialize-EobReportsView {
     param()
 
     $c = $script:Ui.C
-    Set-EobComboItems -Combo $c.ReportsDaysCombo -SelectedValue '30' -Items @(
+    Set-EobComboSource -Combo $c.ReportsDaysCombo -SelectedValue '30' -Items @(
         [pscustomobject]@{ Text = 'Letzte 7 Tage'; Value = '7' }, [pscustomobject]@{ Text = 'Letzte 30 Tage'; Value = '30' }
         [pscustomobject]@{ Text = 'Letzte 90 Tage'; Value = '90' }, [pscustomobject]@{ Text = 'Letztes Jahr'; Value = '365' }
     )
@@ -2851,7 +2873,7 @@ function Update-EobReportList {
     $days = [int](Get-EobComboValue -Combo $c.ReportsDaysCombo)
     if ($days -le 0) { $days = 30 }
     $files = @(Get-EobReportFile -Config $script:Ui.Config -Days $days)
-    Set-EobGridItems -Grid $c.ReportsGrid -Items @($files | ForEach-Object {
+    Set-EobGridSource -Grid $c.ReportsGrid -Items @($files | ForEach-Object {
             [pscustomobject]@{
                 Name        = $_.Name
                 Kind        = $_.Directory.Name
@@ -2904,7 +2926,7 @@ function Update-EobAuditList {
                 Result = Get-EobUiText -Map $script:StatusTexts -Key ([string]$_.Result); Actor = [string]$_.Actor; Message = [string]$_.Message; OperationId = [string]$_.OperationId
             }
         })
-    Set-EobGridItems -Grid $c.AuditGrid -Items $rows
+    Set-EobGridSource -Grid $c.AuditGrid -Items $rows
     $failed = @($entries | Where-Object { [string]$_.Result -eq 'Failed' }).Count
     $c.AuditSummaryText.Text = "$($entries.Count) Einträge$(if ($entries.Count -gt 2000) { ' (Anzeige der neuesten 2000)' }) · $failed fehlgeschlagen · Zeitraum $(ConvertTo-EobUiDateText -Value $range.From) bis $(ConvertTo-EobUiDateText -Value $range.To)"
 }
@@ -2915,7 +2937,7 @@ function Export-EobUiAudit {
 
     $range = Get-EobUiAuditRange
     $extension = $Format.ToLowerInvariant()
-    $file = Select-EobSaveFile -Filter "$Format (*.$extension)|*.$extension" -Title 'Audit exportieren' -FileName ("easyONB_Audit_{0}_{1}.{2}" -f $range.From.ToString('yyyyMMdd'), $range.To.ToString('yyyyMMdd'), $extension)
+    $file = Select-EobSaveFile -Filter "$Format (*.$extension)|*.$extension" -Title 'Audit exportieren' -FileName ('easyONB_Audit_{0}_{1}.{2}' -f $range.From.ToString('yyyyMMdd'), $range.To.ToString('yyyyMMdd'), $extension)
     if (-not $file) { return }
     $path = Export-EobAuditReport -Path $file -From $range.From -To $range.To -Format $Format -Confirm:$false
     $script:Ui.C.AuditSummaryText.Text = "Exportiert: $path"
@@ -2983,7 +3005,7 @@ function Update-EobToolsStatus {
     [CmdletBinding()]
     param()
 
-    Set-EobGridItems -Grid $script:Ui.C.ToolsIntegrationGrid -Items @(Get-EobIntegrationStatus -Config $script:Ui.Config | ForEach-Object { ConvertTo-EobUiIntegrationRow -Status $_ })
+    Set-EobGridSource -Grid $script:Ui.C.ToolsIntegrationGrid -Items @(Get-EobIntegrationStatus -Config $script:Ui.Config | ForEach-Object { ConvertTo-EobUiIntegrationRow -Status $_ })
 }
 
 function Invoke-EobToolsConfigCheck {
@@ -3028,7 +3050,7 @@ function Initialize-EobSettingsView {
     param()
 
     $c = $script:Ui.C
-    Set-EobComboItems -Combo $c.SetThemeCombo -SelectedValue $script:Ui.Theme -Items @([pscustomobject]@{ Text = 'Hell'; Value = 'Light' }, [pscustomobject]@{ Text = 'Dunkel'; Value = 'Dark' })
+    Set-EobComboSource -Combo $c.SetThemeCombo -SelectedValue $script:Ui.Theme -Items @([pscustomobject]@{ Text = 'Hell'; Value = 'Light' }, [pscustomobject]@{ Text = 'Dunkel'; Value = 'Dark' })
     $c.SetAccentText.Text = if ($script:Ui.AccentColor) { $script:Ui.AccentColor } else { '#0F6CBD' }
     $c.SetReloadButton.Add_Click({ Invoke-EobUiSafely -Name 'Konfiguration neu laden' -Busy -Action { Update-EobUiConfiguration } })
     $c.SetOpenConfigButton.Add_Click({ Invoke-EobUiSafely -Name 'Konfiguration öffnen' -Action { Open-EobPath -Path (Get-EobUiConfigPath) } })
@@ -3049,7 +3071,7 @@ function Update-EobSettingsView {
     $c.SetCreateConfigButton.IsEnabled = -not $config.Exists
     $summary = Get-EobConfigFindingSummary -Config $config
     $c.SetFindingsSummaryText.Text = "$($summary.Errors) Fehler · $($summary.Warnings) Warnungen · $($summary.Informations) Hinweise"
-    Set-EobGridItems -Grid $c.SetFindingsGrid -Items @($config.Findings | Sort-Object -Property @{ Expression = { @('Error', 'Warning', 'Information').IndexOf([string]$_.Severity) } } |
+    Set-EobGridSource -Grid $c.SetFindingsGrid -Items @($config.Findings | Sort-Object -Property @{ Expression = { @('Error', 'Warning', 'Information').IndexOf([string]$_.Severity) } } |
             ForEach-Object { ConvertTo-EobUiFindingRow -Finding $_ })
     $read = { param([string]$Key) Get-EobConfigValue -Config $config -Section 'Security' -Key $Key }
     $c.SetSecurityInfoText.Text = @(
@@ -3143,7 +3165,7 @@ function Update-EobInfoView {
         "Berichte: $(Get-EobReportDirectory -Config $script:Ui.Config)"
         "Domänencontroller: $(if ($ad.Connected) { $ad.Server } else { 'nicht verbunden' })"
     ) -join "`n"
-    Set-EobGridItems -Grid $c.InfoModulesGrid -Items @(Get-Module -Name 'easyONB.*' | Sort-Object -Property Name | ForEach-Object {
+    Set-EobGridSource -Grid $c.InfoModulesGrid -Items @(Get-Module -Name 'easyONB.*' | Sort-Object -Property Name | ForEach-Object {
             [pscustomobject]@{ Name = $_.Name; Version = [string]$_.Version; Description = $_.Description }
         })
 }

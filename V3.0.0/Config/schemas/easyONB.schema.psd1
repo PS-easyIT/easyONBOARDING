@@ -467,7 +467,7 @@
             Keys        = @{
                 Mode                = @{ Type = 'Enum'; Values = @('None', 'Online', 'OnPremises', 'Hybrid'); Default = 'None'; Description = 'Betriebsart.' }
                 OnPremisesUri       = @{ Type = 'Url'; Default = ''; Description = 'PowerShell-Endpunkt (z. B. http://exchange.example.com/PowerShell), Kerberos.' }
-                RemoteRoutingDomain = @{ Type = 'Domain'; Default = ''; Description = 'Hybrid: Routingdomäne (z. B. example.mail.onmicrosoft.com).' }
+                RemoteRoutingDomain = @{ Type = 'Domain'; Default = ''; Description = 'Hybrid: Routingdomäne (z. B. <Mandant>.mail.onmicrosoft.com).' }
             }
         }
 

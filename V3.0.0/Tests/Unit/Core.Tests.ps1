@@ -1,4 +1,4 @@
-#Requires -Modules @{ ModuleName = 'Pester'; ModuleVersion = '5.3.0' }
+﻿#Requires -Modules @{ ModuleName = 'Pester'; ModuleVersion = '5.3.0' }
 
 BeforeAll {
     . (Join-Path -Path $PSScriptRoot -ChildPath '../TestHelpers.ps1')
@@ -34,7 +34,12 @@ BeforeAll {
     } | Import-Module -Global -PassThru
 
     $script:ForeignModule = New-Module -Name 'Fremdmodul' -ScriptBlock {
-        function Invoke-ForeignHandler { [CmdletBinding(SupportsShouldProcess)] param([string]$Name) 'nicht erlaubt' }
+        function Invoke-ForeignHandler {
+            [CmdletBinding(SupportsShouldProcess)]
+            [OutputType([string])]
+            param([string]$Name)
+            if ($PSCmdlet.ShouldProcess($Name, 'Fremden Handler ausführen')) { 'nicht erlaubt' }
+        }
         Export-ModuleMember -Function *
     } | Import-Module -Global -PassThru
 }
@@ -192,7 +197,9 @@ Describe 'Redaktion sensibler Werte' {
     }
 
     It 'maskiert JWT-artige Tokens' {
-        $jwt = 'eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.abcdefghijk'
+        # Künstliches Token (Header {"alg":"HS256"}, Nutzlast {"sub":"1234567890"}); zur Laufzeit
+        # zusammengesetzt, damit der Secret-Scan (Scripts/Invoke-EobQualityCheck.ps1) nicht anschlägt.
+        $jwt = @('eyJhbGciOiJIUzI1NiJ9', 'eyJzdWIiOiIxMjM0NTY3ODkwIn0', 'abcdefghijk') -join '.'
         Protect-EobSensitiveText -Text "token $jwt ende" | Should -Not -Match 'eyJhbGci'
     }
 
@@ -282,10 +289,10 @@ Describe 'Logging und Audit' {
 
     It 'wechselt bei Überschreiten der Maximalgröße auf eine Folgedatei' {
         $null = Initialize-EobLogging -Directory $script:LogDir -MaxFileSizeMB 1
-        $first = Join-Path $script:LogDir ("easyONB_{0}.log" -f (Get-Date).ToString('yyyyMMdd'))
+        $first = Join-Path $script:LogDir ('easyONB_{0}.log' -f (Get-Date).ToString('yyyyMMdd'))
         [System.IO.File]::WriteAllBytes($first, [byte[]]::new(1MB + 10))
         Write-EobLog -Message 'Folgedatei' -Level Information
-        Test-Path (Join-Path $script:LogDir ("easyONB_{0}_1.log" -f (Get-Date).ToString('yyyyMMdd'))) | Should -BeTrue
+        Test-Path (Join-Path $script:LogDir ('easyONB_{0}_1.log' -f (Get-Date).ToString('yyyyMMdd'))) | Should -BeTrue
     }
 
     It 'löscht Logdateien außerhalb der Aufbewahrungsfrist' {

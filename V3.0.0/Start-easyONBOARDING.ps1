@@ -1,4 +1,4 @@
-#Requires -Version 7.2
+﻿#Requires -Version 7.2
 <#
 .SYNOPSIS
     Startet easyONBOARDING 3 (Oberfläche) oder prüft Konfiguration und Umgebung (-CheckOnly).
@@ -58,14 +58,14 @@ $adConnection = Initialize-EobAdConnection -Config $config
 if ($CheckOnly) {
     $summary = Get-EobConfigFindingSummary -Config $config
     $log = Get-EobLogStatus
-    Write-Output ("easyONBOARDING {0} - Prüfung" -f (Get-EobVersion))
-    Write-Output ("PowerShell {0} ({1}), {2}" -f $PSVersionTable.PSVersion, $PSVersionTable.PSEdition, [System.Runtime.InteropServices.RuntimeInformation]::OSDescription)
-    Write-Output ("Konfiguration: {0} ({1})" -f $ConfigPath, $(if ($config.Exists) { 'vorhanden' } else { 'FEHLT' }))
-    Write-Output ("Befunde: {0} Fehler, {1} Warnungen, {2} Hinweise" -f $summary.Errors, $summary.Warnings, $summary.Informations)
-    Write-Output ("Logs: {0} | Audit: {1}{2}" -f $log.Directory, $log.AuditDirectory, $(if ($log.FallbackActive) { ' (Ersatzverzeichnis aktiv)' } else { '' }))
-    Write-Output ("Active Directory: {0}" -f $(if ($adConnection.Connected) { "verbunden mit $($adConnection.Server)" } else { "nicht verbunden ($($adConnection.LastError))" }))
+    Write-Output ('easyONBOARDING {0} - Prüfung' -f (Get-EobVersion))
+    Write-Output ('PowerShell {0} ({1}), {2}' -f $PSVersionTable.PSVersion, $PSVersionTable.PSEdition, [System.Runtime.InteropServices.RuntimeInformation]::OSDescription)
+    Write-Output ('Konfiguration: {0} ({1})' -f $ConfigPath, $(if ($config.Exists) { 'vorhanden' } else { 'FEHLT' }))
+    Write-Output ('Befunde: {0} Fehler, {1} Warnungen, {2} Hinweise' -f $summary.Errors, $summary.Warnings, $summary.Informations)
+    Write-Output ('Logs: {0} | Audit: {1}{2}' -f $log.Directory, $log.AuditDirectory, $(if ($log.FallbackActive) { ' (Ersatzverzeichnis aktiv)' } else { '' }))
+    Write-Output ('Active Directory: {0}' -f $(if ($adConnection.Connected) { "verbunden mit $($adConnection.Server)" } else { "nicht verbunden ($($adConnection.LastError))" }))
     $gui = if ($IsWindows) { 'Windows - Oberfläche verfügbar' } else { 'kein Windows - nur Prüfung/Skripte' }
-    Write-Output ("Oberfläche: {0}" -f $gui)
+    Write-Output ('Oberfläche: {0}' -f $gui)
     Write-Output ''
     Write-Output 'Integrationen:'
     Get-EobIntegrationStatus -Config $config | Select-Object -Property Name, State, Implementation, Detail, Hint | Format-Table -AutoSize -Wrap | Out-String -Width 220 | Write-Output
