@@ -39,7 +39,8 @@ function global:New-ADUser {
         [string]$MobilePhone, [string]$EmailAddress, [string]$EmployeeID, [string]$EmployeeNumber, [string]$StreetAddress,
         [string]$City, [string]$PostalCode, [string]$Country, [string]$State, [string]$HomeDirectory, [string]$HomeDrive,
         [string]$ProfilePath, [string]$ScriptPath, [object]$AccountExpirationDate, [object]$Manager, [string]$HomePage,
-        [string]$Initials, [hashtable]$OtherAttributes, [string]$Server, [switch]$PassThru)
+        [string]$Initials, [hashtable]$OtherAttributes, [object]$PasswordNeverExpires, [object]$SmartcardLogonRequired,
+        [string]$Server, [switch]$PassThru)
     Invoke-EobUnmockedStub -Name 'New-ADUser'
 }
 function global:Set-ADUser {
@@ -57,7 +58,7 @@ function global:Remove-ADUser {
     Invoke-EobUnmockedStub -Name 'Remove-ADUser'
 }
 function global:Remove-ADObject {
-    [CmdletBinding(SupportsShouldProcess)]
+    [CmdletBinding(SupportsShouldProcess, ConfirmImpact = 'High')]
     param([object]$Identity, [switch]$Recursive, [string]$Server)
     Invoke-EobUnmockedStub -Name 'Remove-ADObject'
 }
@@ -94,7 +95,7 @@ function global:Add-ADGroupMember {
     Invoke-EobUnmockedStub -Name 'Add-ADGroupMember'
 }
 function global:Remove-ADGroupMember {
-    [CmdletBinding(SupportsShouldProcess)]
+    [CmdletBinding(SupportsShouldProcess, ConfirmImpact = 'High')]
     param([object]$Identity, [object[]]$Members, [string]$Server)
     Invoke-EobUnmockedStub -Name 'Remove-ADGroupMember'
 }
