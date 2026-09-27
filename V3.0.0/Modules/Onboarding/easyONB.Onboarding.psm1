@@ -1338,14 +1338,14 @@ function New-EobUserUpdatePlan {
     if ($Changes.ContainsKey('Manager')) {
         $managerText = ([string]$Changes['Manager']).Trim()
         if (-not $managerText -and $user.Manager) {
-            $null = Add-EobPlanStep -Plan $plan -Action 'ClearManager' -Title 'Führungskraft entfernen' -Target $user.SamAccountName -Handler 'Set-EobAdUserManager' -Parameters @{ Identity = $target } -Details @("Bisher: $($user.Manager)")
+            $null = Add-EobPlanStep -Plan $plan -Action 'ClearManager' -Title 'Führungskraft entfernen' -Target $user.SamAccountName -Handler 'Set-EobAdUserManager' -Parameters @{ Identity = $target; AllowPrivileged = [bool]$AllowPrivileged } -Details @("Bisher: $($user.Manager)")
         }
         elseif ($managerText) {
             try {
                 $manager = Resolve-EobAdUserReference -Identity $managerText
                 if ($manager.DistinguishedName -ine $user.Manager) {
                     $null = Add-EobPlanStep -Plan $plan -Action 'SetManager' -Title "Führungskraft setzen: $($manager.DisplayName)" -Target $user.SamAccountName -Handler 'Set-EobAdUserManager' -Parameters @{
-                        Identity = $target; ManagerDistinguishedName = $manager.DistinguishedName
+                        Identity = $target; ManagerDistinguishedName = $manager.DistinguishedName; AllowPrivileged = [bool]$AllowPrivileged
                     } -Details @("Bisher: $($user.Manager)", "Neu: $($manager.DistinguishedName)")
                 }
             }

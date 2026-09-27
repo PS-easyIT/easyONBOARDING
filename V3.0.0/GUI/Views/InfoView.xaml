@@ -1,0 +1,40 @@
+<!--
+    Info: Version, Autor, Lizenzhinweis, Pfade und geladene Module.
+-->
+<UserControl xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+        <StackPanel Margin="24,20,24,24">
+            <TextBlock Style="{StaticResource HeadingTextStyle}" Text="Info" />
+            <Border Style="{StaticResource CardStyle}">
+                <StackPanel>
+                    <TextBlock x:Name="InfoProductText" FontSize="18" FontWeight="SemiBold" />
+                    <TextBlock x:Name="InfoAuthorText" Style="{StaticResource BodyTextStyle}" Margin="0,6,0,0" />
+                    <TextBlock x:Name="InfoLicenseText" Style="{StaticResource CaptionTextStyle}" Margin="0,6,0,0" />
+                    <WrapPanel Margin="0,12,0,0">
+                        <Button x:Name="InfoProjectButton" Content="_Projektseite öffnen" Margin="0,0,8,8" />
+                        <Button x:Name="InfoDocsButton" Content="_Dokumentation öffnen" Margin="0,0,8,8" />
+                    </WrapPanel>
+                </StackPanel>
+            </Border>
+            <Border Style="{StaticResource CardStyle}">
+                <StackPanel>
+                    <TextBlock Style="{StaticResource SubheadingTextStyle}" Text="Umgebung" />
+                    <TextBlock x:Name="InfoEnvironmentText" Style="{StaticResource BodyTextStyle}" />
+                </StackPanel>
+            </Border>
+            <Border Style="{StaticResource CardStyle}">
+                <StackPanel>
+                    <TextBlock Style="{StaticResource SubheadingTextStyle}" Text="Module" />
+                    <DataGrid x:Name="InfoModulesGrid" MaxHeight="320" AutomationProperties.Name="Geladene Module">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="Modul" Binding="{Binding Name}" Width="220" />
+                            <DataGridTextColumn Header="Version" Binding="{Binding Version}" Width="90" />
+                            <DataGridTextColumn Header="Beschreibung" Binding="{Binding Description}" Width="*" />
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </StackPanel>
+            </Border>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

@@ -1,0 +1,59 @@
+<!--
+    Tools: Verbindungen herstellen und prüfen, Konfiguration prüfen und migrieren, Ordner öffnen.
+-->
+<UserControl xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+        <StackPanel Margin="24,20,24,24">
+            <TextBlock Style="{StaticResource HeadingTextStyle}" Text="Tools" />
+            <TextBlock Style="{StaticResource CaptionTextStyle}" Margin="0,0,0,12"
+                       Text="Externe Dienste sind optional. Es werden keine Module installiert; fehlende Module bitte durch den Administrator bereitstellen." />
+
+            <Border Style="{StaticResource CardStyle}">
+                <StackPanel>
+                    <TextBlock Style="{StaticResource SubheadingTextStyle}" Text="Verbindungen" />
+                    <DataGrid x:Name="ToolsIntegrationGrid" MaxHeight="300" AutomationProperties.Name="Status der Integrationen">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="Integration" Binding="{Binding Name}" Width="170" />
+                            <DataGridTextColumn Header="Status" Binding="{Binding StateText}" Width="140" />
+                            <DataGridTextColumn Header="Details" Binding="{Binding Detail}" Width="*" />
+                            <DataGridTextColumn Header="Hinweis" Binding="{Binding Hint}" Width="*" />
+                        </DataGrid.Columns>
+                    </DataGrid>
+                    <WrapPanel Margin="0,12,0,0">
+                        <Button x:Name="ToolsAdReconnectButton" Content="_AD neu verbinden" Margin="0,0,8,8" />
+                        <Button x:Name="ToolsExchangeConnectButton" Content="_Exchange verbinden" Margin="0,0,8,8" />
+                        <Button x:Name="ToolsExchangeDisconnectButton" Content="Exchange trennen" Margin="0,0,8,8" />
+                        <Button x:Name="ToolsGraphConnectButton" Content="Microsoft _Graph verbinden" Margin="0,0,8,8" />
+                        <Button x:Name="ToolsGraphDisconnectButton" Content="Graph trennen" Margin="0,0,8,8" />
+                        <Button x:Name="ToolsSmtpTestButton" Content="_SMTP prüfen" Margin="0,0,8,8" />
+                        <Button x:Name="ToolsFileServerTestButton" Content="_Dateiserver prüfen" Margin="0,0,8,8" />
+                        <Button x:Name="ToolsStatusRefreshButton" Content="Status a_ktualisieren" Margin="0,0,8,8" />
+                    </WrapPanel>
+                </StackPanel>
+            </Border>
+
+            <Border Style="{StaticResource CardStyle}">
+                <StackPanel>
+                    <TextBlock Style="{StaticResource SubheadingTextStyle}" Text="Konfiguration und Dateien" />
+                    <WrapPanel>
+                        <Button x:Name="ToolsConfigCheckButton" Style="{StaticResource PrimaryButtonStyle}" Content="Konfiguration _prüfen" Margin="0,0,8,8" />
+                        <Button x:Name="ToolsMigrateButton" Content="Legacy-Konfiguration _migrieren …" Margin="0,0,8,8" />
+                        <Button x:Name="ToolsOpenConfigFolderButton" Content="Konfigurations_ordner öffnen" Margin="0,0,8,8" />
+                        <Button x:Name="ToolsOpenLogFolderButton" Content="_Log-Ordner öffnen" Margin="0,0,8,8" />
+                    </WrapPanel>
+                    <TextBlock Style="{StaticResource CaptionTextStyle}" Margin="0,4,0,0"
+                               Text="Die Migration liest eine INI der Version 1.x, entfernt enthaltene Kennwörter und schreibt eine neue Datei. Die Quelldatei bleibt unverändert." />
+                </StackPanel>
+            </Border>
+
+            <Border Style="{StaticResource CardStyle}">
+                <StackPanel>
+                    <TextBlock Style="{StaticResource SubheadingTextStyle}" Text="Ergebnis" />
+                    <TextBox x:Name="ToolsOutputText" IsReadOnly="True" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="160" MaxHeight="400"
+                             VerticalContentAlignment="Top" VerticalScrollBarVisibility="Auto" FontFamily="Consolas" AutomationProperties.Name="Ergebnis" />
+                </StackPanel>
+            </Border>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

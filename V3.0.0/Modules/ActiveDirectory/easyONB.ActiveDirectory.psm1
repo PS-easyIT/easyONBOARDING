@@ -320,7 +320,7 @@ function Find-EobAdUser {
     $limit = if ($MaxResults -gt 0) { $MaxResults } else { [Math]::Max(1, [int]$script:AdState.MaxResults) }
     $parameters = Get-EobAdServerParameter
     $parameters['LDAPFilter'] = $filter
-    $parameters['Properties'] = @('DisplayName', 'mail', 'Department', 'Title', 'Enabled', 'UserPrincipalName', 'employeeID', 'adminCount')
+    $parameters['Properties'] = @('DisplayName', 'mail', 'Department', 'Title', 'Enabled', 'UserPrincipalName', 'employeeID', 'adminCount', 'LastLogonDate')
     $parameters['ResultSetSize'] = $limit
     if ($script:AdState.SearchBase) { $parameters['SearchBase'] = $script:AdState.SearchBase }
 

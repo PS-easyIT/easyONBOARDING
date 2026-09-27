@@ -1,0 +1,58 @@
+<!--
+    Massenverarbeitung: CSV-Import für Onboarding oder Offboarding mit Prüfung je Zeile,
+    Tippbestätigung ab Schwellwert, fortlaufender Ausführung und Ergebnisexport ohne Kennwörter.
+-->
+<UserControl xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+        <StackPanel Margin="24,20,24,24">
+            <TextBlock Style="{StaticResource HeadingTextStyle}" Text="Massenverarbeitung" />
+            <TextBlock Style="{StaticResource CaptionTextStyle}" Margin="0,0,0,12"
+                       Text="CSV-Dateien werden vollständig geprüft, bevor eine Zeile ausgeführt wird. Fehlerhafte Zeilen werden übersprungen." />
+
+            <Border Style="{StaticResource CardStyle}">
+                <StackPanel>
+                    <TextBlock Style="{StaticResource SubheadingTextStyle}" Text="1. Datei auswählen" />
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                        <RadioButton x:Name="BulkModeOnboardingRadio" GroupName="BulkMode" Content="Onboarding" IsChecked="True" />
+                        <RadioButton x:Name="BulkModeOffboardingRadio" GroupName="BulkMode" Content="Offboarding" />
+                    </StackPanel>
+                    <DockPanel>
+                        <Button x:Name="BulkBrowseButton" DockPanel.Dock="Right" Content="_Durchsuchen …" Margin="8,0,0,0" />
+                        <TextBox x:Name="BulkFileText" AutomationProperties.Name="CSV-Datei" />
+                    </DockPanel>
+                    <TextBlock x:Name="BulkFormatHint" Style="{StaticResource CaptionTextStyle}" Margin="0,6,0,0" />
+                    <Button x:Name="BulkImportButton" Style="{StaticResource PrimaryButtonStyle}" Content="Datei _prüfen" HorizontalAlignment="Left" Margin="0,10,0,0" />
+                </StackPanel>
+            </Border>
+
+            <Border x:Name="BulkSummaryBanner" Style="{StaticResource InfoBannerStyle}" Visibility="Collapsed">
+                <TextBlock x:Name="BulkSummaryText" Style="{StaticResource BodyTextStyle}" />
+            </Border>
+
+            <Border Style="{StaticResource CardStyle}">
+                <StackPanel>
+                    <TextBlock Style="{StaticResource SubheadingTextStyle}" Text="2. Prüfung und Ausführung" />
+                    <DataGrid x:Name="BulkItemsGrid" MinHeight="160" MaxHeight="460" AutomationProperties.Name="Zeilen der CSV-Datei">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="Zeile" Binding="{Binding RowNumber}" Width="60" />
+                            <DataGridTextColumn Header="Person / Konto" Binding="{Binding Name}" Width="2*" />
+                            <DataGridTextColumn Header="Konto" Binding="{Binding Account}" Width="*" />
+                            <DataGridTextColumn Header="Prüfung" Binding="{Binding StateText}" Width="110" />
+                            <DataGridTextColumn Header="Ergebnis" Binding="{Binding OutcomeText}" Width="150" />
+                            <DataGridTextColumn Header="Meldungen" Binding="{Binding MessagesText}" Width="3*" />
+                        </DataGrid.Columns>
+                    </DataGrid>
+                    <ProgressBar x:Name="BulkProgressBar" Minimum="0" Maximum="100" Value="0" Margin="0,10,0,4" />
+                    <TextBlock x:Name="BulkProgressText" Style="{StaticResource CaptionTextStyle}" />
+                    <TextBlock x:Name="BulkPasswordHint" Style="{StaticResource CaptionTextStyle}" Margin="0,6,0,0" />
+                    <WrapPanel Margin="0,12,0,0">
+                        <Button x:Name="BulkExecuteButton" Style="{StaticResource PrimaryButtonStyle}" Content="_Ausführen …" IsEnabled="False" Margin="0,0,8,8" />
+                        <Button x:Name="BulkCancelButton" Content="Abbre_chen" IsEnabled="False" Margin="0,0,8,8" />
+                        <Button x:Name="BulkExportButton" Content="Ergebnis _exportieren …" IsEnabled="False" Margin="0,0,8,8" />
+                    </WrapPanel>
+                </StackPanel>
+            </Border>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>
