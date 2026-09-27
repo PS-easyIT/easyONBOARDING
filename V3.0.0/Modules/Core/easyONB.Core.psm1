@@ -1514,6 +1514,62 @@ function Get-EobPlanOutcome {
     return 'Succeeded'
 }
 
+function Start-EobPlanRun {
+    <#
+    .SYNOPSIS
+        Bereitet die Ausführung eines Plans vor (Prüfungen, Status, Protokoll).
+    .DESCRIPTION
+        Wird von Invoke-EobPlan und von der kooperativen Ausführung der Oberfläche verwendet.
+        Live-Ausführungen setzen ein beschreibbares Audit-Log voraus.
+    #>
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)][pscustomobject]$Plan,
+        [switch]$Simulation
+    )
+
+    if (-not (Test-EobPlanExecutable -Plan $Plan)) {
+        $messages = @($Plan.Findings | Where-Object Severity -EQ 'Error' | ForEach-Object Message)
+        throw ("Der Plan kann nicht ausgeführt werden: " + ($messages -join ' | '))
+    }
+    if ($Simulation) { $Plan.Simulation = $true }
+    if (-not $Plan.Simulation -and -not (Test-EobAuditWritable)) {
+        throw 'Das Audit-Log ist nicht beschreibbar. Live-Ausführungen sind aus Gründen der Nachvollziehbarkeit gesperrt.'
+    }
+    $Plan.StartedAt = Get-Date
+    $Plan.Status = 'Running'
+    $level = if ($Plan.Simulation) { 'Information' } else { 'Audit' }
+    Write-EobLog -Level $level -OperationId $Plan.OperationId -Action ("{0}Started" -f $Plan.Kind) -Target (Get-EobPlanSubjectText -Plan $Plan) `
+        -Message ("Plan gestartet ({0} Schritte, Simulation: {1})" -f $Plan.Steps.Count, $Plan.Simulation)
+}
+
+function Complete-EobPlanRun {
+    <#
+    .SYNOPSIS
+        Schließt die Ausführung eines Plans ab (Gesamtstatus, Protokoll).
+    #>
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)][pscustomobject]$Plan,
+        [string[]]$IncludePhase
+    )
+
+    $Plan.CompletedAt = Get-Date
+    $Plan.Status = Get-EobPlanOutcome -Plan $Plan -IncludePhase $IncludePhase
+    $level = if ($Plan.Simulation) { 'Information' } else { 'Audit' }
+    $duration = if ($null -ne $Plan.StartedAt) { [long]($Plan.CompletedAt - $Plan.StartedAt).TotalMilliseconds } else { 0 }
+    Write-EobLog -Level $level -OperationId $Plan.OperationId -Action ("{0}Completed" -f $Plan.Kind) -Target (Get-EobPlanSubjectText -Plan $Plan) `
+        -Result $Plan.Status -DurationMs $duration -Message 'Plan abgeschlossen.'
+}
+
+function Get-EobPlanSubjectText {
+    [CmdletBinding()]
+    [OutputType([string])]
+    param([Parameter(Mandatory)][pscustomobject]$Plan)
+
+    return [string](Get-EobPropertyValue -InputObject $Plan.Subject -Name 'SamAccountName' -Default $Plan.Kind)
+}
+
 function Invoke-EobPlan {
     <#
     .SYNOPSIS
@@ -1538,39 +1594,24 @@ function Invoke-EobPlan {
         $messages = @($Plan.Findings | Where-Object Severity -EQ 'Error' | ForEach-Object Message)
         throw ("Der Plan kann nicht ausgeführt werden: " + ($messages -join ' | '))
     }
-
     if ($WhatIfPreference) {
         $Plan.Simulation = $true
     }
-
-    $subjectText = [string](Get-EobPropertyValue -InputObject $Plan.Subject -Name 'SamAccountName' -Default $Plan.Kind)
     if (-not $Plan.Simulation) {
-        if (-not $PSCmdlet.ShouldProcess($subjectText, ("{0}: {1} Schritt(e) ausführen" -f $Plan.Kind, $Plan.Steps.Count))) {
+        if (-not $PSCmdlet.ShouldProcess((Get-EobPlanSubjectText -Plan $Plan), ("{0}: {1} Schritt(e) ausführen" -f $Plan.Kind, $Plan.Steps.Count))) {
             $Plan.Status = 'Cancelled'
             return $Plan
         }
-        if (-not (Test-EobAuditWritable)) {
-            throw 'Das Audit-Log ist nicht beschreibbar. Live-Ausführungen sind aus Gründen der Nachvollziehbarkeit gesperrt.'
-        }
     }
 
-    $Plan.StartedAt = Get-Date
-    $Plan.Status = 'Running'
-    $startLevel = if ($Plan.Simulation) { 'Information' } else { 'Audit' }
-    Write-EobLog -Level $startLevel -OperationId $Plan.OperationId -Action ("{0}Started" -f $Plan.Kind) -Target $subjectText `
-        -Message ("Plan gestartet ({0} Schritte, Simulation: {1})" -f $Plan.Steps.Count, $Plan.Simulation)
-
+    Start-EobPlanRun -Plan $Plan
     foreach ($step in $Plan.Steps) {
         if ($IncludePhase -and $step.Phase -notin $IncludePhase) {
             continue
         }
         $null = Invoke-EobPlanStep -Plan $Plan -Step $step -Simulation:$Plan.Simulation
     }
-
-    $Plan.CompletedAt = Get-Date
-    $Plan.Status = Get-EobPlanOutcome -Plan $Plan -IncludePhase $IncludePhase
-    Write-EobLog -Level $startLevel -OperationId $Plan.OperationId -Action ("{0}Completed" -f $Plan.Kind) -Target $subjectText `
-        -Result $Plan.Status -DurationMs ([long]($Plan.CompletedAt - $Plan.StartedAt).TotalMilliseconds) -Message 'Plan abgeschlossen.'
+    Complete-EobPlanRun -Plan $Plan -IncludePhase $IncludePhase
     return $Plan
 }
 

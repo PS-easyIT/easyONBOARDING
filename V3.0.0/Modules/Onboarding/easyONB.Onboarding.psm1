@@ -1190,7 +1190,9 @@ function Get-EobPlanCredential {
     [CmdletBinding()]
     param([Parameter(Mandatory)][pscustomobject]$Plan)
 
-    if ($Plan.Simulation -or $Plan.Status -notin @('Succeeded', 'CompletedWithWarnings')) { return $null }
+    # Das Kennwort wird angezeigt, sobald das Konto angelegt bzw. das Kennwort gesetzt wurde - auch wenn
+    # spätere Schritte (z. B. Gruppen) fehlschlagen; sonst wäre das Konto ohne bekanntes Kennwort.
+    if ($Plan.Simulation -or $Plan.Kind -notin @('Onboarding', 'PasswordReset')) { return $null }
     $create = $Plan.Steps | Where-Object { $_.Action -in @('CreateUser', 'ResetPassword') -and $_.Status -eq 'Succeeded' } | Select-Object -First 1
     if ($null -eq $create) { return $null }
     $secretName = if ($Plan.Secrets.ContainsKey('InitialPassword')) { 'InitialPassword' } else { 'NewPassword' }

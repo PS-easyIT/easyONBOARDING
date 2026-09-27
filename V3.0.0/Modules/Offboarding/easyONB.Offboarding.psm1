@@ -895,6 +895,70 @@ function Get-EobOffboardingDuePhase {
 
 #region Ausführung und Warteschlange
 
+function Select-EobOffboardingPhase {
+    <#
+    .SYNOPSIS
+        Ermittelt die auszuführenden Phasen (fällig oder manuell gewählt) und prüft die Reihenfolge.
+    #>
+    [CmdletBinding()]
+    [OutputType([string[]])]
+    param(
+        [Parameter(Mandatory)][pscustomobject]$Plan,
+        [ValidateSet('Immediate', 'ExitDate', 'Retention')][string[]]$Phase,
+        [datetime]$Now = (Get-Date)
+    )
+
+    if ($Plan.Kind -ne 'Offboarding' -or $null -eq (Get-EobPropertyValue -InputObject $Plan -Name 'Offboarding')) { throw 'Kein Offboarding-Plan.' }
+    $details = $Plan.Offboarding
+    if (-not $Phase) { return @(Get-EobOffboardingDuePhase -Plan $Plan -Now $Now) }
+
+    $selected = @($script:ExecutablePhases | Where-Object { $_ -in $Phase })
+    $lastIndex = [array]::IndexOf($script:ExecutablePhases, $selected[-1])
+    for ($index = 0; $index -lt $lastIndex; $index++) {
+        $required = $script:ExecutablePhases[$index]
+        if ($required -notin $selected -and $required -notin $details.CompletedPhases -and $details.PhaseStepCount[$required] -gt 0) {
+            throw "Die Phase '$($selected[-1])' setzt die Phase '$required' voraus."
+        }
+    }
+    Write-EobLog -Level Warning -OperationId $Plan.OperationId -Action 'OffboardingPhaseOverride' -Target ([string]$Plan.Subject['SamAccountName']) `
+        -Message ("Phasen manuell ausgewählt: {0}" -f ($selected -join ', '))
+    return $selected
+}
+
+function Complete-EobOffboardingRun {
+    <#
+    .SYNOPSIS
+        Vermerkt erledigte Phasen und aktualisiert nach Live-Ausführungen die Warteschlange.
+    .DESCRIPTION
+        Eine Phase gilt als erledigt, wenn keiner ihrer Schritte fehlgeschlagen ist und die
+        Ausführung nicht abgebrochen wurde. Fehlgeschlagene Phasen werden beim nächsten Lauf
+        erneut ausgeführt.
+    #>
+    [CmdletBinding(SupportsShouldProcess)]
+    [OutputType([pscustomobject])]
+    param(
+        [Parameter(Mandatory)][pscustomobject]$Plan,
+        [AllowEmptyCollection()][string[]]$SelectedPhase = @(),
+        [switch]$NoQueue
+    )
+
+    $details = $Plan.Offboarding
+    foreach ($phaseName in $SelectedPhase) {
+        $failed = @($Plan.Steps | Where-Object { $_.Phase -eq $phaseName -and $_.Status -eq 'Failed' }).Count
+        $interrupted = $Plan.Aborted -or $Plan.CancelRequested
+        if ($failed -eq 0 -and -not $interrupted -and $phaseName -notin $details.CompletedPhases) {
+            $details.CompletedPhases += $phaseName
+        }
+    }
+    $hasErrors = @($Plan.Findings | Where-Object Severity -EQ 'Error').Count -gt 0
+    if (-not $Plan.Simulation -and -not $NoQueue -and -not $hasErrors -and $null -ne $details.User) {
+        if ($PSCmdlet.ShouldProcess($Plan.OperationId, 'Offboarding-Warteschlange aktualisieren')) {
+            $null = Save-EobOffboardingQueueEntry -Plan $Plan -Confirm:$false
+        }
+    }
+    return $Plan
+}
+
 function Invoke-EobOffboardingPlan {
     <#
     .SYNOPSIS
@@ -914,46 +978,29 @@ function Invoke-EobOffboardingPlan {
         [switch]$NoQueue
     )
 
-    if ($Plan.Kind -ne 'Offboarding' -or $null -eq (Get-EobPropertyValue -InputObject $Plan -Name 'Offboarding')) { throw 'Kein Offboarding-Plan.' }
-    $details = $Plan.Offboarding
-    if ($Phase) {
-        $selected = @($script:ExecutablePhases | Where-Object { $_ -in $Phase })
-        $lastIndex = [array]::IndexOf($script:ExecutablePhases, $selected[-1])
-        for ($index = 0; $index -lt $lastIndex; $index++) {
-            $required = $script:ExecutablePhases[$index]
-            if ($required -notin $selected -and $required -notin $details.CompletedPhases -and $details.PhaseStepCount[$required] -gt 0) {
-                throw "Die Phase '$($selected[-1])' setzt die Phase '$required' voraus."
-            }
-        }
-        Write-EobLog -Level Warning -OperationId $Plan.OperationId -Action 'OffboardingPhaseOverride' -Target ([string]$Plan.Subject['SamAccountName']) `
-            -Message ("Phasen manuell ausgewählt: {0}" -f ($selected -join ', '))
-    }
-    else {
-        $selected = @(Get-EobOffboardingDuePhase -Plan $Plan -Now $Now)
-    }
-
-    $withSteps = @($selected | Where-Object { $details.PhaseStepCount[$_] -gt 0 })
+    $selectParameters = @{ Plan = $Plan; Now = $Now }
+    if ($Phase) { $selectParameters['Phase'] = $Phase }
+    $selected = @(Select-EobOffboardingPhase @selectParameters)
+    if ($WhatIfPreference) { $Plan.Simulation = $true }
+    $withSteps = @($selected | Where-Object { $Plan.Offboarding.PhaseStepCount[$_] -gt 0 })
     if ($withSteps.Count -eq 0) {
-        foreach ($phaseName in $selected) { if ($phaseName -notin $details.CompletedPhases) { $details.CompletedPhases += $phaseName } }
         $Plan.Status = 'Scheduled'
-        if (-not $Plan.Simulation -and -not $WhatIfPreference -and -not $NoQueue -and @($Plan.Findings | Where-Object Severity -EQ 'Error').Count -eq 0) {
-            $null = Save-EobOffboardingQueueEntry -Plan $Plan -Confirm:$false
-        }
-        return $Plan
+        return (Complete-EobOffboardingRun -Plan $Plan -SelectedPhase $selected -NoQueue:$NoQueue -Confirm:$false)
     }
+    $null = Invoke-EobPlan -Plan $Plan -IncludePhase (@($script:AlwaysPhase) + $selected) -WhatIf:$Plan.Simulation -Confirm:$false
+    return (Complete-EobOffboardingRun -Plan $Plan -SelectedPhase $selected -NoQueue:$NoQueue -Confirm:$false)
+}
 
-    $null = Invoke-EobPlan -Plan $Plan -IncludePhase (@($script:AlwaysPhase) + $selected) -WhatIf:$WhatIfPreference -Confirm:$false
-    foreach ($phaseName in $selected) {
-        $failed = @($Plan.Steps | Where-Object { $_.Phase -eq $phaseName -and $_.Status -eq 'Failed' }).Count
-        $skippedAfterAbort = $Plan.Aborted -or $Plan.CancelRequested
-        if ($failed -eq 0 -and -not $skippedAfterAbort -and $phaseName -notin $details.CompletedPhases) {
-            $details.CompletedPhases += $phaseName
-        }
-    }
-    if (-not $Plan.Simulation -and -not $NoQueue) {
-        $null = Save-EobOffboardingQueueEntry -Plan $Plan -Confirm:$false
-    }
-    return $Plan
+function Get-EobOffboardingIncludePhase {
+    <#
+    .SYNOPSIS
+        Liefert die Phasenliste für Invoke-EobPlan bzw. die kooperative Ausführung (inkl. Dokumentation).
+    #>
+    [CmdletBinding()]
+    [OutputType([string[]])]
+    param([AllowEmptyCollection()][string[]]$SelectedPhase = @())
+
+    return @(@($script:AlwaysPhase) + $SelectedPhase)
 }
 
 function ConvertTo-EobOffboardingQueueRequest {
