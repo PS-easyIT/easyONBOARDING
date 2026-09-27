@@ -1,0 +1,21 @@
+; ==============================================================================
+; Beispiel für ein weiteres Unternehmen (Mandant / Tochtergesellschaft)
+; ------------------------------------------------------------------------------
+; Zum Aktivieren in "Company1.ini" umbenennen. Alle *.ini-Dateien in diesem Ordner
+; werden automatisch geladen. Werte in Config\easyONB.ini haben Vorrang.
+; Schlüssel dürfen die Abschnittsnummer als Suffix tragen (Legacy-kompatibel), z. B.
+; CompanyActiveDirectoryDomain1 - ohne Suffix gilt der Schlüssel ohne Nummer.
+; ==============================================================================
+
+[Company1]
+CompanyNameFirma=Example Services GmbH
+CompanyActiveDirectoryDomain=services.example.com
+CompanyActiveDirectoryOU=OU=Mitarbeiter,OU=Services,DC=example,DC=local
+CompanyMailDomain=@services.example.com
+CompanyMS365Domain=@example.onmicrosoft.com
+CompanyDomain=www.services.example.com
+CompanyStrasse=Beispielweg 2
+CompanyPLZ=54321
+CompanyOrt=Beispielstadt
+CompanyTelefon=+49 40 7654321-0
+CompanyCountry=DE

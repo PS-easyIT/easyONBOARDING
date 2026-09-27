@@ -1,0 +1,20 @@
+# Laufzeitdaten (enthalten personenbezogene Daten und Audit-Informationen)
+Logs/
+Reports/
+Data/
+
+# Lokale Konfiguration (nur die Vorlage wird versioniert)
+Config/easyONB.ini
+Config/easyONB.ini.*.bak
+Config/companies/*.ini
+!Config/companies/*.ini.example
+
+# Test- und Werkzeugartefakte
+TestResults/
+*.tmp
+
+# Zertifikate / Schlüssel
+*.pfx
+*.p12
+*.key
+*.pem

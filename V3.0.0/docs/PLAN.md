@@ -10,10 +10,11 @@ Der Legacy-Code (1.3.10 / 1.4.23) ist signiert, monolithisch und in zentralen Pf
 Signatur brechen und die kritischen Befunde (Kennwörter in Logs/Reports, Überschreiben
 bestehender Konten) nur punktuell beheben. Deshalb:
 
-1. **Neue modulare Anwendung 2.0.0 im Repository-Root** gemäß Zielarchitektur.
+1. **Neue modulare Anwendung 3.0.0 im Unterordner `V3.0.0`** gemäß Zielarchitektur (entspricht der
+   bestehenden Konvention mit Versionsordnern `V1.3.10`, `V1.4.XX`).
 2. **Legacy-Ordner bleiben unverändert** (Rollback, Nachvollziehbarkeit, gültige Signaturen) und werden
    mit einem Hinweis `DEPRECATED.md` versehen.
-3. **INI-Kompatibilität:** Die 2.0-Konfiguration liest das bestehende INI-Format. Unsichere Schlüssel
+3. **INI-Kompatibilität:** Die 3.0-Konfiguration liest das bestehende INI-Format. Unsichere Schlüssel
    (`fixPassword`, Klartext-Secrets, `SyncCommand`) werden erkannt, gemeldet und ignoriert.
    Migrationsskript: `Scripts/Convert-LegacyConfiguration.ps1`.
 
@@ -31,7 +32,7 @@ Details der Architekturentscheidungen: [ARCHITECTURE.md](ARCHITECTURE.md).
 | WP6 | Offboarding: Vorlagen aus Konfiguration, Schutzprüfungen, Snapshot vorher/nachher, Aktionskatalog, Mehrstufigkeit mit Warteschlange, abgesicherte Löschung, CSV | Offboarding | `Modules/Offboarding/*`, `Config/templates/*` | hoch (destruktiv) | Keine Aktion ohne Vorschau/Bestätigung; Löschung nur mit Frist, Backup, Tippbestätigung |
 | WP7 | Reporting (HTML/CSV/JSON/TXT, PDF mit Fallback), Legacy-Templates sicher, Exchange/Entra optional, Integrationsstatus | Stabilität | `Modules/Reporting/*`, `Modules/Exchange/*`, `Modules/Entra/*`, `ReportTemplates/*` | mittel | Reports ohne Secrets (Test), HTML-Encoding (Test), fehlende Integrationen verständlich angezeigt |
 | WP8 | WPF-GUI: linke Navigation, Dashboard, Wizards, Themes (Light/Dark), zentrale Dialoge, kooperative Ausführung | GUI | `GUI/*`, `Modules/UI/*`, `Start-easyONBOARDING.ps1` | hoch (nicht lokal testbar) | XAML ist gültig, alle referenzierten Controls existieren (statischer Test), XAML-Ladetest in CI (Windows) |
-| WP9 | Tests & CI: Pester (Unit), Parser, PSScriptAnalyzer, Secret-Scan, Doku-Prüfung | Tests | `Tests/*`, `.github/workflows/ci.yml`, `PSScriptAnalyzerSettings.psd1`, `Scripts/*` | gering | Alle Tests grün; Workflow mit gepinnten SHAs und `contents: read` |
+| WP9 | Tests & CI: Pester (Unit), Parser, PSScriptAnalyzer, Secret-Scan, Doku-Prüfung | Tests | `Tests/*`, `.github/workflows/ci.yml` (Repository-Root, technisch erforderlich), `PSScriptAnalyzerSettings.psd1`, `Scripts/*` | gering | Alle Tests grün; Workflow mit gepinnten SHAs und `contents: read` |
 | WP10 | Dokumentation: README, CHANGELOG, SECURITY, CONTRIBUTING, docs/* | Doku | `*.md`, `docs/*` | gering | Doku entspricht Implementierungsstand; Status (produktiv/simuliert/vorbereitet) markiert |
 
 ## Nicht-Ziele / bewusst ausgelassen

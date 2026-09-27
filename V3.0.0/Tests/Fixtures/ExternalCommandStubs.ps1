@@ -1,0 +1,198 @@
+<#
+.SYNOPSIS
+    Stub-Funktionen für externe Cmdlets (ActiveDirectory, Exchange, Microsoft Graph, Entra Connect).
+
+.DESCRIPTION
+    Die Stubs werden global definiert und verdecken damit ggf. installierte echte Cmdlets
+    (Funktionen haben Vorrang vor Cmdlets). Ein nicht gemockter Aufruf führt zu einer Exception.
+    Die Parameterlisten decken alle von easyONBOARDING verwendeten Parameter ab, damit Pester-Mocks
+    mit ParameterFilter arbeiten können.
+#>
+
+function global:Invoke-EobUnmockedStub {
+    param([string]$Name)
+    throw "Test-Stub '$Name' wurde aufgerufen, ohne gemockt zu sein. Tests dürfen keine echten Systeme ansprechen."
+}
+
+# ---------------------------------------------------------------- ActiveDirectory
+function global:Get-ADDomain {
+    [CmdletBinding()]
+    param([object]$Identity, [string]$Server, [pscredential]$Credential)
+    Invoke-EobUnmockedStub -Name 'Get-ADDomain'
+}
+function global:Get-ADDomainController {
+    [CmdletBinding()]
+    param([object]$Identity, [switch]$Discover, [switch]$Writable, [string]$DomainName, [string]$Server, [object]$Service)
+    Invoke-EobUnmockedStub -Name 'Get-ADDomainController'
+}
+function global:Get-ADUser {
+    [CmdletBinding()]
+    param([object]$Identity, [string]$Filter, [string]$LDAPFilter, [string[]]$Properties, [string]$Server,
+        [string]$SearchBase, [object]$SearchScope, [object]$ResultSetSize, [pscredential]$Credential)
+    Invoke-EobUnmockedStub -Name 'Get-ADUser'
+}
+function global:New-ADUser {
+    [CmdletBinding(SupportsShouldProcess)]
+    param([string]$Name, [string]$SamAccountName, [string]$UserPrincipalName, [string]$GivenName, [string]$Surname,
+        [string]$DisplayName, [string]$Path, [securestring]$AccountPassword, [object]$Enabled, [object]$ChangePasswordAtLogon,
+        [string]$Description, [string]$Title, [string]$Department, [string]$Company, [string]$Office, [string]$OfficePhone,
+        [string]$MobilePhone, [string]$EmailAddress, [string]$EmployeeID, [string]$EmployeeNumber, [string]$StreetAddress,
+        [string]$City, [string]$PostalCode, [string]$Country, [string]$State, [string]$HomeDirectory, [string]$HomeDrive,
+        [string]$ProfilePath, [string]$ScriptPath, [object]$AccountExpirationDate, [object]$Manager, [string]$HomePage,
+        [string]$Initials, [hashtable]$OtherAttributes, [string]$Server, [switch]$PassThru)
+    Invoke-EobUnmockedStub -Name 'New-ADUser'
+}
+function global:Set-ADUser {
+    [CmdletBinding(SupportsShouldProcess)]
+    param([object]$Identity, [hashtable]$Replace, [hashtable]$Add, [hashtable]$Remove, [string[]]$Clear, [string]$Description,
+        [object]$Manager, [object]$ChangePasswordAtLogon, [object]$Enabled, [string]$DisplayName, [string]$GivenName,
+        [string]$Surname, [string]$Title, [string]$Department, [string]$Company, [string]$Office, [string]$OfficePhone,
+        [string]$MobilePhone, [string]$EmailAddress, [string]$HomeDirectory, [string]$HomeDrive, [string]$ProfilePath,
+        [string]$Server, [switch]$PassThru)
+    Invoke-EobUnmockedStub -Name 'Set-ADUser'
+}
+function global:Remove-ADUser {
+    [CmdletBinding(SupportsShouldProcess)]
+    param([object]$Identity, [string]$Server)
+    Invoke-EobUnmockedStub -Name 'Remove-ADUser'
+}
+function global:Remove-ADObject {
+    [CmdletBinding(SupportsShouldProcess)]
+    param([object]$Identity, [switch]$Recursive, [string]$Server)
+    Invoke-EobUnmockedStub -Name 'Remove-ADObject'
+}
+function global:Get-ADObject {
+    [CmdletBinding()]
+    param([object]$Identity, [string]$Filter, [string]$LDAPFilter, [string[]]$Properties, [string]$Server,
+        [string]$SearchBase, [object]$SearchScope, [object]$ResultSetSize)
+    Invoke-EobUnmockedStub -Name 'Get-ADObject'
+}
+function global:Set-ADObject {
+    [CmdletBinding(SupportsShouldProcess)]
+    param([object]$Identity, [hashtable]$Replace, [string[]]$Clear, [object]$ProtectedFromAccidentalDeletion, [string]$Server)
+    Invoke-EobUnmockedStub -Name 'Set-ADObject'
+}
+function global:Move-ADObject {
+    [CmdletBinding(SupportsShouldProcess)]
+    param([object]$Identity, [string]$TargetPath, [string]$Server, [switch]$PassThru)
+    Invoke-EobUnmockedStub -Name 'Move-ADObject'
+}
+function global:Get-ADGroup {
+    [CmdletBinding()]
+    param([object]$Identity, [string]$Filter, [string]$LDAPFilter, [string[]]$Properties, [string]$Server,
+        [string]$SearchBase, [object]$ResultSetSize)
+    Invoke-EobUnmockedStub -Name 'Get-ADGroup'
+}
+function global:Get-ADGroupMember {
+    [CmdletBinding()]
+    param([object]$Identity, [switch]$Recursive, [string]$Server)
+    Invoke-EobUnmockedStub -Name 'Get-ADGroupMember'
+}
+function global:Add-ADGroupMember {
+    [CmdletBinding(SupportsShouldProcess)]
+    param([object]$Identity, [object[]]$Members, [string]$Server)
+    Invoke-EobUnmockedStub -Name 'Add-ADGroupMember'
+}
+function global:Remove-ADGroupMember {
+    [CmdletBinding(SupportsShouldProcess)]
+    param([object]$Identity, [object[]]$Members, [string]$Server)
+    Invoke-EobUnmockedStub -Name 'Remove-ADGroupMember'
+}
+function global:Get-ADPrincipalGroupMembership {
+    [CmdletBinding()]
+    param([object]$Identity, [string]$Server)
+    Invoke-EobUnmockedStub -Name 'Get-ADPrincipalGroupMembership'
+}
+function global:Get-ADOrganizationalUnit {
+    [CmdletBinding()]
+    param([object]$Identity, [string]$Filter, [string]$LDAPFilter, [string[]]$Properties, [string]$Server,
+        [string]$SearchBase, [object]$SearchScope, [object]$ResultSetSize)
+    Invoke-EobUnmockedStub -Name 'Get-ADOrganizationalUnit'
+}
+function global:Disable-ADAccount {
+    [CmdletBinding(SupportsShouldProcess)]
+    param([object]$Identity, [string]$Server)
+    Invoke-EobUnmockedStub -Name 'Disable-ADAccount'
+}
+function global:Enable-ADAccount {
+    [CmdletBinding(SupportsShouldProcess)]
+    param([object]$Identity, [string]$Server)
+    Invoke-EobUnmockedStub -Name 'Enable-ADAccount'
+}
+function global:Set-ADAccountPassword {
+    [CmdletBinding(SupportsShouldProcess)]
+    param([object]$Identity, [securestring]$NewPassword, [switch]$Reset, [string]$Server)
+    Invoke-EobUnmockedStub -Name 'Set-ADAccountPassword'
+}
+function global:Set-ADAccountExpiration {
+    [CmdletBinding(SupportsShouldProcess)]
+    param([object]$Identity, [object]$DateTime, [string]$Server)
+    Invoke-EobUnmockedStub -Name 'Set-ADAccountExpiration'
+}
+function global:Get-ADDefaultDomainPasswordPolicy {
+    [CmdletBinding()]
+    param([object]$Identity, [string]$Server)
+    Invoke-EobUnmockedStub -Name 'Get-ADDefaultDomainPasswordPolicy'
+}
+function global:Get-ADOptionalFeature {
+    [CmdletBinding()]
+    param([object]$Identity, [string]$Filter, [string]$Server)
+    Invoke-EobUnmockedStub -Name 'Get-ADOptionalFeature'
+}
+
+# ---------------------------------------------------------------- Exchange
+function global:Get-Mailbox {
+    [CmdletBinding()]
+    param([object]$Identity, [object]$ResultSize)
+    Invoke-EobUnmockedStub -Name 'Get-Mailbox'
+}
+function global:Set-Mailbox {
+    [CmdletBinding(SupportsShouldProcess)]
+    param([object]$Identity, [string]$Type, [object]$HiddenFromAddressListsEnabled, [string]$ForwardingSmtpAddress,
+        [object]$ForwardingAddress, [object]$DeliverToMailboxAndForward)
+    Invoke-EobUnmockedStub -Name 'Set-Mailbox'
+}
+function global:Set-MailboxAutoReplyConfiguration {
+    [CmdletBinding(SupportsShouldProcess)]
+    param([object]$Identity, [string]$AutoReplyState, [string]$InternalMessage, [string]$ExternalMessage,
+        [string]$ExternalAudience, [object]$StartTime, [object]$EndTime)
+    Invoke-EobUnmockedStub -Name 'Set-MailboxAutoReplyConfiguration'
+}
+function global:Get-MailboxPermission {
+    [CmdletBinding()]
+    param([object]$Identity)
+    Invoke-EobUnmockedStub -Name 'Get-MailboxPermission'
+}
+function global:Get-ConnectionInformation {
+    [CmdletBinding()]
+    param()
+    Invoke-EobUnmockedStub -Name 'Get-ConnectionInformation'
+}
+function global:Enable-Mailbox {
+    [CmdletBinding(SupportsShouldProcess)]
+    param([object]$Identity, [string]$Database, [string]$Alias)
+    Invoke-EobUnmockedStub -Name 'Enable-Mailbox'
+}
+function global:Enable-RemoteMailbox {
+    [CmdletBinding(SupportsShouldProcess)]
+    param([object]$Identity, [string]$RemoteRoutingAddress, [string]$Alias)
+    Invoke-EobUnmockedStub -Name 'Enable-RemoteMailbox'
+}
+
+# ---------------------------------------------------------------- Microsoft Graph
+function global:Get-MgContext {
+    [CmdletBinding()]
+    param()
+    Invoke-EobUnmockedStub -Name 'Get-MgContext'
+}
+function global:Revoke-MgUserSignInSession {
+    [CmdletBinding(SupportsShouldProcess)]
+    param([string]$UserId)
+    Invoke-EobUnmockedStub -Name 'Revoke-MgUserSignInSession'
+}
+
+# ---------------------------------------------------------------- Remoting (Entra Connect)
+function global:Invoke-EobRemoteSyncStub {
+    param()
+    Invoke-EobUnmockedStub -Name 'Invoke-EobRemoteSyncStub'
+}
