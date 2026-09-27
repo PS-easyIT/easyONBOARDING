@@ -70,6 +70,8 @@
                         <ListBox x:Name="UpdAddGroupsList" SelectionMode="Extended" Height="170" AutomationProperties.Name="Gruppen hinzufügen" />
                         <TextBlock Style="{StaticResource CaptionTextStyle}" Margin="0,6,0,0"
                                    Text="Privilegierte Gruppen werden nicht angeboten und nie automatisch zugewiesen." />
+                        <CheckBox x:Name="UpdEnableAccountCheck" Content="Konto aktivieren (derzeit deaktiviert)" Visibility="Collapsed" Margin="0,12,0,0"
+                                  ToolTip="Für Konten, die bei der Anlage deaktiviert wurden (Aktivierung bei Übergabe)." />
                         <TextBlock Style="{StaticResource FieldLabelStyle}" Text="Ticket / Vorgangsnummer" />
                         <TextBox x:Name="UpdTicketText" AutomationProperties.Name="Ticketnummer" />
                         <WrapPanel Margin="0,16,0,0">

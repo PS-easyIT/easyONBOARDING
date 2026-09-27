@@ -93,8 +93,10 @@ Kennwörter. Die Ansicht *Reports und Audit* listet Berichte und Audit-Einträge
 
 Suche nach Name, Anmeldename, UPN oder E-Mail; geänderte Felder, Führungskraft sowie hinzuzufügende
 und zu entfernende Gruppen erscheinen in der Vorschau als Vorher/Nachher. Nur tatsächlich geänderte
-Werte werden geschrieben. Ein **Kennwort-Reset** ist eine eigene Aktion mit Bestätigung und
-einmaliger Anzeige des neuen Kennworts. Geschützte Konten lassen sich nicht bearbeiten.
+Werte werden geschrieben. Deaktiviert angelegte Konten (`[ADUserDefaults] AccountDisabled=True`,
+"Aktivierung bei Übergabe") werden hier mit *Konto aktivieren* freigeschaltet; liegt das Konto in der
+OU für ausgeschiedene Benutzer, warnt die Vorschau. Ein **Kennwort-Reset** ist eine eigene Aktion mit
+Bestätigung und einmaliger Anzeige des neuen Kennworts. Geschützte Konten lassen sich nicht bearbeiten.
 
 ## Massenverarbeitung (CSV)
 

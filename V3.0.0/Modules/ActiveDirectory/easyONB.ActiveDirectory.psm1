@@ -1059,17 +1059,20 @@ function Disable-EobAdUserAccount {
 function Enable-EobAdUserAccount {
     <#
     .SYNOPSIS
-        Aktiviert ein Benutzerkonto.
+        Aktiviert ein Benutzerkonto (z. B. bei der Übergabe eines deaktiviert angelegten Kontos).
     #>
     [CmdletBinding(SupportsShouldProcess, ConfirmImpact = 'Medium')]
     [OutputType([pscustomobject])]
-    param([Parameter(Mandatory)][string]$Identity)
+    param(
+        [Parameter(Mandatory)][string]$Identity,
+        [switch]$AllowPrivileged
+    )
 
     if (-not $PSCmdlet.ShouldProcess($Identity, 'Konto aktivieren')) {
         return New-EobNotProcessedResult -Message 'Konto würde aktiviert.'
     }
     Assert-EobAdConnected
-    $null = Assert-EobAdTargetAllowed -Identity $Identity
+    $null = Assert-EobAdTargetAllowed -Identity $Identity -AllowPrivileged:$AllowPrivileged
     try {
         $server = Get-EobAdServerParameter
         Enable-ADAccount -Identity $Identity @server -ErrorAction Stop

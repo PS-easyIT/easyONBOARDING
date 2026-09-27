@@ -419,6 +419,40 @@ Describe 'Benutzer aktualisieren und Kennwort zurücksetzen' {
         $plan.Findings.Code | Should -Contain 'UPD_GROUP_PROTECTED'
     }
 
+    It 'aktiviert ein deaktiviertes Konto nur auf ausdrücklichen Wunsch' {
+        Mock -ModuleName $script:OnbModule Get-EobAdUser {
+            [pscustomobject]@{ SamAccountName = 'mmuster'; UserPrincipalName = 'mmuster@example.com'; DisplayName = 'Max Muster'; Enabled = $false
+                Title = 'Alt'; Department = 'IT'; Company = ''; Office = ''; OfficePhone = ''; MobilePhone = ''; Description = ''; EmployeeId = ''; EmployeeNumber = ''
+                Manager = ''; MemberOf = @(); DistinguishedName = $script:UserDn; ObjectGuid = '11111111-2222-3333-4444-555555555555'
+                Sid = 'S-1-5-21-1-2-3-1500'; AdminCount = 0; PrimaryGroupId = 513; ObjectClass = 'user'
+            }
+        }
+        $script:UserDn = 'CN=Max Muster,OU=Mitarbeiter,DC=example,DC=local'
+        @((New-EobUserUpdatePlan -Identity 'mmuster' -Config $script:Config).Steps).Count | Should -Be 0
+        $plan = New-EobUserUpdatePlan -Identity 'mmuster' -EnableAccount -Config $script:Config
+        $plan.Steps[0].Action | Should -Be 'EnableAccount'
+        $plan.Steps[0].Handler | Should -Be 'Enable-EobAdUserAccount'
+        $plan.Findings.Code | Should -Not -Contain 'UPD_ENABLE_OFFBOARDED'
+
+        $script:UserDn = 'CN=Max Muster,OU=Ausgeschieden,DC=example,DC=local'
+        $config = New-TestConfig -Extra "[Offboarding]`nDisabledUsersOU=OU=Ausgeschieden,DC=example,DC=local"
+        $plan = New-EobUserUpdatePlan -Identity 'mmuster' -EnableAccount -Config $config
+        $plan.Findings.Code | Should -Contain 'UPD_ENABLE_OFFBOARDED'
+        $plan.Steps[0].Action | Should -Be 'EnableAccount'
+    }
+
+    It 'meldet bereits aktive Konten statt sie erneut zu aktivieren' {
+        Mock -ModuleName $script:OnbModule Get-EobAdUser {
+            [pscustomobject]@{ SamAccountName = 'mmuster'; UserPrincipalName = 'mmuster@example.com'; DisplayName = 'Max Muster'; Enabled = $true
+                Manager = ''; MemberOf = @(); DistinguishedName = 'CN=Max Muster,OU=Mitarbeiter,DC=example,DC=local'; ObjectGuid = '11111111-2222-3333-4444-555555555555'
+                Sid = 'S-1-5-21-1-2-3-1500'; AdminCount = 0; PrimaryGroupId = 513; ObjectClass = 'user'
+            }
+        }
+        $plan = New-EobUserUpdatePlan -Identity 'mmuster' -EnableAccount -Config $script:Config
+        $plan.Findings.Code | Should -Contain 'UPD_ALREADY_ENABLED'
+        @($plan.Steps).Count | Should -Be 0
+    }
+
     It 'meldet bestehende Mitgliedschaften statt sie erneut zu setzen' {
         $plan = New-EobUserUpdatePlan -Identity 'mmuster' -AddGroups 'Vertrieb' -Config $script:Config
         $plan.Findings.Code | Should -Contain 'UPD_ALREADY_MEMBER'

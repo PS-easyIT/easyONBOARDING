@@ -186,5 +186,6 @@ Namenskollisionen: `Send-WelcomeEmail` (2×), `Test-UserInput` (2×), `New-UserR
 * README-Beispiel `CompanyADDomain`, `DefaultOU` unter `[Company]`, `LicensesGroups E3=` weichen von den tatsächlichen Schlüsseln ab.
 * README nennt Module/Funktionen (`New-ADUserFromData`, `Validate-Settings`, `Initialize-GUI`), die nicht existieren.
 * "Hot-Reload", "Live-Validierung", "Audit Trail", "Asset Management", "Schulungsplan", "Zugangskarten" sind als implementiert markiert, existieren aber nicht.
-* Platzhalter `yourusername`, `yourdomain.com`, `support@yourdomain.com` in `V1.4.XX/README.md`.
+* Platzhalter `yourusername`, `yourdomain.com`, `support@yourdomain.com` in `V1.4.XX/README.md`
+  (inzwischen durch Repository-Adresse, Beispieldomäne und Kontakt des Autors ersetzt).
 * Beispiel-INI enthält reale Domänen des Autors (`phinit.de`, `psscripts.de` …) statt neutraler Beispieldaten.

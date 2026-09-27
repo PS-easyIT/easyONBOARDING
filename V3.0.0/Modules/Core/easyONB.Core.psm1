@@ -254,25 +254,6 @@ function Get-EobSafeFileName {
     return $safe
 }
 
-function New-EobDirectory {
-    <#
-    .SYNOPSIS
-        Legt ein Verzeichnis an (falls nötig) und liefert den vollständigen Pfad.
-    #>
-    [CmdletBinding(SupportsShouldProcess)]
-    [OutputType([string])]
-    param(
-        [Parameter(Mandatory)][string]$Path
-    )
-
-    if (-not (Test-Path -LiteralPath $Path -PathType Container)) {
-        if ($PSCmdlet.ShouldProcess($Path, 'Verzeichnis anlegen')) {
-            $null = New-Item -ItemType Directory -Path $Path -Force -ErrorAction Stop
-        }
-    }
-    return $Path
-}
-
 #endregion
 
 #region Konvertierung und Hilfsfunktionen

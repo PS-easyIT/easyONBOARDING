@@ -53,7 +53,8 @@ sich auf die Bestandsaufnahme in [docs/ANALYSIS.md](docs/ANALYSIS.md).
 - UPN- und Anzeigenamen-Vorlagen werden korrekt ausgewertet; Legacy-Schlüsselwörter wie
   `FIRSTNAME.LASTNAME` bleiben gültig (F-09).
 - "Benutzer aktualisieren" ändert nur tatsächlich geänderte Werte und setzt nie nebenbei ein
-  Kennwort (C-04); der Kennwort-Reset ist eine eigene, bestätigte Aktion.
+  Kennwort (C-04); der Kennwort-Reset ist eine eigene, bestätigte Aktion. Deaktiviert angelegte
+  Konten werden dort bei der Übergabe aktiviert.
 - AD-Suchen und Filter werden maskiert (H-05); Führungskräfte werden eindeutig aufgelöst (H-12).
 - Welcome-Mail über `System.Net.Mail` statt `Send-MailMessage`, Absender einheitlich
   `[EmailSettings] FromAddress` (M-09).

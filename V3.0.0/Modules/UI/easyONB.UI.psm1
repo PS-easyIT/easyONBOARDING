@@ -2465,7 +2465,9 @@ function Select-EobUserUpdateUser {
     $user = Get-EobAdUser -Identity $Identity
     $state.User = $user
     if ($null -ne $state.Plan) { Clear-EobPlanSecret -Plan $state.Plan -Confirm:$false; $state.Plan = $null }
-    $c.UpdSelectedUserText.Text = "Ausgewählt: $($user.DisplayName) ($($user.SamAccountName)) · $($user.UserPrincipalName)"
+    $c.UpdSelectedUserText.Text = "Ausgewählt: $($user.DisplayName) ($($user.SamAccountName)) · $($user.UserPrincipalName)" + $(if (-not $user.Enabled) { ' · deaktiviert' } else { '' })
+    $c.UpdEnableAccountCheck.IsChecked = $false
+    $c.UpdEnableAccountCheck.Visibility = if ($user.Enabled) { 'Collapsed' } else { 'Visible' }
     $c.UpdDisplayNameText.Text = $user.DisplayName
     $c.UpdTitleText.Text = $user.Title
     $c.UpdDepartmentText.Text = $user.Department
@@ -2516,6 +2518,7 @@ function Show-EobUserUpdatePreview {
     if (([string]$c.UpdManagerText.Text).Trim() -ne [string]$state.ManagerText) { $changes['Manager'] = $c.UpdManagerText.Text }
     $parameters = @{
         Identity = [string]$state.User.ObjectGuid; Changes = $changes; Config = $script:Ui.Config; Simulation = $script:Ui.Simulation
+        EnableAccount = [bool]$c.UpdEnableAccountCheck.IsChecked
         AddGroups = @(Get-EobListSelection -List $c.UpdAddGroupsList); RemoveGroups = @(Get-EobListSelection -List $c.UpdCurrentGroupsList)
     }
     $plan = New-EobUserUpdatePlan @parameters
