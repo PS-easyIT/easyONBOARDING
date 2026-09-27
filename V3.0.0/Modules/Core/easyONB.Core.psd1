@@ -32,7 +32,6 @@
         'Invoke-EobLogMaintenance'
         'Invoke-EobPlan'
         'Invoke-EobPlanStep'
-        'New-EobDirectory'
         'New-EobFinding'
         'New-EobIntegrationStatus'
         'New-EobOperationContext'

@@ -1291,6 +1291,8 @@ function New-EobUserUpdatePlan {
         Hinzuzufügende Gruppen.
     .PARAMETER RemoveGroups
         Zu entfernende Gruppen.
+    .PARAMETER EnableAccount
+        Deaktiviertes Konto aktivieren (z. B. bei der Übergabe eines deaktiviert angelegten Kontos).
     #>
     [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseShouldProcessForStateChangingFunctions', '', Justification = 'Erzeugt nur ein Objekt im Speicher; keine Systemänderung.')]
     [CmdletBinding()]
@@ -1301,6 +1303,7 @@ function New-EobUserUpdatePlan {
         [string[]]$AddGroups = @(),
         [string[]]$RemoveGroups = @(),
         [AllowNull()][pscustomobject]$Config,
+        [switch]$EnableAccount,
         [switch]$AllowPrivileged,
         [switch]$Simulation
     )
@@ -1366,6 +1369,22 @@ function New-EobUserUpdatePlan {
             catch {
                 Add-EobPlanFinding -Plan $plan -Severity Error -Code 'UPD_MANAGER_UNRESOLVED' -Field 'Manager' -Message "Führungskraft: $($_.Exception.Message)"
             }
+        }
+    }
+
+    if ($EnableAccount) {
+        if ($user.Enabled) {
+            Add-EobPlanFinding -Plan $plan -Severity Information -Code 'UPD_ALREADY_ENABLED' -Field 'EnableAccount' -Message 'Das Konto ist bereits aktiviert.'
+        }
+        else {
+            # Konten in der OU für ausgeschiedene Benutzer nur bewusst reaktivieren.
+            $disabledOu = [string](Get-EobConfigValue -Config $Config -Section 'Offboarding' -Key 'DisabledUsersOU')
+            if ($disabledOu -and ([string]$user.DistinguishedName).EndsWith(",$disabledOu", [System.StringComparison]::OrdinalIgnoreCase)) {
+                Add-EobPlanFinding -Plan $plan -Severity Warning -Code 'UPD_ENABLE_OFFBOARDED' -Field 'EnableAccount' -Message "Das Konto liegt in der OU für ausgeschiedene Benutzer ($disabledOu). Bitte prüfen, ob ein Offboarding-Vorgang läuft."
+            }
+            $null = Add-EobPlanStep -Plan $plan -Action 'EnableAccount' -Title 'Konto aktivieren' -Target $user.SamAccountName -Handler 'Enable-EobAdUserAccount' -Risk Medium -Parameters @{
+                Identity = $target; AllowPrivileged = [bool]$AllowPrivileged
+            } -Details @('Bisher: deaktiviert')
         }
     }
 
