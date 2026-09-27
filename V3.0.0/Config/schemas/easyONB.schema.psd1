@@ -138,6 +138,8 @@
                 TemplatePathTXT    = @{ Type = 'Path'; Default = ''; Description = 'Legacy-TXT-Vorlage (wird nicht mehr verwendet, TXT-Berichte werden generiert).'; Unused = $true }
                 TemplateLogo       = @{ Type = 'Path'; Default = ''; Description = 'Logo für HTML-Berichte.' }
                 wkhtmltopdfPath    = @{ Type = 'Path'; Default = ''; Description = 'Pfad zu wkhtmltopdf.exe (Legacy-PDF-Engine, optional).' }
+                EdgePath           = @{ Type = 'Path'; Default = ''; Description = 'Optionaler Pfad zu msedge.exe (sonst Standard-Installationspfade).' }
+                PdfTimeoutSeconds  = @{ Type = 'Int'; Min = 5; Max = 300; Default = '60'; Description = 'Zeitlimit der PDF-Erzeugung in Sekunden.' }
                 Formats            = @{ Type = 'List'; Default = 'Html;Json'; Description = 'Berichtsformate: Html, Json, Csv, Txt, Pdf.' }
                 PdfEngine          = @{ Type = 'Enum'; Values = @('Auto', 'Edge', 'Wkhtmltopdf', 'None'); Default = 'Auto'; Description = 'PDF-Erzeugung (Auto = Edge, sonst wkhtmltopdf, sonst HTML).' }
                 CreateWelcomeDocument = @{ Type = 'Bool'; Default = '1'; Description = 'Willkommensdokument aus TemplatePathHTML erzeugen (ohne Kennwort).' }

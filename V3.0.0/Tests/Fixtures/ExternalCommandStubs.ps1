@@ -179,6 +179,21 @@ function global:Enable-RemoteMailbox {
     param([object]$Identity, [string]$RemoteRoutingAddress, [string]$Alias)
     Invoke-EobUnmockedStub -Name 'Enable-RemoteMailbox'
 }
+function global:Set-RemoteMailbox {
+    [CmdletBinding(SupportsShouldProcess)]
+    param([object]$Identity, [string]$Type)
+    Invoke-EobUnmockedStub -Name 'Set-RemoteMailbox'
+}
+function global:Connect-ExchangeOnline {
+    [CmdletBinding()]
+    param([string]$UserPrincipalName, [switch]$ShowBanner)
+    Invoke-EobUnmockedStub -Name 'Connect-ExchangeOnline'
+}
+function global:Disconnect-ExchangeOnline {
+    [CmdletBinding(SupportsShouldProcess)]
+    param()
+    Invoke-EobUnmockedStub -Name 'Disconnect-ExchangeOnline'
+}
 
 # ---------------------------------------------------------------- Microsoft Graph
 function global:Get-MgContext {
@@ -191,9 +206,20 @@ function global:Revoke-MgUserSignInSession {
     param([string]$UserId)
     Invoke-EobUnmockedStub -Name 'Revoke-MgUserSignInSession'
 }
-
-# ---------------------------------------------------------------- Remoting (Entra Connect)
-function global:Invoke-EobRemoteSyncStub {
+function global:Connect-MgGraph {
+    [CmdletBinding()]
+    param([string[]]$Scopes, [string]$TenantId, [switch]$NoWelcome)
+    Invoke-EobUnmockedStub -Name 'Connect-MgGraph'
+}
+function global:Disconnect-MgGraph {
+    [CmdletBinding()]
     param()
-    Invoke-EobUnmockedStub -Name 'Invoke-EobRemoteSyncStub'
+    Invoke-EobUnmockedStub -Name 'Disconnect-MgGraph'
+}
+
+# ---------------------------------------------------------------- Entra Connect (ADSync)
+function global:Start-ADSyncSyncCycle {
+    [CmdletBinding()]
+    param([string]$PolicyType)
+    Invoke-EobUnmockedStub -Name 'Start-ADSyncSyncCycle'
 }

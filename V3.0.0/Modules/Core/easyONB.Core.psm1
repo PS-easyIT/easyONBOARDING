@@ -7,6 +7,9 @@
 
 Set-StrictMode -Version 3.0
 
+# Zeichen, mit denen Tabellenkalkulationen eine Formel beginnen (CSV-Injektion)
+$script:CsvFormulaPrefixes = [char[]]@('=', '+', '-', '@', "`t", "`r")
+
 #region Modulzustand
 
 $script:AppRoot = [System.IO.Path]::GetFullPath((Join-Path -Path $PSScriptRoot -ChildPath (Join-Path -Path '..' -ChildPath '..')))
@@ -272,6 +275,62 @@ function New-EobDirectory {
 #endregion
 
 #region Konvertierung und Hilfsfunktionen
+
+function ConvertTo-EobHtmlEncoded {
+    <#
+    .SYNOPSIS
+        HTML-kodiert einen Wert für Berichte, Vorlagen und E-Mails (null ergibt einen Leerstring).
+    .DESCRIPTION
+        Kodiert die in Text und Attributwerten relevanten Zeichen & < > " '. Umlaute bleiben
+        lesbar erhalten (Dokumente werden als UTF-8 geschrieben).
+    #>
+    [CmdletBinding()]
+    [OutputType([string])]
+    param([Parameter(ValueFromPipeline)][AllowNull()][object]$Value)
+
+    process {
+        if ($null -eq $Value) { return '' }
+        return ([string]$Value).Replace('&', '&amp;').Replace('<', '&lt;').Replace('>', '&gt;').Replace('"', '&quot;').Replace("'", '&#39;')
+    }
+}
+
+function ConvertTo-EobCsvSafeValue {
+    <#
+    .SYNOPSIS
+        Schützt Texte in CSV-Exporten vor Formel-Injektion (Beginn mit =, +, -, @, Tab oder CR).
+    .DESCRIPTION
+        Betroffenen Texten wird ein Apostroph vorangestellt, damit Tabellenkalkulationen sie
+        nicht als Formel auswerten. Zahlen und andere Werttypen bleiben unverändert.
+    #>
+    [CmdletBinding()]
+    [OutputType([object])]
+    param([AllowNull()][object]$Value)
+
+    if ($Value -isnot [string]) { return $Value }
+    if ($Value.Length -gt 0 -and $Value.IndexOfAny($script:CsvFormulaPrefixes) -eq 0) {
+        return "'" + $Value
+    }
+    return $Value
+}
+
+function ConvertTo-EobCsvSafeObject {
+    <#
+    .SYNOPSIS
+        Wendet ConvertTo-EobCsvSafeValue auf alle Eigenschaften eines Objekts an.
+    #>
+    [CmdletBinding()]
+    [OutputType([pscustomobject])]
+    param([Parameter(Mandatory, ValueFromPipeline)][AllowNull()][object]$InputObject)
+
+    process {
+        if ($null -eq $InputObject) { return }
+        $copy = [ordered]@{}
+        foreach ($property in $InputObject.PSObject.Properties) {
+            $copy[$property.Name] = ConvertTo-EobCsvSafeValue -Value $property.Value
+        }
+        [pscustomobject]$copy
+    }
+}
 
 function ConvertTo-EobBoolean {
     <#
@@ -1142,6 +1201,8 @@ function New-EobPlan {
         Vorgangskontext (New-EobOperationContext).
     .PARAMETER Subject
         Betroffenes Objekt (Anzeige- und Reportdaten).
+    .PARAMETER Config
+        Konfiguration; Schrittparameter mit dem Wert '@Config' erhalten sie bei der Ausführung.
     #>
     [CmdletBinding()]
     [OutputType([pscustomobject])]
@@ -1149,6 +1210,7 @@ function New-EobPlan {
         [Parameter(Mandatory)][string]$Kind,
         [Parameter(Mandatory)][pscustomobject]$Context,
         [hashtable]$Subject = @{},
+        [AllowNull()][pscustomobject]$Config,
         [switch]$Simulation
     )
 
@@ -1159,6 +1221,7 @@ function New-EobPlan {
         CreatedAt       = Get-Date
         CreatedBy       = $Context.Actor
         Context         = $Context
+        Config          = $Config
         Simulation      = ([bool]$Simulation -or [bool]$Context.Simulation)
         Subject         = $Subject
         Summary         = [ordered]@{}
@@ -1290,6 +1353,9 @@ function Resolve-EobStepParameter {
                 throw "Geheimer Wert '$secretName' ist für Schritt $($Step.Id) nicht verfügbar."
             }
             $resolved[$key] = $Plan.Secrets[$secretName]
+        }
+        elseif ($value -is [string] -and $value -ceq '@Config') {
+            $resolved[$key] = $Plan.Config
         }
         elseif ($value -is [string] -and $value.StartsWith('@Runtime:')) {
             $runtimeName = $value.Substring(9)

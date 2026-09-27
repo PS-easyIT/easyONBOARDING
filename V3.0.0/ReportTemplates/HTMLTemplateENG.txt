@@ -771,7 +771,7 @@
     <section class="section welcome-section">
         <!-- Header with logo -->
         <div class="header-image" style="margin-bottom: var(--spacing-md); text-align: center;">
-            <img src="C:\easyIT\DATA\easyONBOARDING\assets\easyOnboardingHeaderWelcome4.png" alt="Firmenlogo" style="display: inline-block;">
+            <img src="{{AssetDataUri:Report/welcome-header.png}}" alt="Firmenlogo" style="display: inline-block;">
         </div>
         
         <!-- Welcome message with spacing -->
@@ -967,11 +967,11 @@
             <div style="margin-bottom: var(--spacing-md);">
                 <table>
                     <tr>
-                        <th style="background-color: var(--gray-400) !important; color: black;">Phone Number</th>
+                        <th style="background-color: var(--gray-400) !important; color: black;">Office</th>
                         <td style="background-color: var(--gray-100) !important; color: black;"><strong>{{Buero}}</strong></td>
                     </tr>
                     <tr>
-                        <th style="background-color: var(--gray-400) !important; color: black;">Extension</th>
+                        <th style="background-color: var(--gray-400) !important; color: black;">Phone</th>
                         <td style="background-color: var(--gray-100) !important; color: black;"><strong>{{Rufnummer}}</strong></td>
                     </tr>
                     <tr>
@@ -1169,11 +1169,11 @@
           <!-- QR-Codes für App-Installation -->
           <div style="display: flex; justify-content: center; margin-top: 15px; gap: 30px;">
             <div style="text-align: center;">
-              <img src="C:\easyIT\easyONBOARDING\assets\ms-mfa_applestore.png" alt="iOS App Store QR Code" style="max-width: 250px; max-height: 250px; border: 2px solid var(--primary-light); border-radius: var(--border-radius); padding: 5px;">
+              <img src="{{AssetDataUri:Report/qr-mfa-app-ios.jpg}}" alt="iOS App Store QR Code" style="max-width: 250px; max-height: 250px; border: 2px solid var(--primary-light); border-radius: var(--border-radius); padding: 5px;">
               <p style="margin: 6px 0 0; font-size: 9pt; font-weight: 500;">App Store (iOS)</p>
             </div>
             <div style="text-align: center;">
-              <img src="C:\easyIT\easyONBOARDING\assets\ms-mfa_androidstore.png" alt="Google Play Store QR Code" style="max-width: 250px; max-height: 250px; border: 2px solid var(--primary-light); border-radius: var(--border-radius); padding: 5px;">
+              <img src="{{AssetDataUri:Report/qr-mfa-app-android.jpg}}" alt="Google Play Store QR Code" style="max-width: 250px; max-height: 250px; border: 2px solid var(--primary-light); border-radius: var(--border-radius); padding: 5px;">
               <p style="margin: 6px 0 0; font-size: 9pt; font-weight: 500;">Play Store (Android)</p>
             </div>
           </div>

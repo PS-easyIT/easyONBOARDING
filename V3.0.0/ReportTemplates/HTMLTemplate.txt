@@ -771,7 +771,7 @@
     <section>
         <!-- Header with logo -->
         <div class="header-image" style="margin-bottom: var(--spacing-md); text-align: center;">
-            <img src="C:\easyIT\DATA\easyONBOARDING\assets\easyOnboardingHeaderWelcome4.png" alt="Firmenlogo" style="display: inline-block;">
+            <img src="{{AssetDataUri:Report/welcome-header.png}}" alt="Firmenlogo" style="display: inline-block;">
         </div>
         
         <!-- Welcome message with spacing -->
@@ -896,15 +896,15 @@
           <div style="margin-bottom: var(--spacing-md);">
               <table>
                   <tr>
-                      <th style="background-color: var(--gray-400) !important; color: black; width: 30%;"">Rufnummer</th>
+                      <th style="background-color: var(--gray-400) !important; color: black; width: 30%;">Büro</th>
                       <td style="background-color: var(--gray-100) !important; color: black;"><strong>{{Buero}}</strong></td>
                   </tr>
                   <tr>
-                      <th style="background-color: var(--gray-400) !important; color: black; width: 30%;"">Durchwahl</th>
+                      <th style="background-color: var(--gray-400) !important; color: black; width: 30%;">Telefon</th>
                       <td style="background-color: var(--gray-100) !important; color: black;"><strong>{{Rufnummer}}</strong></td>
                   </tr>
                   <tr>
-                      <th style="background-color: var(--gray-400) !important; color: black; width: 30%;"">Mobil</th>
+                      <th style="background-color: var(--gray-400) !important; color: black; width: 30%;">Mobil</th>
                       <td style="background-color: var(--gray-100) !important; color: black;"><strong>{{Mobil}}</strong></td>
                   </tr>
               </table>
@@ -914,11 +914,11 @@
           <div style="margin-bottom: var(--spacing-md);">
               <table>
                   <tr>
-                      <th style="background-color: var(--gray-400) !important; color: black; width: 30%;"">Position</th>
+                      <th style="background-color: var(--gray-400) !important; color: black; width: 30%;">Position</th>
                       <td style="background-color: var(--gray-100) !important; color: black;"><strong>{{Position}}</strong></td>
                   </tr>
                   <tr>
-                      <th style="background-color: var(--gray-400) !important; color: black; width: 30%;"">Abteilung</th>
+                      <th style="background-color: var(--gray-400) !important; color: black; width: 30%;">Abteilung</th>
                       <td style="background-color: var(--gray-100) !important; color: black;"><strong>{{Abteilung}}</strong></td>
                   </tr>
               </table>
@@ -939,7 +939,7 @@
                       <td style="background-color: var(--gray-100) !important; color: black;"><strong>{{MailAddress}}</strong></td>
                   </tr>
                   <tr>
-                      <th style="background-color: var(--gray-400) !important; color: black; width: 30%;"">MS365 Lizenz</th>
+                      <th style="background-color: var(--gray-400) !important; color: black; width: 30%;">MS365 Lizenz</th>
                       <td style="background-color: var(--gray-100) !important; color: black;"><strong>{{License}}</strong></td>
                   </tr>
               </table>
@@ -965,27 +965,27 @@
         <br>
         <table>
             <tr>
-                <th style="background-color: var(--gray-400) !important; color: black; width: 30%;"">Firmenname</th>
+                <th style="background-color: var(--gray-400) !important; color: black; width: 30%;">Firmenname</th>
                 <td style="background-color: var(--gray-100) !important; color: black;"><strong>{{CompanyName}}</strong></td>
             </tr>
             <tr>
-                <th style="background-color: var(--gray-400) !important; color: black; width: 30%;"">Straße</th>
+                <th style="background-color: var(--gray-400) !important; color: black; width: 30%;">Straße</th>
                 <td style="background-color: var(--gray-100) !important; color: black;"><strong>{{CompanyStreet}}</strong></td>
             </tr>
             <tr>
-                <th style="background-color: var(--gray-400) !important; color: black; width: 30%;"">PLZ</th>
+                <th style="background-color: var(--gray-400) !important; color: black; width: 30%;">PLZ</th>
                 <td style="background-color: var(--gray-100) !important; color: black;"><strong>{{CompanyZIP}}</strong></td>
             </tr>
             <tr>
-                <th style="background-color: var(--gray-400) !important; color: black; width: 30%;"">Ort</th>
+                <th style="background-color: var(--gray-400) !important; color: black; width: 30%;">Ort</th>
                 <td style="background-color: var(--gray-100) !important; color: black;"><strong>{{CompanyCity}}</strong></td>
             </tr>
             <tr>
-                <th style="background-color: var(--gray-400) !important; color: black; width: 30%;"">Domain</th>
+                <th style="background-color: var(--gray-400) !important; color: black; width: 30%;">Domain</th>
                 <td style="background-color: var(--gray-100) !important; color: black;"><strong>{{CompanyDomain}}</strong></td>
             </tr>
             <tr>
-                <th style="background-color: var(--gray-400) !important; color: black; width: 30%;"">Telefon</th>
+                <th style="background-color: var(--gray-400) !important; color: black; width: 30%;">Telefon</th>
                 <td style="background-color: var(--gray-100) !important; color: black;"><strong>{{CompanyPhone}}</strong></td>
             </tr>
         </table>
@@ -1025,15 +1025,15 @@
                 <td style="background-color: var(--gray-100) !important; color: black;">{{CompanyHelpdeskTel}}</td>
             </tr>
             <tr>
-                <th style="background-color: var(--gray-400) !important; color: black; width: 30%;"">E-Mail</th>
+                <th style="background-color: var(--gray-400) !important; color: black; width: 30%;">E-Mail</th>
                 <td style="background-color: var(--gray-100) !important; color: black;">{{CompanyHelpdeskMail}}</td>
             </tr>
             <tr>
-                <th style="background-color: var(--gray-400) !important; color: black; width: 30%;"">Ansprechpartner</th>
+                <th style="background-color: var(--gray-400) !important; color: black; width: 30%;">Ansprechpartner</th>
                 <td style="background-color: var(--gray-100) !important; color: black;">{{CompanyITMitarbeiter}}</td>
             </tr>
             <tr>
-                <th style="background-color: var(--gray-400) !important; color: black; width: 30%;"">Erreichbar</th>
+                <th style="background-color: var(--gray-400) !important; color: black; width: 30%;">Erreichbar</th>
                 <td style="background-color: var(--gray-100) !important; color: black;">Mo-Fr ab 08:15 Uhr</td>
             </tr>
         </table>
@@ -1156,11 +1156,11 @@
           <!-- QR-Codes für App-Installation -->
           <div style="display: flex; justify-content: center; margin-top: 15px; gap: 30px;">
             <div style="text-align: center;">
-              <img src="C:\easyIT\easyONBOARDING\assets\ms-mfa_applestore.png" alt="iOS App Store QR Code" style="max-width: 250px; max-height: 250px; border: 2px solid var(--primary-light); border-radius: var(--border-radius); padding: 5px;">
+              <img src="{{AssetDataUri:Report/qr-mfa-app-ios.jpg}}" alt="iOS App Store QR Code" style="max-width: 250px; max-height: 250px; border: 2px solid var(--primary-light); border-radius: var(--border-radius); padding: 5px;">
               <p style="margin: 6px 0 0; font-size: 9pt; font-weight: 500;">App Store (iOS)</p>
             </div>
             <div style="text-align: center;">
-              <img src="C:\easyIT\easyONBOARDING\assets\ms-mfa_androidstore.png" alt="Google Play Store QR Code" style="max-width: 250px; max-height: 250px; border: 2px solid var(--primary-light); border-radius: var(--border-radius); padding: 5px;">
+              <img src="{{AssetDataUri:Report/qr-mfa-app-android.jpg}}" alt="Google Play Store QR Code" style="max-width: 250px; max-height: 250px; border: 2px solid var(--primary-light); border-radius: var(--border-radius); padding: 5px;">
               <p style="margin: 6px 0 0; font-size: 9pt; font-weight: 500;">Play Store (Android)</p>
             </div>
           </div>
