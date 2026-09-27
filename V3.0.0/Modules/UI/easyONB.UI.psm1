@@ -1088,7 +1088,9 @@ function Start-EobGui {
     $script:Ui = New-EobUiState
     $script:Ui.Config = $Config
     $script:Ui.ConfigPath = if ($ConfigPath) { $ConfigPath } else { [string]$Config.Path }
-    $script:Ui.Simulation = [bool]$ForceSimulation -or [bool](Get-EobConfigValue -Config $Config -Section 'Security' -Key 'SimulationByDefault' -As Bool)
+    # Mit Fehlern in der Konfiguration startet die Oberfläche immer in der Simulation.
+    $script:Ui.Simulation = [bool]$ForceSimulation -or [bool](Get-EobConfigValue -Config $Config -Section 'Security' -Key 'SimulationByDefault' -As Bool) -or
+    @(Get-EobUiConfigError -Config $Config).Count -gt 0
     if (-not $Theme) { $Theme = [string](Get-EobConfigValue -Config $Config -Section 'UI' -Key 'Theme') }
     if ($Theme -notin @('Light', 'Dark')) { $Theme = 'Light' }
     Initialize-EobApplication -Theme $Theme -AccentColor ([string](Get-EobConfigValue -Config $Config -Section 'UI' -Key 'AccentColor'))
@@ -1214,6 +1216,12 @@ function Switch-EobExecutionMode {
 
     if ($null -ne $script:Ui.Execution) { return }
     if ($script:Ui.Simulation) {
+        $errors = @(Get-EobUiConfigError -Config $script:Ui.Config)
+        if ($errors.Count -gt 0) {
+            $null = Show-EobDialog -Title 'Live-Modus nicht möglich' -Kind Error -Details $errors `
+                -Message "Die Konfiguration enthält $($errors.Count) Fehler. Bitte zuerst beheben (Einstellungen bzw. Start-easyONBOARDING.ps1 -CheckOnly) und die Konfiguration neu laden."
+            return
+        }
         $answer = Show-EobDialog -Title 'Live-Modus aktivieren' -Kind Danger -ConfirmText '_Live-Modus aktivieren' -CancelText 'In der Simulation bleiben' `
             -Message 'Im Live-Modus werden Änderungen an Active Directory, Exchange, Microsoft 365 und Dateisystem tatsächlich ausgeführt. Jede Ausführung wird vorher als Vorschau angezeigt und muss bestätigt werden.'
         if (-not $answer.Confirmed) { return }
@@ -2983,6 +2991,21 @@ function Initialize-EobToolsView {
     $c.ToolsOpenLogFolderButton.Add_Click({ Invoke-EobUiSafely -Name 'Log-Ordner' -Action { Open-EobPath -Path (Get-EobLogStatus).Directory } })
 }
 
+function Get-EobUiConfigError {
+    <#
+    .SYNOPSIS
+        Liefert die Fehler einer Konfiguration als Anzeigetexte (höchstens 15).
+    #>
+    [CmdletBinding()]
+    [OutputType([string])]
+    param([AllowNull()][object]$Config)
+
+    if ($null -eq $Config) { return 'Keine Konfiguration geladen.' }
+    $errors = @($Config.Findings | Where-Object { $_.Severity -eq 'Error' })
+    foreach ($finding in $errors | Select-Object -First 15) { '{0}: {1}' -f $finding.Code, $finding.Message }
+    if ($errors.Count -gt 15) { "... und $($errors.Count - 15) weitere" }
+}
+
 function Get-EobUiConfigPath {
     [CmdletBinding()]
     [OutputType([string])]
@@ -3090,6 +3113,14 @@ function Update-EobUiConfiguration {
 
     if ($null -ne $script:Ui.Execution) { throw 'Während einer Ausführung kann die Konfiguration nicht neu geladen werden.' }
     $config = Import-EobConfiguration -Path (Get-EobUiConfigPath)
+    # Eine fehlerhafte Datei ersetzt die geladene Konfiguration nicht.
+    $errors = @(Get-EobUiConfigError -Config $config)
+    if ($errors.Count -gt 0) {
+        Write-EobLog -Level Warning -Action 'ConfigReloaded' -Result 'Failed' -Target (Get-EobUiConfigPath) -Message "Konfiguration nicht übernommen: $($errors.Count) Fehler."
+        $null = Show-EobDialog -Title 'Konfiguration nicht übernommen' -Kind Error -Details $errors `
+            -Message "Die Datei enthält $($errors.Count) Fehler. Die bisher geladene Konfiguration bleibt aktiv."
+        return
+    }
     $script:Ui.Config = $config
     $null = Initialize-EobAdConnection -Config $config
     foreach ($name in @($script:Ui.Views.Keys)) {

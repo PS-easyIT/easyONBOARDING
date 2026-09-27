@@ -242,10 +242,20 @@ function Test-SecretCheck {
 function Test-DocumentationCheck {
     $required = @('README.md', 'CHANGELOG.md', 'SECURITY.md', 'CONTRIBUTING.md', 'VERSION', 'docs/ARCHITECTURE.md',
         'docs/INSTALLATION.md', 'docs/CONFIGURATION.md', 'docs/ONBOARDING.md', 'docs/OFFBOARDING.md', 'docs/MIGRATION.md',
-        'docs/TESTING.md', 'ReportTemplates/README.md')
+        'docs/TESTING.md', 'docs/CONFIGURATION-REFERENCE.md', 'ReportTemplates/README.md')
     foreach ($name in $required) {
         if (-not (Test-Path -LiteralPath (Join-Path -Path $Root -ChildPath $name) -PathType Leaf)) {
             New-QualityFinding -Check 'Docs' -File $name -Message 'Pflichtdokument fehlt.'
+        }
+    }
+    # Die Konfigurationsreferenz wird aus dem Schema erzeugt und muss aktuell sein.
+    $generator = Join-Path -Path $Root -ChildPath 'Scripts/Export-EobConfigurationReference.ps1'
+    $reference = Join-Path -Path $Root -ChildPath 'docs/CONFIGURATION-REFERENCE.md'
+    if ((Test-Path -LiteralPath $generator -PathType Leaf) -and (Test-Path -LiteralPath $reference -PathType Leaf)) {
+        $expected = (& $generator -Root $Root -PassThru) -replace '\r\n', "`n"
+        $actual = ([System.IO.File]::ReadAllText($reference)) -replace '\r\n', "`n"
+        if ($expected -ne $actual) {
+            New-QualityFinding -Check 'Docs' -File 'docs/CONFIGURATION-REFERENCE.md' -Message 'Veraltet: mit Scripts/Export-EobConfigurationReference.ps1 neu erzeugen.'
         }
     }
     foreach ($file in Get-RepositoryFile -Extension @('.md')) {

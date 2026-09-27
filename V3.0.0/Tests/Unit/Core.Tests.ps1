@@ -232,6 +232,15 @@ Describe 'Logging und Audit' {
         $null = Receive-EobLogEntry
     }
 
+    It 'weicht bei einem nicht vorhandenen Laufwerk auf das Ausweichverzeichnis aus, ohne abzubrechen' {
+        $fallbackRoot = Join-Path $TestDrive 'fallback'
+        $status = Initialize-EobLogging -Directory 'Q:\gibt-es-nicht\Logs' -FallbackRoot $fallbackRoot -WarningAction SilentlyContinue
+        $status.FallbackActive | Should -BeTrue
+        $status.Directory | Should -BeLike "$fallbackRoot*"
+        Test-Path -LiteralPath (Join-Path $fallbackRoot 'easyONBOARDING/Logs/audit') | Should -BeTrue
+        Test-EobPathWithin -Path 'max' -Root 'Q:\Home' | Should -BeTrue
+    }
+
     It 'schreibt Einträge mit Operation-ID, Akteur, Aktion, Ziel, Ergebnis und Dauer' {
         Write-EobLog -Message 'Test' -Level Information -OperationId 'op-1' -Action 'CreateUser' -Target 'mmuster' -Result 'Succeeded' -DurationMs 42
         $file = Get-ChildItem -LiteralPath $script:LogDir -Filter 'easyONB_*.log' | Select-Object -First 1

@@ -85,6 +85,12 @@ Describe 'Kennwortgenerierung' {
         $policy.Source | Should -Match 'Domäne'
     }
 
+    It 'schwächt die Komplexitätsprüfung durch die Domänenrichtlinie nicht ab' {
+        $policy = Get-EobPasswordPolicy -Config $script:DefaultConfig -DomainPolicy ([pscustomobject]@{ MinPasswordLength = 7; ComplexityEnabled = $false })
+        $policy.ComplexityEnabled | Should -BeTrue
+        $policy.Length | Should -BeGreaterOrEqual 16
+    }
+
     It 'wandelt SecureStrings für die einmalige Anzeige verlustfrei um' {
         $secure = New-EobPassword
         $plain = ConvertTo-EobPlainText -SecureString $secure

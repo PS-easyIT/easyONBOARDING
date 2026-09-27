@@ -188,7 +188,7 @@ function Get-EobOffboardingDirectory {
     }
     $data = [string](Get-EobConfigValue -Config $Config -Section 'Paths' -Key 'DataDirectory' -As Path)
     if (-not $data) { $data = Join-Path -Path (Get-EobAppRoot) -ChildPath 'Data' }
-    return (Join-Path -Path $data -ChildPath 'OffboardingQueue')
+    return [System.IO.Path]::Combine($data, 'OffboardingQueue')
 }
 
 function Get-EobInternalMailDomain {
@@ -1053,6 +1053,49 @@ function Get-EobOffboardingQueueStatus {
     return 'Completed'
 }
 
+function Get-EobSnapshotHashTable {
+    <#
+    .SYNOPSIS
+        Führt die SHA-256-Prüfsummen der Zustandsberichte (Pfad = Prüfsumme) aus Warteschlange und Lauf zusammen.
+    #>
+    [CmdletBinding()]
+    [OutputType([System.Collections.Specialized.OrderedDictionary])]
+    param(
+        [AllowNull()][System.Collections.IDictionary]$Entry,
+        [AllowNull()][System.Collections.IDictionary]$Runtime
+    )
+
+    $hashes = [ordered]@{}
+    if ($null -ne $Entry -and $Entry.Contains('SnapshotHashes') -and $Entry['SnapshotHashes'] -is [System.Collections.IDictionary]) {
+        foreach ($key in $Entry['SnapshotHashes'].Keys) { $hashes[[string]$key] = [string]$Entry['SnapshotHashes'][$key] }
+    }
+    if ($null -ne $Runtime) {
+        foreach ($key in @($Runtime.Keys | Where-Object { $_ -like 'Snapshot_*' })) {
+            $hashKey = 'SnapshotHash_' + $key.Substring('Snapshot_'.Length)
+            if ($Runtime.Contains($hashKey) -and $Runtime[$key]) { $hashes[[string]$Runtime[$key]] = [string]$Runtime[$hashKey] }
+        }
+    }
+    return $hashes
+}
+
+function Test-EobSnapshotIntegrity {
+    <#
+    .SYNOPSIS
+        Prüft einen Zustandsbericht gegen die in der Warteschlange gespeicherte SHA-256-Prüfsumme.
+    #>
+    [CmdletBinding()]
+    [OutputType([bool])]
+    param(
+        [AllowNull()][System.Collections.IDictionary]$Entry,
+        [Parameter(Mandatory)][string]$Path
+    )
+
+    if ($null -eq $Entry -or -not $Entry.Contains('SnapshotHashes') -or $Entry['SnapshotHashes'] -isnot [System.Collections.IDictionary]) { return $false }
+    $expected = [string]$Entry['SnapshotHashes'][$Path]
+    if (-not $expected -or -not (Test-Path -LiteralPath $Path -PathType Leaf)) { return $false }
+    return ((Get-FileHash -LiteralPath $Path -Algorithm SHA256).Hash -eq $expected)
+}
+
 function Save-EobOffboardingQueueEntry {
     <#
     .SYNOPSIS
@@ -1081,6 +1124,7 @@ function Save-EobOffboardingQueueEntry {
         $value = [string]$Plan.Runtime[$key]
         if ($value -and -not $snapshots.Contains($value)) { $snapshots.Add($value) }
     }
+    $hashes = Get-EobSnapshotHashTable -Entry $existing -Runtime $Plan.Runtime
     $history = [System.Collections.Generic.List[object]]::new()
     if ($null -ne $existing -and $existing.ContainsKey('History')) { foreach ($item in @($existing['History'])) { $history.Add($item) } }
     $executed = @($Plan.Steps | Where-Object { $_.Status -notin @('Planned') -and $_.Phase -ne $script:AlwaysPhase } | ForEach-Object Phase | Select-Object -Unique)
@@ -1115,6 +1159,7 @@ function Save-EobOffboardingQueueEntry {
         Privileged        = [bool]$details.Privileged
         RequiresIntegration = @($details.RequiresIntegration)
         SnapshotPaths     = $snapshots.ToArray()
+        SnapshotHashes    = $hashes
         History           = $history.ToArray()
         Request           = ConvertTo-EobOffboardingQueueRequest -Plan $Plan
     }
@@ -1357,6 +1402,9 @@ function New-EobOffboardingDeletionPlan {
     if ($backups.Count -eq 0) {
         Add-EobPlanFinding -Plan $plan -Severity Error -Code 'OFF_DEL_NO_BACKUP' -Message 'Kein Zustandsbericht "vorher" gefunden. Ohne Sicherung ist keine Löschung zulässig.'
     }
+    elseif (@($backups | Where-Object { Test-EobSnapshotIntegrity -Entry $item.Entry -Path ([string]$_) }).Count -eq 0) {
+        Add-EobPlanFinding -Plan $plan -Severity Error -Code 'OFF_DEL_BACKUP_MODIFIED' -Message 'Der Zustandsbericht "vorher" wurde verändert oder hat keine gespeicherte Prüfsumme (SHA-256). Ohne unveränderte Sicherung ist keine Löschung zulässig.'
+    }
     if (-not (Get-EobAdConnectionInfo).Connected) {
         Add-EobPlanFinding -Plan $plan -Severity Error -Code 'OFF_AD_OFFLINE' -Message 'Keine Verbindung zum Active Directory.'
         return $plan
@@ -1447,6 +1495,7 @@ function Invoke-EobOffboardingFinalDeletion {
             foreach ($path in @($entry['SnapshotPaths'])) { if ($path) { $snapshots.Add([string]$path) } }
             foreach ($key in @($Plan.Runtime.Keys | Where-Object { $_ -like 'Snapshot_*' })) { $snapshots.Add([string]$Plan.Runtime[$key]) }
             $entry['SnapshotPaths'] = $snapshots.ToArray()
+            $entry['SnapshotHashes'] = Get-EobSnapshotHashTable -Entry $entry -Runtime $Plan.Runtime
             Write-EobJsonFile -Path $entryPath -InputObject $entry
         }
     }
@@ -1504,7 +1553,9 @@ function Save-EobOffboardingSnapshot {
     $shortId = if ($OperationId) { $OperationId.Split('-')[0] } else { 'manuell' }
     $path = Join-Path -Path (Join-Path -Path $Directory -ChildPath $sam) -ChildPath ('{0}_{1}_{2}.json' -f (Get-Date).ToString('yyyyMMdd-HHmmss'), $Label, $shortId)
     Write-EobJsonFile -Path $path -InputObject $document -Depth 8
-    return New-EobResult -Status Succeeded -Message "Zustandsbericht gespeichert: $path" -Data @{ "Snapshot_$Label" = $path }
+    # Die Prüfsumme wird in der Warteschlange gespeichert und vor einer Löschung abgeglichen.
+    $hash = (Get-FileHash -LiteralPath $path -Algorithm SHA256).Hash
+    return New-EobResult -Status Succeeded -Message "Zustandsbericht gespeichert: $path (SHA-256 $hash)" -Data @{ "Snapshot_$Label" = $path; "SnapshotHash_$Label" = $hash }
 }
 
 function Export-EobOffboardingMailboxPermission {
@@ -1557,7 +1608,7 @@ function Move-EobHomeDirectoryToArchive {
     if (@($AllowedRoots | Where-Object { $_.TrimEnd('\', '/') -ieq $normalizedPath }).Count -gt 0) { throw "Ein Stammpfad selbst wird nie verschoben: $Path" }
     if (Test-EobPathWithin -Path $Path -Root $ArchiveRoot) { throw "Das Verzeichnis liegt bereits im Archiv: $Path" }
 
-    $target = Join-Path -Path $ArchiveRoot -ChildPath ('{0}_{1}' -f (Get-EobSafeFileName -Name $SamAccountName), (Get-Date).ToString('yyyyMMdd-HHmmss'))
+    $target = [System.IO.Path]::Combine($ArchiveRoot, ('{0}_{1}' -f (Get-EobSafeFileName -Name $SamAccountName), (Get-Date).ToString('yyyyMMdd-HHmmss')))
     if (-not $PSCmdlet.ShouldProcess($Path, "Archivieren nach $target")) {
         return New-EobNotProcessedResult -Message "Home-Verzeichnis würde nach $target verschoben."
     }

@@ -1092,7 +1092,7 @@ function New-EobOnboardingPlan {
 
     if (Get-EobConfigValue -Config $Config -Section 'OnboardingExtensions' -Key 'SetUserPhoto' -As Bool) {
         $photoDir = Get-EobConfigValue -Config $Config -Section 'OnboardingExtensions' -Key 'DefaultPhotoPath' -As Path
-        $photo = if ($photoDir) { Join-Path -Path $photoDir -ChildPath "$sam.jpg" } else { '' }
+        $photo = if ($photoDir) { [System.IO.Path]::Combine($photoDir, "$sam.jpg") } else { '' }
         if ($photo -and (Test-Path -LiteralPath $photo -PathType Leaf)) {
             $null = Add-EobPlanStep -Plan $plan -Action 'SetPhoto' -Title 'Profilbild setzen' -Target $sam -Handler 'Set-EobUserPhoto' -DependsOn $create.Id -Parameters @{ Identity = $sam; Path = $photo }
         }

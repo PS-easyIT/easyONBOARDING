@@ -133,7 +133,8 @@ function Get-EobPasswordPolicy {
         $domainMin = [int](Get-EobPropertyValue -InputObject $DomainPolicy -Name 'MinPasswordLength' -Default 0)
         $complexity = Get-EobPropertyValue -InputObject $DomainPolicy -Name 'ComplexityEnabled' -Default $true
         $policy.DomainMinLength = $domainMin
-        $policy.ComplexityEnabled = [bool]$complexity
+        # Der strengere Wert gewinnt: Eine Domäne ohne Komplexitätsanforderung schwächt die Prüfung nicht ab.
+        $policy.ComplexityEnabled = $policy.ComplexityEnabled -or [bool]$complexity
         if ($domainMin -gt $policy.Length) { $policy.Length = $domainMin }
         if ($domainMin -gt $policy.MinManualLength) { $policy.MinManualLength = $domainMin }
         $policy.Source = 'Konfiguration + Domänenrichtlinie'
