@@ -1,5 +1,8 @@
 # easyONBOARDING v1.4.1
 
+> **Veraltet:** Diese Version wird nicht mehr gepflegt. Aktuelle Version: [easyONBOARDING 3](../V3.0.0/README.md)
+> (Umstieg: [MIGRATION.md](../V3.0.0/docs/MIGRATION.md), Hinweise: [DEPRECATED.md](DEPRECATED.md)).
+
 Ein professionelles PowerShell-Tool für IT-Administratoren zur Automatisierung und Vereinfachung des User-Onboarding-Prozesses in Active Directory-Umgebungen.
 
 ## 📋 Inhaltsverzeichnis
@@ -90,7 +93,7 @@ easyONBOARDING ist ein umfassendes PowerShell-basiertes Tool mit moderner WPF-GU
 
 ### 1. Repository klonen
 ```powershell
-git clone https://github.com/yourusername/easyONBOARDING.git
+git clone https://github.com/PS-easyIT/easyONBOARDING.git
 cd easyONBOARDING/V1.4.XX
 ```
 
@@ -126,9 +129,9 @@ Die `easyONB.ini` enthält alle Konfigurationseinstellungen:
 [Company]
 CompanyName=Ihre Firma GmbH
 CompanyShortName=YF
-CompanyADDomain=@yourdomain.com
-CompanyMailDomain=yourdomain.com
-DefaultOU=OU=Users,OU=Company,DC=yourdomain,DC=com
+CompanyADDomain=@example.com
+CompanyMailDomain=example.com
+DefaultOU=OU=Users,OU=Company,DC=example,DC=com
 
 [DisplayNameUPNTemplates]
 DefaultDisplayNameFormat={first} {last}
@@ -342,7 +345,7 @@ Dieses Projekt ist lizenziert unter der MIT-Lizenz - siehe [LICENSE](LICENSE) f�
 
 ## 👥 Autoren
 
-- **IT Team** - *Initial work* - [YourGitHub](https://github.com/yourusername)
+- **Andreas Hepp** (PHINIT.DE) - [PS-easyIT](https://github.com/PS-easyIT)
 
 ## 🙏 Danksagungen
 
@@ -352,9 +355,9 @@ Dieses Projekt ist lizenziert unter der MIT-Lizenz - siehe [LICENSE](LICENSE) f�
 
 ---
 
-📧 **Support**: support@yourdomain.com  
+📧 **Support**: info@phinit.de  
 🌐 **Website**: https://easy-it.phinit.de  
-📖 **Dokumentation**: [Wiki](https://github.com/yourusername/easyONBOARDING/wiki)
+📖 **Dokumentation**: [Repository](https://github.com/PS-easyIT/easyONBOARDING)
 
 ## 🆕 Erweiterte Funktionen (v1.4.1+)
 

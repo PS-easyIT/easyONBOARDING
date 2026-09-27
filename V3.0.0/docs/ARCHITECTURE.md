@@ -46,14 +46,17 @@ Sicherheitsmängel, Signaturen. Nur `.github/workflows` liegt technisch bedingt 
 das Präfix `Eob`, um Kollisionen mit AD-/Exchange-Cmdlets und Legacy-Funktionen zu vermeiden.
 Jedes Modul besitzt ein Manifest (`.psd1`) mit expliziten Exporten.
 
-**ADR-03 – Eine Versionsquelle.** `V3.0.0/VERSION`. Manifeste und `CHANGELOG.md` werden per Test
-gegen diese Datei geprüft.
+**ADR-03 – Eine Versionsquelle.** `V3.0.0/VERSION`. Manifeste, `CHANGELOG.md` und README werden von
+`Scripts/Invoke-EobQualityCheck.ps1 -Check Version` (CI und Pester) gegen diese Datei geprüft.
 
 **ADR-04 – INI bleibt Primärformat.** Bestehende INI-Dateien werden weiter gelesen. Ein Schema
 (`Config/schemas/easyONB.schema.psd1`) liefert Typen, Standardwerte, Pflichtangaben und Hinweise.
 Zusammenführung: `Config/templates/*.ini` → `Config/companies/*.ini` → Haupt-INI (höchste Priorität).
 Unbekannte Schlüssel werden gemeldet, aber nie verworfen. Secrets in der INI werden erkannt und
-ignoriert. Hot-Reload wird nicht angeboten; "Neu laden" validiert vor der Übernahme.
+ignoriert. Hot-Reload wird nicht angeboten; "Neu laden" validiert vor der Übernahme und behält bei
+Fehlern die bisherige Konfiguration. Solange die geladene Konfiguration Fehler enthält, bleibt die
+Oberfläche in der Simulation. Die Konfigurationsreferenz wird aus dem Schema erzeugt
+(`Scripts/Export-EobConfigurationReference.ps1`).
 
 **ADR-05 – Plan-Engine mit Handler-Allowlist.** Pläne bestehen aus Schritten mit Handlerfunktion,
 Parametern, Risiko, Abhängigkeiten und Phase. Die Engine ruft nur Funktionen aus
@@ -61,7 +64,8 @@ Parametern, Risiko, Abhängigkeiten und Phase. Die Engine ruft nur Funktionen au
 `@Secret:<Name>`-Verweise zur Laufzeit aus dem Speicher aufgelöst.
 
 **ADR-06 – Kennwörter.** Erzeugung mit `RandomNumberGenerator` (CSPRNG). Im Speicher als
-`SecureString`. Klartext nur für die optionale einmalige Anzeige bzw. den Druck aus dem Speicher.
+`SecureString` (`New-EobPassword` liefert nichts anderes, `Test-EobPasswordPolicy` akzeptiert keinen
+Klartext). Klartext nur für die optionale einmalige Anzeige bzw. den Druck aus dem Speicher.
 Generierte Werte werden für die Laufzeit in die Log-Redaktion eingetragen. Ein fester
 Standardkennwortwert aus der INI wird nicht mehr unterstützt.
 
@@ -88,9 +92,12 @@ erkannt (sprachunabhängig), ergänzt um Namensmuster, `adminCount` und verschac
 (RID 500–504), Break-Glass-, Service- und konfigurierte Konten bzw. OUs.
 
 **ADR-11 – Mehrstufiges Offboarding über eine Warteschlange ohne ausführbaren Inhalt.** Gespeichert
-werden nur Anfrage-Daten (ObjectGUID, Vorlage, Termine, Optionen). Fällige Phasen werden neu geplant,
-neu validiert und erneut in der Vorschau bestätigt. Die endgültige Löschung verlangt Frist, Snapshot
-mit Hash-Prüfung, Tippbestätigung und läuft nie unbeaufsichtigt.
+werden nur Anfrage-Daten (ObjectGUID, Vorlage, Termine, Optionen), Historie sowie Pfade und
+SHA-256-Prüfsummen der Zustandsberichte. Fällige Phasen werden immer neu geplant und neu validiert
+(u. a. ObjectGUID-Abgleich): in der Oberfläche mit Vorschau und Bestätigung, in der geplanten Aufgabe
+nur für nicht privilegierte Konten und ohne Löschung. Die endgültige Löschung verlangt Frist, einen
+unveränderten Zustandsbericht (Prüfsummenabgleich), Vorschau und Tippbestätigung und läuft nie
+unbeaufsichtigt.
 
 **ADR-12 – PDF über vorhandene Komponenten.** Bevorzugt Microsoft Edge (headless), alternativ
 wkhtmltopdf (Legacy, konfigurierbar), sonst HTML-Fallback mit Hinweis.
@@ -102,3 +109,11 @@ werden kann; UI-Fehler sollen nicht durch Property-Zugriffe auf optionale WPF-Ei
 **ADR-14 – Laufzeit.** PowerShell 7.2 oder höher (primäres und einziges getestetes Ziel), Windows
 für GUI und AD-Funktionen. Keine lokalen Administratorrechte erforderlich; AD-Rechte werden über
 Delegation vergeben.
+
+**ADR-15 – Qualitätssicherung als Code.** `PSScriptAnalyzerSettings.psd1` (Standardregeln plus
+Formatierung und Syntaxkompatibilität, Ausnahmen nur per `SuppressMessageAttribute` mit Begründung) und
+`Scripts/Invoke-EobQualityCheck.ps1` (Parser, Kodierung, XAML, Analyzer, Secret-/Platzhalter-Scan,
+Doku, Version) laufen lokal und in `.github/workflows/v3-ci.yml` (Windows und Linux, Actions per
+Commit-SHA, `contents: read`). Die Oberfläche besitzt einen Testmodus (`$script:Ui.Headless`), in dem
+Dialoge protokolliert statt modal angezeigt werden; so kann die CI unter Windows alle Ansichten ohne
+Benutzerinteraktion laden.

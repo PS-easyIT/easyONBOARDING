@@ -32,7 +32,7 @@ Details der Architekturentscheidungen: [ARCHITECTURE.md](ARCHITECTURE.md).
 | WP6 | Offboarding: Vorlagen aus Konfiguration, Schutzprüfungen, Snapshot vorher/nachher, Aktionskatalog, Mehrstufigkeit mit Warteschlange, abgesicherte Löschung, CSV | Offboarding | `Modules/Offboarding/*`, `Config/templates/*` | hoch (destruktiv) | Keine Aktion ohne Vorschau/Bestätigung; Löschung nur mit Frist, Backup, Tippbestätigung |
 | WP7 | Reporting (HTML/CSV/JSON/TXT, PDF mit Fallback), Legacy-Templates sicher, Exchange/Entra optional, Integrationsstatus | Stabilität | `Modules/Reporting/*`, `Modules/Exchange/*`, `Modules/Entra/*`, `ReportTemplates/*` | mittel | Reports ohne Secrets (Test), HTML-Encoding (Test), fehlende Integrationen verständlich angezeigt |
 | WP8 | WPF-GUI: linke Navigation, Dashboard, Wizards, Themes (Light/Dark), zentrale Dialoge, kooperative Ausführung | GUI | `GUI/*`, `Modules/UI/*`, `Start-easyONBOARDING.ps1` | hoch (nicht lokal testbar) | XAML ist gültig, alle referenzierten Controls existieren (statischer Test), XAML-Ladetest in CI (Windows) |
-| WP9 | Tests & CI: Pester (Unit), Parser, PSScriptAnalyzer, Secret-Scan, Doku-Prüfung | Tests | `Tests/*`, `.github/workflows/ci.yml` (Repository-Root, technisch erforderlich), `PSScriptAnalyzerSettings.psd1`, `Scripts/*` | gering | Alle Tests grün; Workflow mit gepinnten SHAs und `contents: read` |
+| WP9 | Tests & CI: Pester (Unit), Parser, PSScriptAnalyzer, Secret-Scan, Doku-Prüfung | Tests | `Tests/*`, `.github/workflows/v3-ci.yml` (Repository-Root, technisch erforderlich), `PSScriptAnalyzerSettings.psd1`, `Scripts/*` | gering | Alle Tests grün; Workflow mit gepinnten SHAs und `contents: read` |
 | WP10 | Dokumentation: README, CHANGELOG, SECURITY, CONTRIBUTING, docs/* | Doku | `*.md`, `docs/*` | gering | Doku entspricht Implementierungsstand; Status (produktiv/simuliert/vorbereitet) markiert |
 
 ## Nicht-Ziele / bewusst ausgelassen
@@ -41,3 +41,10 @@ Details der Architekturentscheidungen: [ARCHITECTURE.md](ARCHITECTURE.md).
 * Kein automatischer Hot-Reload der Konfiguration (nur explizites "Neu laden" mit Validierung).
 * Keine Neusignierung (erfordert das Zertifikat des Maintainers).
 * Keine Änderungen an `# ARCHIV`, `# Extra Tools`, `# TEST` (Befunde dokumentiert).
+
+## Umsetzungsstand (27.09.2026)
+
+Alle Arbeitspakete WP1–WP10 sind umgesetzt (Details: [CHANGELOG.md](../CHANGELOG.md)). Offen und nur
+außerhalb dieser Entwicklungsumgebung möglich: manuelle Prüfung der Oberfläche unter Windows,
+Verifikation der Exchange-, Graph- und Entra-Connect-Funktionen gegen reale Testumgebungen und die
+Code-Signatur durch den Maintainer (siehe [TESTING.md](TESTING.md#manuelle-prüfung)).
