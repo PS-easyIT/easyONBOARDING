@@ -162,6 +162,15 @@ function Test-AnalyzerCheck {
     $settings = Join-Path -Path $Root -ChildPath 'PSScriptAnalyzerSettings.psd1'
     $analyzerErrors = @()
     $records = Invoke-ScriptAnalyzer -Path $Root -Recurse -Settings $settings -ErrorVariable analyzerErrors -ErrorAction SilentlyContinue
+    if (@($analyzerErrors).Count -gt 0) {
+        # PSScriptAnalyzer führt Regeln parallel aus und stürzt dabei sporadisch intern ab (z. B.
+        # NullReferenceException), ohne dass der Code einen Befund hat. Ein solcher Lauf ist
+        # unvollständig und wird genau einmal vollständig wiederholt; tritt der Fehler erneut auf,
+        # zählt er als Befund. Regelbefunde werden nie wiederholt oder verworfen.
+        Write-Warning ('PSScriptAnalyzer meldete {0} interne(n) Fehler ({1}); die Analyse wird einmal wiederholt.' -f @($analyzerErrors).Count, $analyzerErrors[0].Exception.Message)
+        $analyzerErrors = @()
+        $records = Invoke-ScriptAnalyzer -Path $Root -Recurse -Settings $settings -ErrorVariable analyzerErrors -ErrorAction SilentlyContinue
+    }
     foreach ($record in @($records)) {
         $file = if ($record.ScriptPath) { Get-RelativePath -Path $record.ScriptPath } else { '' }
         New-QualityFinding -Check 'Analyzer' -File $file -Line ([int]$record.Line) -Message ('{0} ({1}): {2}' -f $record.RuleName, $record.Severity, $record.Message)
