@@ -836,7 +836,6 @@ function New-EobAdUserAccount {
         [hashtable]$OtherAttributes = @{}
     )
 
-    Assert-EobAdConnected
     foreach ($key in $Attributes.Keys) {
         if ($key -notin $script:AllowedNewUserParameters) { throw "Unzulässiger Parameter für New-ADUser: $key" }
     }
@@ -849,6 +848,7 @@ function New-EobAdUserAccount {
     if (-not $PSCmdlet.ShouldProcess("$SamAccountName ($Path)", 'Benutzerkonto anlegen')) {
         return New-EobNotProcessedResult -Message "Konto $SamAccountName würde in $Path angelegt."
     }
+    Assert-EobAdConnected
 
     $parameters = Get-EobAdServerParameter
     $parameters['SamAccountName'] = $SamAccountName
