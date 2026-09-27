@@ -6,7 +6,7 @@
 
     Implementierungsstand: vorbereitet. Mit Mocks getestet, nicht gegen einen realen Tenant oder
     Entra-Connect-Server. Es werden keine Module installiert; Microsoft.Graph.Authentication und
-    Microsoft.Graph.Users stellt bei Bedarf der Administrator bereit (-Scope CurrentUser).
+    Microsoft.Graph.Users.Actions (Revoke-MgUserSignInSession) stellt bei Bedarf der Administrator bereit (-Scope CurrentUser).
     Graph wird delegiert mit minimalen Berechtigungen verbunden (User.Read.All, User.RevokeSessions.All).
 #>
 
@@ -87,7 +87,7 @@ function Get-EobGraphStatus {
     $module = Get-Module -ListAvailable -Name 'Microsoft.Graph.Authentication' -ErrorAction SilentlyContinue | Sort-Object -Property Version -Descending | Select-Object -First 1
     if ($null -eq $module -and $null -eq (Get-Command -Name 'Get-MgContext' -ErrorAction SilentlyContinue)) {
         return New-EobIntegrationStatus -Name 'Microsoft Graph' -State NotInstalled -Detail 'Microsoft.Graph.Authentication nicht gefunden.' `
-            -Hint 'Install-Module Microsoft.Graph.Authentication, Microsoft.Graph.Users -Scope CurrentUser (durch den Administrator).' -Implementation Prepared
+            -Hint 'Install-Module Microsoft.Graph.Authentication, Microsoft.Graph.Users.Actions -Scope CurrentUser (durch den Administrator).' -Implementation Prepared
     }
     $version = if ($null -ne $module) { [string]$module.Version } else { '' }
     $context = Get-EobGraphContext

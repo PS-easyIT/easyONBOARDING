@@ -368,6 +368,9 @@ Describe 'Ausführung und Warteschlange' {
         @($queue[0].Entry['CompletedPhases']) | Should -Be @('Immediate')
         @($queue[0].Entry['SnapshotPaths']).Count | Should -Be 2
         Test-Path -LiteralPath @($queue[0].Entry['SnapshotPaths'])[0] | Should -BeTrue
+        foreach ($snapshot in @($queue[0].Entry['SnapshotPaths'])) {
+            $queue[0].Entry['SnapshotHashes'][$snapshot] | Should -Be (Get-FileHash -LiteralPath $snapshot -Algorithm SHA256).Hash
+        }
     }
 
     It 'speichert weder Kennwörter noch Secrets in Warteschlange, Snapshots, Logs oder Berichten' {
@@ -524,6 +527,14 @@ Describe 'Endgültige Löschung' {
         Get-ChildItem -LiteralPath (Join-Path $script:Config.TestRoot 'snapshots') -Recurse -File | Remove-Item -Force
         $deletion = New-EobOffboardingDeletionPlan -OperationId $script:OperationId -Config $script:Config -Now ([datetime]'2027-10-01')
         @($deletion.Findings.Code) | Should -Contain 'OFF_DEL_NO_BACKUP'
+    }
+
+    It 'verweigert die Löschung, wenn der Zustandsbericht verändert wurde' {
+        $snapshot = @(Get-ChildItem -LiteralPath (Join-Path $script:Config.TestRoot 'snapshots') -Recurse -File -Filter '*_vorher_*')[0]
+        Add-Content -LiteralPath $snapshot.FullName -Value ' '
+        $deletion = New-EobOffboardingDeletionPlan -OperationId $script:OperationId -Config $script:Config -Now ([datetime]'2027-10-01')
+        @($deletion.Findings.Code) | Should -Contain 'OFF_DEL_BACKUP_MODIFIED'
+        Test-EobPlanExecutable -Plan $deletion | Should -BeFalse
     }
 
     It 'verlangt den exakten Bestätigungstext' {

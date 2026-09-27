@@ -212,7 +212,8 @@ function Test-EobPathWithin {
     }
     else {
         $fullRoot = & $normalize ([System.IO.Path]::GetFullPath($Root))
-        $candidate = if ([System.IO.Path]::IsPathRooted($Path)) { $Path } else { Join-Path -Path $Root -ChildPath $Path }
+        # [System.IO.Path]::Combine statt Join-Path: konfigurierte Laufwerke müssen nicht existieren.
+        $candidate = if ([System.IO.Path]::IsPathRooted($Path)) { $Path } else { [System.IO.Path]::Combine($Root, $Path) }
         $fullPath = & $normalize ([System.IO.Path]::GetFullPath($candidate))
     }
 
@@ -769,7 +770,7 @@ function Test-EobDirectoryWritable {
         if (-not (Test-Path -LiteralPath $Path -PathType Container)) {
             $null = New-Item -ItemType Directory -Path $Path -Force -ErrorAction Stop
         }
-        $probe = Join-Path -Path $Path -ChildPath ('.write-test-' + [guid]::NewGuid().ToString('N'))
+        $probe = [System.IO.Path]::Combine($Path, '.write-test-' + [guid]::NewGuid().ToString('N'))
         [System.IO.File]::WriteAllText($probe, '')
         Remove-Item -LiteralPath $probe -Force -ErrorAction Stop
         return $true
@@ -800,6 +801,8 @@ function Initialize-EobLogging {
         Maximale Größe einer Textlogdatei vor dem Wechsel auf eine Folgedatei.
     .PARAMETER EnableQueue
         Stellt Einträge zusätzlich in eine Warteschlange (Anzeige in der GUI).
+    .PARAMETER FallbackRoot
+        Basis des Ausweichverzeichnisses (Standard: lokales Anwendungsdatenverzeichnis des Benutzers).
     #>
     [CmdletBinding()]
     [OutputType([pscustomobject])]
@@ -811,7 +814,8 @@ function Initialize-EobLogging {
         [ValidateRange(0, 36500)][int]$AuditRetentionDays = 0,
         [ValidateRange(1, 1024)][int]$MaxFileSizeMB = 20,
         [switch]$EnableQueue,
-        [switch]$ConsoleOutput
+        [switch]$ConsoleOutput,
+        [string]$FallbackRoot
     )
 
     $script:LogState.FallbackActive = $false
@@ -821,10 +825,12 @@ function Initialize-EobLogging {
     $script:LogState.CurrentFiles = @{}
 
     $logDir = $Directory
-    $auditDir = if ([string]::IsNullOrWhiteSpace($AuditDirectory)) { Join-Path -Path $Directory -ChildPath 'audit' } else { $AuditDirectory }
+    # [System.IO.Path]::Combine statt Join-Path: ein konfiguriertes Laufwerk, das es auf diesem Rechner
+    # nicht gibt, soll zum Ausweichverzeichnis führen und nicht zu einem Fehler.
+    $auditDir = if ([string]::IsNullOrWhiteSpace($AuditDirectory)) { [System.IO.Path]::Combine($Directory, 'audit') } else { $AuditDirectory }
 
     if (-not (Test-EobDirectoryWritable -Path $logDir) -or -not (Test-EobDirectoryWritable -Path $auditDir)) {
-        $base = [Environment]::GetFolderPath([Environment+SpecialFolder]::LocalApplicationData)
+        $base = if ($FallbackRoot) { $FallbackRoot } else { [Environment]::GetFolderPath([Environment+SpecialFolder]::LocalApplicationData) }
         if ([string]::IsNullOrWhiteSpace($base)) { $base = [System.IO.Path]::GetTempPath() }
         $fallback = Join-Path -Path (Join-Path -Path $base -ChildPath 'easyONBOARDING') -ChildPath 'Logs'
         $script:LogState.FallbackActive = $true

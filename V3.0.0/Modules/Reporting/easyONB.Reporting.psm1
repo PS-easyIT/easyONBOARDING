@@ -131,7 +131,7 @@ function Get-EobReportDirectory {
         $root = Join-Path -Path (Get-EobAppRoot) -ChildPath 'Reports'
     }
     if ($Kind) {
-        return (Join-Path -Path $root -ChildPath (Get-EobSafeFileName -Name $Kind))
+        return [System.IO.Path]::Combine($root, (Get-EobSafeFileName -Name $Kind))
     }
     return $root
 }

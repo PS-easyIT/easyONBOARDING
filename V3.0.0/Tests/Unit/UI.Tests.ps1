@@ -145,6 +145,28 @@ Describe 'Hilfsfunktionen der Oberfläche' {
         }
     }
 
+    It 'verhindert Live-Modus und Neuladen bei Fehlern in der Konfiguration' {
+        $missing = Join-Path $TestDrive 'nicht-vorhanden.ini'
+        $null = Initialize-EobLogging -Directory (Join-Path $TestDrive 'logs-config')
+        InModuleScope 'easyONB.UI' -Parameters @{ Missing = $missing } {
+            param($Missing)
+            $script:Ui = New-EobUiState
+            $script:Ui.Headless = $true
+            $script:Ui.Config = Import-EobConfiguration -Path $Missing -NoIncludes
+            (Get-EobUiConfigError -Config $script:Ui.Config) -join ' ' | Should -Match 'CFG_FILE_NOT_FOUND'
+            Switch-EobExecutionMode
+            $script:Ui.Simulation | Should -BeTrue
+            $script:Ui.DialogLog[0] | Should -Match 'Live-Modus nicht möglich'
+
+            $previous = [pscustomobject]@{ Findings = @(); Path = 'bisher' }
+            $script:Ui.Config = $previous
+            $script:Ui.ConfigPath = $Missing
+            Update-EobUiConfiguration
+            $script:Ui.Config.Path | Should -Be 'bisher'
+            $script:Ui.DialogLog[1] | Should -Match 'nicht übernommen'
+        }
+    }
+
     It 'meldet die Oberfläche außerhalb von Windows als nicht verfügbar' -Skip:$IsWindows {
         $result = Test-EobGuiEnvironment
         $result.IsSupported | Should -BeFalse

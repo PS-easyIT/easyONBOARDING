@@ -369,4 +369,17 @@ Bleibt=ja
         Set-Content -LiteralPath $script:Destination -Value 'vorhanden'
         { Convert-EobLegacyConfiguration -SourcePath $script:Source -DestinationPath $script:Destination -TemplatePath $script:TemplatePath -Confirm:$false } | Should -Throw '*existiert bereits*'
     }
+
+    It 'Scripts/Convert-LegacyConfiguration.ps1 simuliert mit -WhatIf und lässt die Quelle unverändert' {
+        $script = Join-Path $script:AppRoot 'Scripts/Convert-LegacyConfiguration.ps1'
+        $hash = (Get-FileHash -LiteralPath $script:Source).Hash
+        & $script -SourcePath $script:Source -DestinationPath $script:Destination -WhatIf
+        Test-Path -LiteralPath $script:Destination | Should -BeFalse
+        $changes = @(& $script -SourcePath $script:Source -DestinationPath $script:Destination -InformationAction SilentlyContinue)
+        $changes.Key | Should -Contain 'fixPassword'
+        $changes.Key | Should -Contain 'SyncCommand'
+        (Get-Content -LiteralPath $script:Destination -Raw) | Should -Not -Match 'Sehr!Geheim99'
+        (Get-FileHash -LiteralPath $script:Source).Hash | Should -Be $hash
+        { & $script -SourcePath $script:Source -DestinationPath $script:Source } | Should -Throw '*identisch*'
+    }
 }
