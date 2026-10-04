@@ -6,7 +6,20 @@ Alle nennenswerten Änderungen an easyONBOARDING. Format angelehnt an
 
 ## [Unreleased]
 
+### Geändert
+
+- Oberfläche auf 1400 x 900 ausgelegt: Navigation, Kopf, Abstände, Schriftgrößen und
+  Tabellenhöhen so angepasst, dass Assistenten und Ansichten ohne unnötiges Scrollen passen.
+  Das Dashboard zeigt die vier Kennzahlen in einer Zeile; in „Benutzer aktualisieren“ stehen die
+  Attribute zweispaltig. Hinweistexte in Ansichten, Dialogen und Banner sind gekürzt.
+- Auf kleineren Arbeitsflächen (z. B. 1366 x 768) wird das Fenster beim Start auf die
+  Arbeitsfläche begrenzt.
+
 ### Behoben
+
+- Bestätigungsdialog: Lange Detaillisten (z. B. vor der endgültigen Löschung) konnten das Feld für
+  die Tippbestätigung aus dem sichtbaren Bereich schieben; lange Zeilen wurden abgeschnitten. Die
+  Details scrollen jetzt in einem eigenen Bereich und brechen um.
 
 - Massenverarbeitung: Ein Fehler außerhalb der Zeilenverarbeitung (z. B. beim Aktualisieren der
   Ergebnistabelle) ließ die Ausführungssperre bestehen; Ansichtswechsel und Schließen des Fensters

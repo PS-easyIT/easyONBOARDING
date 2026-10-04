@@ -1,9 +1,9 @@
 <UserControl xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
     <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
-        <StackPanel Margin="24,20,24,24">
+        <StackPanel Margin="24,16,24,16">
             <TextBlock Style="{StaticResource HeadingTextStyle}" Text="Dashboard" />
-            <TextBlock x:Name="DashSubtitle" Style="{StaticResource CaptionTextStyle}" Margin="0,0,0,16" />
+            <TextBlock x:Name="DashSubtitle" Style="{StaticResource CaptionTextStyle}" Margin="0,0,0,12" />
 
             <Border x:Name="DashConfigBanner" Style="{StaticResource WarningBannerStyle}" Visibility="Collapsed">
                 <DockPanel>
@@ -12,36 +12,36 @@
                 </DockPanel>
             </Border>
 
-            <WrapPanel Orientation="Horizontal" Margin="0,0,0,4">
-                <Border Style="{StaticResource CardStyle}" Width="270" Margin="0,0,12,12">
+            <UniformGrid Columns="4" Margin="0,0,-12,0">
+                <Border Style="{StaticResource CardStyle}" Margin="0,0,12,12">
                     <StackPanel>
                         <TextBlock Style="{StaticResource CaptionTextStyle}" Text="Active Directory" />
-                        <TextBlock x:Name="DashAdState" FontSize="20" FontWeight="SemiBold" Margin="0,4,0,2" />
-                        <TextBlock x:Name="DashAdDetail" Style="{StaticResource CaptionTextStyle}" />
+                        <TextBlock x:Name="DashAdState" FontSize="19" FontWeight="SemiBold" Margin="0,2,0,2" TextTrimming="CharacterEllipsis" />
+                        <TextBlock x:Name="DashAdDetail" Style="{StaticResource CaptionTextStyle}" TextTrimming="CharacterEllipsis" MaxHeight="34" />
                     </StackPanel>
                 </Border>
-                <Border Style="{StaticResource CardStyle}" Width="270" Margin="0,0,12,12">
+                <Border Style="{StaticResource CardStyle}" Margin="0,0,12,12">
                     <StackPanel>
                         <TextBlock Style="{StaticResource CaptionTextStyle}" Text="Offboarding-Warteschlange" />
-                        <TextBlock x:Name="DashQueueState" FontSize="20" FontWeight="SemiBold" Margin="0,4,0,2" />
+                        <TextBlock x:Name="DashQueueState" FontSize="19" FontWeight="SemiBold" Margin="0,2,0,2" TextTrimming="CharacterEllipsis" />
                         <TextBlock x:Name="DashQueueDetail" Style="{StaticResource CaptionTextStyle}" />
                     </StackPanel>
                 </Border>
-                <Border Style="{StaticResource CardStyle}" Width="270" Margin="0,0,12,12">
+                <Border Style="{StaticResource CardStyle}" Margin="0,0,12,12">
                     <StackPanel>
                         <TextBlock Style="{StaticResource CaptionTextStyle}" Text="Vorgänge (30 Tage)" />
-                        <TextBlock x:Name="DashStatsState" FontSize="20" FontWeight="SemiBold" Margin="0,4,0,2" />
+                        <TextBlock x:Name="DashStatsState" FontSize="19" FontWeight="SemiBold" Margin="0,2,0,2" TextTrimming="CharacterEllipsis" />
                         <TextBlock x:Name="DashStatsDetail" Style="{StaticResource CaptionTextStyle}" />
                     </StackPanel>
                 </Border>
-                <Border Style="{StaticResource CardStyle}" Width="270" Margin="0,0,12,12">
+                <Border Style="{StaticResource CardStyle}" Margin="0,0,12,12">
                     <StackPanel>
                         <TextBlock Style="{StaticResource CaptionTextStyle}" Text="Konfiguration" />
-                        <TextBlock x:Name="DashConfigState" FontSize="20" FontWeight="SemiBold" Margin="0,4,0,2" />
+                        <TextBlock x:Name="DashConfigState" FontSize="19" FontWeight="SemiBold" Margin="0,2,0,2" TextTrimming="CharacterEllipsis" />
                         <TextBlock x:Name="DashConfigDetail" Style="{StaticResource CaptionTextStyle}" />
                     </StackPanel>
                 </Border>
-            </WrapPanel>
+            </UniformGrid>
 
             <Border Style="{StaticResource CardStyle}">
                 <StackPanel>
@@ -58,7 +58,7 @@
             <Border Style="{StaticResource CardStyle}">
                 <StackPanel>
                     <TextBlock Style="{StaticResource SubheadingTextStyle}" Text="Integrationen" />
-                    <DataGrid x:Name="DashIntegrationGrid" MaxHeight="280" AutomationProperties.Name="Status der Integrationen">
+                    <DataGrid x:Name="DashIntegrationGrid" MaxHeight="250" AutomationProperties.Name="Status der Integrationen">
                         <DataGrid.Columns>
                             <DataGridTextColumn Header="Integration" Binding="{Binding Name}" Width="170" />
                             <DataGridTextColumn Header="Status" Binding="{Binding StateText}" Width="140" />
@@ -73,7 +73,7 @@
             <Border Style="{StaticResource CardStyle}">
                 <StackPanel>
                     <TextBlock Style="{StaticResource SubheadingTextStyle}" Text="Offboarding: fällige Aufgaben" />
-                    <DataGrid x:Name="DashQueueGrid" MaxHeight="240" AutomationProperties.Name="Fällige Offboarding-Aufgaben">
+                    <DataGrid x:Name="DashQueueGrid" MaxHeight="200" AutomationProperties.Name="Fällige Offboarding-Aufgaben">
                         <DataGrid.Columns>
                             <DataGridTextColumn Header="Konto" Binding="{Binding Account}" Width="*" />
                             <DataGridTextColumn Header="Vorlage" Binding="{Binding Template}" Width="140" />
@@ -88,7 +88,7 @@
             <Border Style="{StaticResource CardStyle}">
                 <StackPanel>
                     <TextBlock Style="{StaticResource SubheadingTextStyle}" Text="Letzte Vorgänge" />
-                    <DataGrid x:Name="DashOperationsGrid" MaxHeight="300" AutomationProperties.Name="Letzte Vorgänge">
+                    <DataGrid x:Name="DashOperationsGrid" MaxHeight="240" AutomationProperties.Name="Letzte Vorgänge">
                         <DataGrid.Columns>
                             <DataGridTextColumn Header="Zeitpunkt" Binding="{Binding TimeText}" Width="150" />
                             <DataGridTextColumn Header="Vorgang" Binding="{Binding Kind}" Width="140" />

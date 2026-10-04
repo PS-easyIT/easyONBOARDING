@@ -4,15 +4,15 @@
 <UserControl xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
     <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
-        <StackPanel Margin="24,20,24,24">
+        <StackPanel Margin="24,16,24,16">
             <TextBlock Style="{StaticResource HeadingTextStyle}" Text="Tools" />
             <TextBlock Style="{StaticResource CaptionTextStyle}" Margin="0,0,0,12"
-                       Text="Externe Dienste sind optional. Es werden keine Module installiert; fehlende Module bitte durch den Administrator bereitstellen." />
+                       Text="Externe Dienste sind optional; fehlende Module stellt der Administrator bereit." />
 
             <Border Style="{StaticResource CardStyle}">
                 <StackPanel>
                     <TextBlock Style="{StaticResource SubheadingTextStyle}" Text="Verbindungen" />
-                    <DataGrid x:Name="ToolsIntegrationGrid" MaxHeight="300" AutomationProperties.Name="Status der Integrationen">
+                    <DataGrid x:Name="ToolsIntegrationGrid" MaxHeight="250" AutomationProperties.Name="Status der Integrationen">
                         <DataGrid.Columns>
                             <DataGridTextColumn Header="Integration" Binding="{Binding Name}" Width="170" />
                             <DataGridTextColumn Header="Status" Binding="{Binding StateText}" Width="140" />
@@ -43,14 +43,14 @@
                         <Button x:Name="ToolsOpenLogFolderButton" Content="_Log-Ordner öffnen" Margin="0,0,8,8" />
                     </WrapPanel>
                     <TextBlock Style="{StaticResource CaptionTextStyle}" Margin="0,4,0,0"
-                               Text="Die Migration liest eine INI der Version 1.x, entfernt enthaltene Kennwörter und schreibt eine neue Datei. Die Quelldatei bleibt unverändert." />
+                               Text="Migration: INI aus 1.x ohne Kennwörter in eine neue Datei; die Quelle bleibt unverändert." />
                 </StackPanel>
             </Border>
 
             <Border Style="{StaticResource CardStyle}">
                 <StackPanel>
                     <TextBlock Style="{StaticResource SubheadingTextStyle}" Text="Ergebnis" />
-                    <TextBox x:Name="ToolsOutputText" IsReadOnly="True" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="160" MaxHeight="400"
+                    <TextBox x:Name="ToolsOutputText" IsReadOnly="True" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="140" MaxHeight="260"
                              VerticalContentAlignment="Top" VerticalScrollBarVisibility="Auto" FontFamily="Consolas" AutomationProperties.Name="Ergebnis" />
                 </StackPanel>
             </Border>

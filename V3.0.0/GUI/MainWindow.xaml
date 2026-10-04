@@ -6,7 +6,7 @@
 <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="easyONBOARDING"
-        Width="1320" Height="860" MinWidth="1100" MinHeight="700"
+        Width="1400" Height="900" MinWidth="1100" MinHeight="680"
         WindowStartupLocation="CenterScreen"
         Background="{DynamicResource WindowBackgroundBrush}"
         Foreground="{DynamicResource TextPrimaryBrush}"
@@ -22,13 +22,13 @@
         </Grid.RowDefinitions>
 
         <!-- Kopfbereich -->
-        <Border Grid.Row="0" Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource DividerBrush}" BorderThickness="0,0,0,1" Padding="16,10">
+        <Border Grid.Row="0" Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource DividerBrush}" BorderThickness="0,0,0,1" Padding="16,8">
             <DockPanel LastChildFill="False">
                 <StackPanel DockPanel.Dock="Left" Orientation="Horizontal">
-                    <Image x:Name="HeaderLogo" Height="32" MaxWidth="160" Margin="0,0,12,0" Visibility="Collapsed" Stretch="Uniform" />
+                    <Image x:Name="HeaderLogo" Height="30" MaxWidth="150" Margin="0,0,12,0" Visibility="Collapsed" Stretch="Uniform" />
                     <StackPanel VerticalAlignment="Center">
-                        <TextBlock x:Name="HeaderTitle" Text="easyONBOARDING" FontSize="18" FontWeight="SemiBold" />
-                        <TextBlock x:Name="HeaderSubtitle" Style="{StaticResource CaptionTextStyle}" Text="" />
+                        <TextBlock x:Name="HeaderTitle" Text="easyONBOARDING" FontSize="17" FontWeight="SemiBold" />
+                        <TextBlock x:Name="HeaderSubtitle" Style="{StaticResource CaptionTextStyle}" Text="" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" MaxWidth="700" />
                     </StackPanel>
                 </StackPanel>
                 <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
@@ -47,74 +47,74 @@
 
         <!-- Hinweis Simulationsmodus -->
         <Border x:Name="SimulationBanner" Grid.Row="1" Background="{DynamicResource WarningBackgroundBrush}"
-                BorderBrush="{DynamicResource WarningBrush}" BorderThickness="0,0,0,1" Padding="16,6">
+                BorderBrush="{DynamicResource WarningBrush}" BorderThickness="0,0,0,1" Padding="16,5">
             <TextBlock TextWrapping="Wrap" Foreground="{DynamicResource TextPrimaryBrush}">
-                <Run FontWeight="SemiBold" Text="Simulationsmodus aktiv: " />
-                <Run Text="Es werden keine Änderungen an Active Directory, Exchange, Microsoft 365 oder Dateisystem vorgenommen. Vorgänge werden vollständig geprüft und als Vorschau protokolliert." />
+                <Run FontWeight="SemiBold" Text="Simulation: " />
+                <Run Text="Es werden keine Änderungen vorgenommen. Alle Vorgänge werden nur geprüft und protokolliert." />
             </TextBlock>
         </Border>
 
         <!-- Navigation und Inhalt -->
         <Grid Grid.Row="2">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="232" />
+                <ColumnDefinition Width="210" />
                 <ColumnDefinition Width="*" />
             </Grid.ColumnDefinitions>
             <Border Grid.Column="0" Background="{DynamicResource NavBackgroundBrush}" BorderBrush="{DynamicResource DividerBrush}" BorderThickness="0,0,1,0">
                 <DockPanel>
                     <TextBlock x:Name="NavFooterText" DockPanel.Dock="Bottom" Style="{StaticResource CaptionTextStyle}" Margin="16,8,16,12" />
-                    <StackPanel Margin="0,10,0,0" AutomationProperties.Name="Hauptnavigation">
+                    <StackPanel Margin="0,8,0,0" AutomationProperties.Name="Hauptnavigation">
                         <RadioButton x:Name="NavDashboard" Style="{StaticResource NavItemStyle}" Tag="Dashboard" ToolTip="Dashboard (Strg+1)" AutomationProperties.Name="Dashboard">
                             <StackPanel Orientation="Horizontal">
-                                <TextBlock Style="{StaticResource IconTextStyle}" Text="&#xE80F;" Margin="4,0,12,0" />
+                                <TextBlock Style="{StaticResource IconTextStyle}" Text="&#xE80F;" Margin="2,0,10,0" />
                                 <TextBlock Text="Dashboard" />
                             </StackPanel>
                         </RadioButton>
                         <RadioButton x:Name="NavOnboarding" Style="{StaticResource NavItemStyle}" Tag="Onboarding" ToolTip="Onboarding (Strg+2)" AutomationProperties.Name="Onboarding">
                             <StackPanel Orientation="Horizontal">
-                                <TextBlock Style="{StaticResource IconTextStyle}" Text="&#xE8FA;" Margin="4,0,12,0" />
+                                <TextBlock Style="{StaticResource IconTextStyle}" Text="&#xE8FA;" Margin="2,0,10,0" />
                                 <TextBlock Text="Onboarding" />
                             </StackPanel>
                         </RadioButton>
                         <RadioButton x:Name="NavOffboarding" Style="{StaticResource NavItemStyle}" Tag="Offboarding" ToolTip="Offboarding (Strg+3)" AutomationProperties.Name="Offboarding">
                             <StackPanel Orientation="Horizontal">
-                                <TextBlock Style="{StaticResource IconTextStyle}" Text="&#xE8F8;" Margin="4,0,12,0" />
+                                <TextBlock Style="{StaticResource IconTextStyle}" Text="&#xE8F8;" Margin="2,0,10,0" />
                                 <TextBlock Text="Offboarding" />
                             </StackPanel>
                         </RadioButton>
                         <RadioButton x:Name="NavUserUpdate" Style="{StaticResource NavItemStyle}" Tag="UserUpdate" ToolTip="Benutzer aktualisieren (Strg+4)" AutomationProperties.Name="Benutzer aktualisieren">
                             <StackPanel Orientation="Horizontal">
-                                <TextBlock Style="{StaticResource IconTextStyle}" Text="&#xE77B;" Margin="4,0,12,0" />
+                                <TextBlock Style="{StaticResource IconTextStyle}" Text="&#xE77B;" Margin="2,0,10,0" />
                                 <TextBlock Text="Benutzer aktualisieren" />
                             </StackPanel>
                         </RadioButton>
                         <RadioButton x:Name="NavBulk" Style="{StaticResource NavItemStyle}" Tag="Bulk" ToolTip="Massenverarbeitung (Strg+5)" AutomationProperties.Name="Massenverarbeitung">
                             <StackPanel Orientation="Horizontal">
-                                <TextBlock Style="{StaticResource IconTextStyle}" Text="&#xE902;" Margin="4,0,12,0" />
+                                <TextBlock Style="{StaticResource IconTextStyle}" Text="&#xE902;" Margin="2,0,10,0" />
                                 <TextBlock Text="Massenverarbeitung" />
                             </StackPanel>
                         </RadioButton>
                         <RadioButton x:Name="NavReports" Style="{StaticResource NavItemStyle}" Tag="Reports" ToolTip="Reports und Audit (Strg+6)" AutomationProperties.Name="Reports und Audit">
                             <StackPanel Orientation="Horizontal">
-                                <TextBlock Style="{StaticResource IconTextStyle}" Text="&#xE9F9;" Margin="4,0,12,0" />
+                                <TextBlock Style="{StaticResource IconTextStyle}" Text="&#xE9F9;" Margin="2,0,10,0" />
                                 <TextBlock Text="Reports und Audit" />
                             </StackPanel>
                         </RadioButton>
                         <RadioButton x:Name="NavTools" Style="{StaticResource NavItemStyle}" Tag="Tools" ToolTip="Tools (Strg+7)" AutomationProperties.Name="Tools">
                             <StackPanel Orientation="Horizontal">
-                                <TextBlock Style="{StaticResource IconTextStyle}" Text="&#xE90F;" Margin="4,0,12,0" />
+                                <TextBlock Style="{StaticResource IconTextStyle}" Text="&#xE90F;" Margin="2,0,10,0" />
                                 <TextBlock Text="Tools" />
                             </StackPanel>
                         </RadioButton>
                         <RadioButton x:Name="NavSettings" Style="{StaticResource NavItemStyle}" Tag="Settings" ToolTip="Einstellungen (Strg+8)" AutomationProperties.Name="Einstellungen">
                             <StackPanel Orientation="Horizontal">
-                                <TextBlock Style="{StaticResource IconTextStyle}" Text="&#xE713;" Margin="4,0,12,0" />
+                                <TextBlock Style="{StaticResource IconTextStyle}" Text="&#xE713;" Margin="2,0,10,0" />
                                 <TextBlock Text="Einstellungen" />
                             </StackPanel>
                         </RadioButton>
                         <RadioButton x:Name="NavInfo" Style="{StaticResource NavItemStyle}" Tag="Info" ToolTip="Info (Strg+9)" AutomationProperties.Name="Info">
                             <StackPanel Orientation="Horizontal">
-                                <TextBlock Style="{StaticResource IconTextStyle}" Text="&#xE946;" Margin="4,0,12,0" />
+                                <TextBlock Style="{StaticResource IconTextStyle}" Text="&#xE946;" Margin="2,0,10,0" />
                                 <TextBlock Text="Info" />
                             </StackPanel>
                         </RadioButton>
@@ -125,7 +125,7 @@
         </Grid>
 
         <!-- Statusleiste -->
-        <Border Grid.Row="3" Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource DividerBrush}" BorderThickness="0,1,0,0" Padding="12,5">
+        <Border Grid.Row="3" Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource DividerBrush}" BorderThickness="0,1,0,0" Padding="12,4">
             <DockPanel>
                 <StackPanel DockPanel.Dock="Left" Orientation="Horizontal">
                     <Ellipse x:Name="StatusAdIndicator" Width="10" Height="10" Margin="0,0,6,0" VerticalAlignment="Center" Fill="{DynamicResource DisabledTextBrush}" />
