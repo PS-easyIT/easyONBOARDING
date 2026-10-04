@@ -1,4 +1,4 @@
-; ==============================================================================
+﻿; ==============================================================================
 ; easyONBOARDING 3.x - Beispielkonfiguration
 ; ------------------------------------------------------------------------------
 ; 1. Diese Datei nach Config\easyONB.ini kopieren und anpassen.
@@ -305,7 +305,14 @@ PasswordDelivery=Discard
 Mode=None
 OnPremisesUri=
 RemoteRoutingDomain=
+; Optional: Zertifikatsanmeldung an Exchange Online (geplante Aufgabe), sonst interaktiv
+AppId=
+CertificateThumbprint=
+Organization=
 
 [Graph]
 Enabled=0
 TenantId=
+; Optional: Zertifikatsanmeldung (Anwendungsberechtigung User.RevokeSessions.All), sonst interaktiv
+ClientId=
+CertificateThumbprint=

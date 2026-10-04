@@ -298,6 +298,13 @@ function Test-EobConfigValueType {
                 return "Keine gültige URL (http/https): '$Value'."
             }
         }
+        'Guid' {
+            $guid = [guid]::Empty
+            if (-not [guid]::TryParse($Value, [ref]$guid)) { return "GUID erwartet, gefunden '$Value'." }
+        }
+        'Thumbprint' {
+            if ($Value -notmatch '^[0-9A-Fa-f]{40}$') { return "Zertifikatsfingerabdruck (40 Hexadezimalzeichen) erwartet, gefunden '$Value'." }
+        }
         'Color' {
             if ($Value -notmatch '^#([0-9A-Fa-f]{6}|[0-9A-Fa-f]{8})$') { return "Farbe im Format #RRGGBB erwartet, gefunden '$Value'." }
         }
@@ -621,6 +628,19 @@ function Test-EobConfigurationRule {
     $exchangeMode = Get-EobConfigValue -Config $Config -Section 'Exchange' -Key 'Mode'
     if ($exchangeMode -in @('OnPremises', 'Hybrid') -and -not (Get-EobConfigValue -Config $Config -Section 'Exchange' -Key 'OnPremisesUri')) {
         New-EobFinding -Severity Warning -Code 'CFG_EXCHANGE_URI_MISSING' -Field 'Exchange.OnPremisesUri' -Message "Exchange-Modus $exchangeMode benötigt OnPremisesUri."
+    }
+    # Zertifikatsanmeldung: nur vollständig wirksam; teilweise Angaben fallen sonst unbemerkt auf interaktiv zurück.
+    foreach ($certificateAuth in @(
+            @{ Section = 'Exchange'; Keys = @('AppId', 'CertificateThumbprint', 'Organization') }
+            @{ Section = 'Graph'; Keys = @('ClientId', 'CertificateThumbprint', 'TenantId') }
+        )) {
+        $set = @($certificateAuth.Keys | Where-Object { [string](Get-EobConfigValue -Config $Config -Section $certificateAuth.Section -Key $_) })
+        $relevant = if ($certificateAuth.Section -eq 'Graph') { @($set | Where-Object { $_ -ne 'TenantId' }).Count -gt 0 } else { $set.Count -gt 0 }
+        if ($relevant -and $set.Count -lt $certificateAuth.Keys.Count) {
+            $missing = @($certificateAuth.Keys | Where-Object { $_ -notin $set }) -join ', '
+            New-EobFinding -Severity Warning -Code 'CFG_CERTIFICATE_AUTH_INCOMPLETE' -Field "$($certificateAuth.Section).$missing" `
+                -Message "[$($certificateAuth.Section)] Zertifikatsanmeldung unvollständig (es fehlt: $missing); es wird interaktiv angemeldet."
+        }
     }
     $templatePath = Get-EobConfigValue -Config $Config -Section 'Report' -Key 'TemplatePathHTML' -As Path
     if ($templatePath -and (Get-EobConfigValue -Config $Config -Section 'Report' -Key 'CreateWelcomeDocument' -As Bool) -and -not (Test-Path -LiteralPath $templatePath -PathType Leaf)) {

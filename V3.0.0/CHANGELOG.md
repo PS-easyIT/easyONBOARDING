@@ -6,6 +6,20 @@ Alle nennenswerten Änderungen an easyONBOARDING. Format angelehnt an
 
 ## [Unreleased]
 
+### Hinzugefügt
+
+- Exchange Hybrid: Verbindung zu Exchange Server **und** Exchange Online. Lokale Befehle werden mit dem
+  Präfix `EobOnPrem` importiert; Postfachaktionen ermitteln, ob das Postfach online oder lokal liegt.
+  Die Umwandlung in ein freigegebenes Postfach erfolgt bei Cloud-Postfächern nach dem
+  Microsoft-Verfahren (Exchange Online, danach `Set-RemoteMailbox -Type Shared` lokal).
+- Zertifikatsanmeldung (App-only) für Exchange Online (`[Exchange] AppId`, `CertificateThumbprint`,
+  `Organization`) und Microsoft Graph (`[Graph] ClientId`, `CertificateThumbprint`). Die geplante
+  Aufgabe verbindet damit Exchange Online und Graph unbeaufsichtigt; ohne Zertifikat bleiben diese
+  Phasen wie bisher manuell. Neue Schematypen `Guid` und `Thumbprint`, Befund
+  `CFG_CERTIFICATE_AUTH_INCOMPLETE` bei unvollständigen Angaben.
+- Entra Connect: Serverprüfung über `Get-ADSyncScheduler` (Erreichbarkeit, laufender Zyklus,
+  Stagingmodus), in der Oberfläche unter Tools › Entra Connect prüfen.
+
 ### Geändert
 
 - Oberfläche auf 1400 x 900 ausgelegt: Navigation, Kopf, Abstände, Schriftgrößen und
@@ -16,6 +30,11 @@ Alle nennenswerten Änderungen an easyONBOARDING. Format angelehnt an
   Arbeitsfläche begrenzt.
 
 ### Behoben
+
+- Exchange Hybrid: Postfächer in Exchange Online wurden über die lokale Sitzung nicht gefunden; alle
+  Postfachaktionen des Offboardings entfielen dadurch („Kein Postfach gefunden“).
+- Microsoft Graph: Der Status meldete „Verbunden“, obwohl `Microsoft.Graph.Users.Actions`
+  (`Revoke-MgUserSignInSession`) fehlte; der Schritt scheiterte erst bei der Ausführung.
 
 - Bestätigungsdialog: Lange Detaillisten (z. B. vor der endgültigen Löschung) konnten das Feld für
   die Tippbestätigung aus dem sichtbaren Bereich schieben; lange Zeilen wurden abgeschnitten. Die

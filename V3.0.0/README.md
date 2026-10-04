@@ -17,9 +17,9 @@ gelten als veraltet.
 | Benutzer aktualisieren | Attribute, Führungskraft, Gruppen mit Vorher/Nachher-Vorschau; Kennwort-Reset nur als eigene, bestätigte Aktion | produktiv |
 | Massenverarbeitung | CSV-Import für Onboarding und Offboarding, Tippbestätigung ab einstellbarer Anzahl | produktiv |
 | Berichte und Audit | HTML, JSON, CSV, TXT, PDF (Microsoft Edge, alternativ wkhtmltopdf); Audit-Log als JSON Lines | produktiv |
-| Exchange (Online, Server, Hybrid) | Postfach anlegen (Server/Hybrid), Abwesenheitsnotiz, Weiterleitung, Ausblenden, Umwandlung in freigegebenes Postfach, Berechtigungsbericht | vorbereitet¹ |
-| Microsoft Graph | Anmeldesitzungen widerrufen (Scopes `User.Read.All`, `User.RevokeSessions.All`) | vorbereitet¹ |
-| Entra Connect Sync | Delta-/Initial-Synchronisation per WinRM | vorbereitet¹ |
+| Exchange (Online, Server, Hybrid) | Postfach anlegen (Server/Hybrid), Abwesenheitsnotiz, Weiterleitung, Ausblenden, Umwandlung in freigegebenes Postfach, Berechtigungsbericht; Hybrid mit Verbindung zu Exchange Server und Exchange Online (Postfach wird online oder lokal gefunden); Zertifikatsanmeldung für die geplante Aufgabe | vorbereitet¹ |
+| Microsoft Graph | Anmeldesitzungen widerrufen (delegiert `User.Read.All`, `User.RevokeSessions.All` oder als Anwendung per Zertifikat) | vorbereitet¹ |
+| Entra Connect Sync | Delta-/Initial-Synchronisation per WinRM; Serverprüfung (Erreichbarkeit, laufender Zyklus, Stagingmodus) | vorbereitet¹ |
 
 ¹ *Vorbereitet* heißt: implementiert, mit Mocks getestet, per Konfiguration abschaltbar (Standard: aus)
 und im Dashboard mit Status angezeigt, aber nicht gegen reale Exchange-, Graph- oder

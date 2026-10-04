@@ -28,6 +28,7 @@
                         <Button x:Name="ToolsGraphDisconnectButton" Content="Graph trennen" Margin="0,0,8,8" />
                         <Button x:Name="ToolsSmtpTestButton" Content="_SMTP prüfen" Margin="0,0,8,8" />
                         <Button x:Name="ToolsFileServerTestButton" Content="_Dateiserver prüfen" Margin="0,0,8,8" />
+                        <Button x:Name="ToolsEntraTestButton" Content="E_ntra Connect prüfen" Margin="0,0,8,8" ToolTip="Fragt den Sync-Server ab: Erreichbarkeit, laufender Zyklus, Stagingmodus." />
                         <Button x:Name="ToolsStatusRefreshButton" Content="Status a_ktualisieren" Margin="0,0,8,8" />
                     </WrapPanel>
                 </StackPanel>

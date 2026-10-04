@@ -3076,6 +3076,12 @@ function Initialize-EobToolsView {
                 Add-EobToolsOutput -Text "Dateiserver: $(Get-EobUiText -Map $script:StateTexts -Key $status.State) - $($status.Detail) $($status.Hint)"
             }
         })
+    $c.ToolsEntraTestButton.Add_Click({
+            Invoke-EobUiSafely -Name 'Entra Connect prüfen' -Busy -Action {
+                $status = Get-EobEntraConnectStatus -Config $script:Ui.Config -TestConnection
+                Add-EobToolsOutput -Text "Entra Connect: $(Get-EobUiText -Map $script:StateTexts -Key $status.State) - $($status.Detail) $($status.Hint)"
+            }
+        })
     $c.ToolsConfigCheckButton.Add_Click({ Invoke-EobUiSafely -Name 'Konfiguration prüfen' -Busy -Action { Invoke-EobToolsConfigCheck } })
     $c.ToolsMigrateButton.Add_Click({ Invoke-EobUiSafely -Name 'Konfiguration migrieren' -Action { Invoke-EobToolsMigration } })
     $c.ToolsOpenConfigFolderButton.Add_Click({ Invoke-EobUiSafely -Name 'Konfigurationsordner' -Action { Open-EobPath -Path (Split-Path -Parent (Get-EobUiConfigPath)) } })

@@ -10,9 +10,10 @@
       der Oberfläche (Offboarding > Warteschlange) mit Vorschau und Tippbestätigung freigegeben werden.
     - Privilegierte Konten werden nicht unbeaufsichtigt weiterverarbeitet.
     - Phasen mit Exchange- oder Graph-Aktionen werden nur mit -AllowIntegration und bestehender
-      Verbindung ausgeführt; sonst als "manuell erforderlich" gemeldet. Exchange Server/Hybrid
-      wird mit -AllowIntegration per Kerberos verbunden; Exchange Online und Microsoft Graph
-      erfordern eine interaktive Anmeldung und werden daher unbeaufsichtigt nicht verbunden.
+      Verbindung ausgeführt; sonst als "manuell erforderlich" gemeldet. Mit -AllowIntegration wird
+      Exchange Server per Kerberos verbunden; Exchange Online (auch Hybrid) und Microsoft Graph nur,
+      wenn die Zertifikatsanmeldung konfiguriert ist ([Exchange] AppId/CertificateThumbprint/
+      Organization bzw. [Graph] ClientId/CertificateThumbprint/TenantId).
     - Mit -WhatIf wird nur simuliert.
 
     Das Skript verändert keine Ausführungsrichtlinie und fordert keine Administratorrechte an.
@@ -22,8 +23,8 @@
     Pfad zur easyONB.ini (Standard: Config\easyONB.ini bzw. Umgebungsvariable EASYONB_CONFIG).
 
 .PARAMETER AllowIntegration
-    Erlaubt fällige Exchange-/Graph-Aktionen, sofern eine Verbindung besteht bzw. (Exchange Server)
-    per Kerberos hergestellt werden kann.
+    Erlaubt fällige Exchange-/Graph-Aktionen, sofern eine Verbindung ohne Anmeldedialog hergestellt
+    werden kann (Kerberos bzw. Zertifikat).
 
 .EXAMPLE
     pwsh -NoProfile -File .\Scripts\Invoke-DueOffboardingPhases.ps1 -WhatIf
@@ -69,13 +70,32 @@ if (-not $connection.Connected) {
 }
 
 if ($AllowIntegration) {
+    # Unbeaufsichtigt nur ohne Anmeldedialog: Exchange Server per Kerberos, Exchange Online und Graph
+    # nur mit Zertifikatsanmeldung. Fehlt eine Verbindung, bleiben die betroffenen Phasen offen.
     $mode = [string](Get-EobConfigValue -Config $config -Section 'Exchange' -Key 'Mode')
-    if ($mode -in @('OnPremises', 'Hybrid')) {
+    $exchangePossible = $mode -eq 'OnPremises' -or ($mode -in @('Online', 'Hybrid') -and (Test-EobExchangeAppOnlyConfigured -Config $config))
+    if ($exchangePossible) {
         try {
             $null = Connect-EobExchange -Config $config -Confirm:$false
         }
         catch {
             Write-EobLog -Level Warning -Action 'ExchangeConnect' -Message "Exchange-Verbindung nicht möglich: $($_.Exception.Message)"
+        }
+    }
+    elseif ($mode -in @('Online', 'Hybrid')) {
+        Write-EobLog -Level Warning -Action 'ExchangeConnect' -Message "Exchange ($mode) benötigt unbeaufsichtigt die Zertifikatsanmeldung ([Exchange] AppId, CertificateThumbprint, Organization)."
+    }
+    if (Get-EobConfigValue -Config $config -Section 'Graph' -Key 'Enabled' -As Bool) {
+        if (Test-EobGraphAppOnlyConfigured -Config $config) {
+            try {
+                $null = Connect-EobGraph -Config $config -Confirm:$false
+            }
+            catch {
+                Write-EobLog -Level Warning -Action 'GraphConnect' -Message "Graph-Verbindung nicht möglich: $($_.Exception.Message)"
+            }
+        }
+        else {
+            Write-EobLog -Level Warning -Action 'GraphConnect' -Message 'Microsoft Graph benötigt unbeaufsichtigt die Zertifikatsanmeldung ([Graph] ClientId, CertificateThumbprint, TenantId).'
         }
     }
 }

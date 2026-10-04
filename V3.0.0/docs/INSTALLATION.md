@@ -8,9 +8,10 @@
 | PowerShell | 7.2 oder höher | [Installation](https://learn.microsoft.com/powershell/scripting/install/installing-powershell-on-windows) durch die IT |
 | Active Directory | Modul `ActiveDirectory` (RSAT) | Windows 10/11: `Add-WindowsCapability -Online -Name Rsat.ActiveDirectory.DS-LDS.Tools~~~~0.0.1.0`; Server: `Install-WindowsFeature RSAT-AD-PowerShell` |
 | PDF (optional) | Microsoft Edge, alternativ wkhtmltopdf | ohne PDF-Engine werden HTML-Berichte erzeugt |
-| Exchange Online (optional) | Modul `ExchangeOnlineManagement` | interaktive Anmeldung |
-| Exchange Server/Hybrid (optional) | Remote-PowerShell-Endpunkt, Kerberos | `[Exchange] OnPremisesUri` |
-| Microsoft Graph (optional) | `Microsoft.Graph.Authentication`, `Microsoft.Graph.Users.Actions` | Scopes `User.Read.All`, `User.RevokeSessions.All` |
+| Exchange Online (optional) | Modul `ExchangeOnlineManagement` | interaktiv oder Zertifikat (`[Exchange] AppId`, `CertificateThumbprint`, `Organization`) |
+| Exchange Server (optional) | Remote-PowerShell-Endpunkt, Kerberos | `[Exchange] OnPremisesUri` |
+| Exchange Hybrid (optional) | beides: Exchange-Server-Endpunkt **und** `ExchangeOnlineManagement` | `OnPremisesUri`, `RemoteRoutingDomain` |
+| Microsoft Graph (optional) | `Microsoft.Graph.Authentication`, `Microsoft.Graph.Users.Actions` | delegiert: `User.Read.All`, `User.RevokeSessions.All`; Zertifikat: `[Graph] ClientId`, `CertificateThumbprint`, `TenantId` |
 | Entra Connect Sync (optional) | WinRM zum Synchronisationsserver | Mitgliedschaft in `ADSyncOperators` auf dem Server |
 
 easyONBOARDING installiert keine Module und ändert keine Systemeinstellungen. Fehlende Komponenten
@@ -52,7 +53,7 @@ Rechten (Assistent "Objektverwaltung zuweisen" bzw. `dsacls`), beschränkt auf d
 | Endgültige Löschung | Benutzerobjekte in der Ausgeschieden-OU löschen – nur für die Personen, die Löschungen freigeben |
 | Home-Verzeichnisse | NTFS-Rechte unter `[FileServer] AllowedRoots` bzw. `ArchiveRoot` (Ordner anlegen, verschieben, Berechtigungen setzen) |
 | Exchange | Server/Hybrid: Rollen *Mail Recipient Creation* und *Mail Recipients* (z. B. über die Rollengruppe *Recipient Management*); Online: Entra-Rolle *Exchange Recipient Administrator* oder eine gleichwertige RBAC-Rolle |
-| Microsoft Graph | delegierte Berechtigungen `User.Read.All` und `User.RevokeSessions.All` mit Administratorzustimmung |
+| Microsoft Graph | delegierte Berechtigungen `User.Read.All` und `User.RevokeSessions.All` mit Administratorzustimmung; für die Zertifikatsanmeldung die Anwendungsberechtigung `User.RevokeSessions.All` |
 | Entra Connect Sync | WinRM-Zugriff und Mitgliedschaft in der lokalen Gruppe `ADSyncOperators` auf dem Synchronisationsserver |
 
 Privilegierte Gruppen und geschützte Konten bearbeitet easyONBOARDING unabhängig von den Rechten nie
@@ -85,9 +86,37 @@ pwsh.exe -NoProfile -NonInteractive -File "D:\Tools\easyONBOARDING\V3.0.0\Script
   und dem Recht "Als Batchauftrag anmelden"; keine Domain-Admin-Rechte.
 * Zeitplan: täglich, z. B. 06:00 Uhr. Zuerst mit `-WhatIf` testen.
 * Das Skript löscht **nie** Konten, bearbeitet **keine** privilegierten Konten und führt Phasen mit
-  Exchange-/Graph-Aktionen nur mit `-AllowIntegration` und bestehender Verbindung aus (Exchange Server
-  per Kerberos; Exchange Online und Graph erfordern eine interaktive Anmeldung und werden daher als
-  "manuell erforderlich" gemeldet).
+  Exchange-/Graph-Aktionen nur mit `-AllowIntegration` und hergestellter Verbindung aus. Exchange
+  Server verbindet es per Kerberos. Exchange Online (auch Hybrid) und Graph verbindet es nur mit
+  Zertifikatsanmeldung (siehe unten), sonst werden diese Phasen als "manuell erforderlich" gemeldet.
+
+### Zertifikatsanmeldung für Exchange Online und Microsoft Graph
+
+Für den unbeaufsichtigten Betrieb meldet sich das Skript als Anwendung an. In der Konfiguration
+stehen nur IDs und der Fingerabdruck; der private Schlüssel bleibt im Zertifikatspeicher des
+ausführenden Kontos (`Cert:\CurrentUser\My`, bei gMSA bzw. Dienstkonto dessen Speicher).
+
+1. In Entra ID eine App-Registrierung anlegen und das öffentliche Zertifikat hochladen.
+2. Exchange Online: API-Berechtigung *Office 365 Exchange Online › Exchange.ManageAsApp*
+   (Anwendung) mit Administratorzustimmung und der App die Entra-Rolle *Exchange Recipient
+   Administrator* zuweisen.
+3. Microsoft Graph: Anwendungsberechtigung `User.RevokeSessions.All` mit Administratorzustimmung.
+4. In der INI eintragen (die Oberfläche nutzt das Zertifikat dann ebenfalls):
+
+```ini
+[Exchange]
+AppId=<Anwendungs-ID>
+CertificateThumbprint=<40 Hexadezimalzeichen>
+Organization=<mandant>.onmicrosoft.com
+
+[Graph]
+TenantId=<mandant>.onmicrosoft.com
+ClientId=<Anwendungs-ID>
+CertificateThumbprint=<40 Hexadezimalzeichen>
+```
+
+Fehlt eine der drei Angaben, meldet die Konfigurationsprüfung `CFG_CERTIFICATE_AUTH_INCOMPLETE`
+und es wird interaktiv angemeldet.
 * Exitcodes: 0 = in Ordnung, 1 = mindestens ein Vorgang blockiert oder fehlgeschlagen,
   2 = Konfiguration oder AD-Verbindung fehlerhaft. Details stehen im Log und je Vorgang im Bericht.
 

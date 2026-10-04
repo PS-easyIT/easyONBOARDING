@@ -7,12 +7,18 @@
     Implementierungsstand: vorbereitet. Mit Mocks getestet, nicht gegen einen realen Tenant oder
     Entra-Connect-Server. Es werden keine Module installiert; Microsoft.Graph.Authentication und
     Microsoft.Graph.Users.Actions (Revoke-MgUserSignInSession) stellt bei Bedarf der Administrator bereit (-Scope CurrentUser).
-    Graph wird delegiert mit minimalen Berechtigungen verbunden (User.Read.All, User.RevokeSessions.All).
+    Graph wird delegiert mit minimalen Berechtigungen verbunden (User.Read.All, User.RevokeSessions.All)
+    oder - für die geplante Aufgabe - per Zertifikat als Anwendung ([Graph] ClientId, CertificateThumbprint,
+    TenantId; Anwendungsberechtigung User.RevokeSessions.All). In der Konfiguration steht nur der
+    Fingerabdruck; das Zertifikat liegt im Zertifikatspeicher des ausführenden Kontos.
+    Entra Connect: Statusprüfung über Get-ADSyncScheduler (Erreichbarkeit, Zyklus, Stagingmodus).
 #>
 
 Set-StrictMode -Version 3.0
 
 $script:GraphScopes = @('User.Read.All', 'User.RevokeSessions.All')
+# Als Anwendung (App-only) genügt die Berechtigung zum Widerrufen.
+$script:GraphAppOnlyScopes = @('User.RevokeSessions.All')
 
 #region Hilfsfunktionen
 
@@ -46,6 +52,36 @@ function Test-EobLocalComputerName {
     return ($Name -ieq 'localhost' -or $Name -eq '.' -or $short -ieq [Environment]::MachineName)
 }
 
+function Invoke-EobAdSyncCommand {
+    <#
+        Führt einen festen Skriptblock lokal oder per PowerShell-Remoting auf dem Entra-Connect-Server aus.
+    #>
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)][string]$Server,
+        [Parameter(Mandatory)][scriptblock]$ScriptBlock,
+        [object[]]$ArgumentList = @()
+    )
+
+    if (Test-EobLocalComputerName -Name $Server) {
+        return (& $ScriptBlock @ArgumentList)
+    }
+    return (Invoke-Command -ComputerName $Server -ScriptBlock $ScriptBlock -ArgumentList $ArgumentList -ErrorAction Stop)
+}
+
+function Test-EobGraphAppOnlyConfigured {
+    <#
+    .SYNOPSIS
+        Prüft, ob die Zertifikatsanmeldung an Microsoft Graph konfiguriert ist (ClientId, Fingerabdruck, TenantId).
+    #>
+    [CmdletBinding()]
+    [OutputType([bool])]
+    param([AllowNull()][object]$Config)
+
+    $values = foreach ($key in @('ClientId', 'CertificateThumbprint', 'TenantId')) { [string](Get-EobConfigValue -Config $Config -Section 'Graph' -Key $key) }
+    return (@($values | Where-Object { $_ }).Count -eq 3)
+}
+
 function Invoke-EobAdSyncCycle {
     <#
         Führt Start-ADSyncSyncCycle lokal oder per PowerShell-Remoting aus. Der Befehl ist fest
@@ -62,10 +98,7 @@ function Invoke-EobAdSyncCycle {
         Import-Module -Name ADSync -ErrorAction Stop
         Start-ADSyncSyncCycle -PolicyType $Type -ErrorAction Stop
     }
-    if (Test-EobLocalComputerName -Name $Server) {
-        return (& $scriptBlock $PolicyType)
-    }
-    return (Invoke-Command -ComputerName $Server -ScriptBlock $scriptBlock -ArgumentList $PolicyType -ErrorAction Stop)
+    return (Invoke-EobAdSyncCommand -Server $Server -ScriptBlock $scriptBlock -ArgumentList @($PolicyType))
 }
 
 #endregion
@@ -90,11 +123,18 @@ function Get-EobGraphStatus {
             -Hint 'Install-Module Microsoft.Graph.Authentication, Microsoft.Graph.Users.Actions -Scope CurrentUser (durch den Administrator).' -Implementation Prepared
     }
     $version = if ($null -ne $module) { [string]$module.Version } else { '' }
+    # Der Widerruf benötigt Microsoft.Graph.Users.Actions; ohne das Modul scheitert der Schritt erst bei der Ausführung.
+    if ($null -eq (Get-Command -Name 'Revoke-MgUserSignInSession' -ErrorAction SilentlyContinue)) {
+        return New-EobIntegrationStatus -Name 'Microsoft Graph' -State NotInstalled -Detail 'Microsoft.Graph.Users.Actions (Revoke-MgUserSignInSession) nicht gefunden.' -Version $version `
+            -Hint 'Install-Module Microsoft.Graph.Users.Actions -Scope CurrentUser (durch den Administrator).' -Implementation Prepared
+    }
     $context = Get-EobGraphContext
     if ($null -ne $context) {
-        $account = [string](Get-EobPropertyValue -InputObject $context -Name 'Account' -Default '')
+        $appOnly = [string](Get-EobPropertyValue -InputObject $context -Name 'AuthType' -Default '') -eq 'AppOnly'
+        $account = if ($appOnly) { 'Anwendung ' + [string](Get-EobPropertyValue -InputObject $context -Name 'ClientId' -Default '') } else { [string](Get-EobPropertyValue -InputObject $context -Name 'Account' -Default '') }
         $scopes = @(Get-EobPropertyValue -InputObject $context -Name 'Scopes' -Default @())
-        $missing = @($script:GraphScopes | Where-Object { $_ -notin $scopes })
+        $required = if ($appOnly) { $script:GraphAppOnlyScopes } else { $script:GraphScopes }
+        $missing = @($required | Where-Object { $_ -notin $scopes })
         if ($missing.Count -gt 0) {
             return New-EobIntegrationStatus -Name 'Microsoft Graph' -State Error -Detail "Verbunden als $account, es fehlen Berechtigungen: $($missing -join ', ')" `
                 -Version $version -Hint 'Neu verbinden (Tools > Microsoft Graph verbinden).' -Implementation Prepared
@@ -120,12 +160,26 @@ function Connect-EobGraph {
     if ($null -eq (Get-Command -Name 'Connect-MgGraph' -ErrorAction SilentlyContinue)) {
         throw 'Das Modul Microsoft.Graph.Authentication ist nicht installiert.'
     }
-    if (-not $PSCmdlet.ShouldProcess('Microsoft Graph', "Verbinden ($($script:GraphScopes -join ', '))")) {
+    $appOnly = Test-EobGraphAppOnlyConfigured -Config $Config
+    $description = if ($appOnly) { 'als Anwendung per Zertifikat' } else { $script:GraphScopes -join ', ' }
+    if (-not $PSCmdlet.ShouldProcess('Microsoft Graph', "Verbinden ($description)")) {
         return New-EobNotProcessedResult -Message 'Microsoft Graph würde verbunden.'
     }
-    $parameters = @{ Scopes = $script:GraphScopes; NoWelcome = $true; ErrorAction = 'Stop' }
     $tenant = [string](Get-EobConfigValue -Config $Config -Section 'Graph' -Key 'TenantId')
-    if ($tenant) { $parameters['TenantId'] = $tenant }
+    if ($appOnly) {
+        # App-only: Berechtigungen sind der Anwendung zugewiesen; -Scopes ist hier nicht zulässig.
+        $parameters = @{
+            ClientId              = [string](Get-EobConfigValue -Config $Config -Section 'Graph' -Key 'ClientId')
+            CertificateThumbprint = [string](Get-EobConfigValue -Config $Config -Section 'Graph' -Key 'CertificateThumbprint')
+            TenantId              = $tenant
+            NoWelcome             = $true
+            ErrorAction           = 'Stop'
+        }
+    }
+    else {
+        $parameters = @{ Scopes = $script:GraphScopes; NoWelcome = $true; ErrorAction = 'Stop' }
+        if ($tenant) { $parameters['TenantId'] = $tenant }
+    }
     try {
         $null = Connect-MgGraph @parameters
     }
@@ -133,8 +187,8 @@ function Connect-EobGraph {
         Write-EobLog -Level Warning -Action 'GraphConnect' -Result 'Failed' -Message 'Graph-Verbindung fehlgeschlagen.' -ErrorRecord $_
         throw
     }
-    Write-EobLog -Level Information -Action 'GraphConnect' -Result 'Succeeded' -Message 'Microsoft Graph verbunden.'
-    return New-EobResult -Status Succeeded -Message 'Microsoft Graph verbunden.'
+    Write-EobLog -Level Information -Action 'GraphConnect' -Result 'Succeeded' -Message "Microsoft Graph verbunden ($description)."
+    return New-EobResult -Status Succeeded -Message "Microsoft Graph verbunden ($description)."
 }
 
 function Disconnect-EobGraph {
@@ -184,11 +238,17 @@ function Revoke-EobEntraUserSession {
 function Get-EobEntraConnectStatus {
     <#
     .SYNOPSIS
-        Status der Entra-Connect-Synchronisation (Konfiguration; die Erreichbarkeit wird nicht geprüft).
+        Status der Entra-Connect-Synchronisation.
+    .PARAMETER TestConnection
+        Fragt den Server ab (Get-ADSyncScheduler): Erreichbarkeit, Rechte, aktiver Zyklus und Stagingmodus.
+        Ohne den Schalter wird nur die Konfiguration bewertet (Dashboard, ohne Netzwerkzugriff).
     #>
     [CmdletBinding()]
     [OutputType([pscustomobject])]
-    param([AllowNull()][object]$Config)
+    param(
+        [AllowNull()][object]$Config,
+        [switch]$TestConnection
+    )
 
     if (-not (Get-EobConfigValue -Config $Config -Section 'ADSync' -Key 'EnableADSync' -As Bool)) {
         return New-EobIntegrationStatus -Name 'Entra Connect Sync' -State Disabled -Detail 'Synchronisation deaktiviert ([ADSync] EnableADSync=0).' -Implementation Prepared
@@ -198,8 +258,41 @@ function Get-EobEntraConnectStatus {
         return New-EobIntegrationStatus -Name 'Entra Connect Sync' -State NotConfigured -Detail 'Kein Server konfiguriert.' -Hint '[ADSync] ADSyncServer setzen.' -Implementation Prepared
     }
     $policy = [string](Get-EobConfigValue -Config $Config -Section 'ADSync' -Key 'PolicyType')
-    return New-EobIntegrationStatus -Name 'Entra Connect Sync' -State Available -Detail "Server $server, Zyklus $policy (Erreichbarkeit nicht geprüft)" `
-        -Hint 'Voraussetzung: PowerShell-Remoting auf dem Server und Mitgliedschaft in ADSyncOperators.' -Implementation Prepared
+    $hint = 'Voraussetzung: PowerShell-Remoting auf dem Server und Mitgliedschaft in ADSyncOperators.'
+    if (-not $TestConnection) {
+        return New-EobIntegrationStatus -Name 'Entra Connect Sync' -State Available -Detail "Server $server, Zyklus $policy (Erreichbarkeit: Tools > Entra Connect prüfen)" `
+            -Hint $hint -Implementation Prepared
+    }
+    try {
+        $scheduler = Invoke-EobAdSyncCommand -Server $server -ScriptBlock {
+            Import-Module -Name ADSync -ErrorAction Stop
+            $value = Get-ADSyncScheduler -ErrorAction Stop
+            [pscustomobject]@{
+                SyncCycleEnabled    = [bool]$value.SyncCycleEnabled
+                SyncCycleInProgress = [bool]$value.SyncCycleInProgress
+                StagingModeEnabled  = [bool]$value.StagingModeEnabled
+                NextSyncCycle       = $value.NextSyncCycleStartTimeInUTC
+            }
+        } | Select-Object -First 1
+    }
+    catch {
+        return New-EobIntegrationStatus -Name 'Entra Connect Sync' -State Error -Detail "Server $server nicht abfragbar: $(Protect-EobSensitiveText -Text $_.Exception.Message)" `
+            -Hint $hint -Implementation Prepared
+    }
+    if ($null -eq $scheduler) {
+        return New-EobIntegrationStatus -Name 'Entra Connect Sync' -State Error -Detail "Server $server lieferte keinen Status (Get-ADSyncScheduler)." -Hint $hint -Implementation Prepared
+    }
+    if ([bool](Get-EobPropertyValue -InputObject $scheduler -Name 'StagingModeEnabled' -Default $false)) {
+        return New-EobIntegrationStatus -Name 'Entra Connect Sync' -State Error -Detail "Server $server ist im Stagingmodus: Ein Zyklus exportiert keine Änderungen." `
+            -Hint '[ADSync] ADSyncServer auf den aktiven Entra-Connect-Server setzen.' -Implementation Prepared
+    }
+    $parts = [System.Collections.Generic.List[string]]::new()
+    $parts.Add("Server $server erreichbar, Zyklus $policy")
+    if (-not [bool](Get-EobPropertyValue -InputObject $scheduler -Name 'SyncCycleEnabled' -Default $true)) { $parts.Add('automatischer Zyklus deaktiviert') }
+    if ([bool](Get-EobPropertyValue -InputObject $scheduler -Name 'SyncCycleInProgress' -Default $false)) { $parts.Add('Synchronisation läuft gerade') }
+    $next = Get-EobPropertyValue -InputObject $scheduler -Name 'NextSyncCycle' -Default $null
+    if ($next -is [datetime]) { $parts.Add('nächster Zyklus ' + $next.ToLocalTime().ToString('dd.MM.yyyy HH:mm')) }
+    return New-EobIntegrationStatus -Name 'Entra Connect Sync' -State Connected -Detail ($parts -join ', ') -Implementation Prepared
 }
 
 function Start-EobEntraConnectSync {

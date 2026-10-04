@@ -21,6 +21,16 @@ BeforeAll {
 }
 
 Describe 'Exchange: Status und Verbindung' {
+    BeforeEach {
+        # Verbindungszustand des Moduls zurücksetzen (Tests verbinden über Mocks).
+        InModuleScope 'easyONB.Exchange' {
+            $script:ExchangeState.Mode = 'None'
+            $script:ExchangeState.Session = $null
+            $script:ExchangeState.ImportedName = ''
+            $script:ExchangeState.OnlineConnected = $false
+        }
+    }
+
     It 'meldet die deaktivierte Integration' {
         $status = Get-EobExchangeStatus -Config (New-TestConfig)
         $status.State | Should -Be 'Disabled'
@@ -44,6 +54,38 @@ Describe 'Exchange: Status und Verbindung' {
     It 'meldet Exchange Server mit URI, aber ohne Sitzung als NotConnected' {
         $config = New-TestConfig -Content "[Exchange]`nMode=Hybrid`nOnPremisesUri=http://exchange.example.local/PowerShell/"
         (Get-EobExchangeStatus -Config $config).State | Should -Be 'NotConnected'
+    }
+
+    It 'meldet im Hybridbetrieb fehlende Teilverbindungen' {
+        $config = New-TestConfig -Content "[Exchange]`nMode=Hybrid`nOnPremisesUri=http://exchange.example.local/PowerShell/"
+        Mock -ModuleName $script:ExModule Get-EobExchangeOnlineModuleVersion { '3.5.0' }
+        Mock -ModuleName $script:ExModule Test-EobExchangeOnPremisesConnected { $true }
+        Mock -ModuleName $script:ExModule Test-EobExchangeOnlineConnected { $false }
+        $status = Get-EobExchangeStatus -Config $config
+        $status.State | Should -Be 'NotConnected'
+        $status.Detail | Should -Match 'Exchange Online'
+        Mock -ModuleName $script:ExModule Test-EobExchangeOnlineConnected { $true }
+        (Get-EobExchangeStatus -Config $config).State | Should -Be 'Connected'
+        Test-EobExchangeConnected -Mode Hybrid | Should -BeTrue
+        Mock -ModuleName $script:ExModule Test-EobExchangeOnPremisesConnected { $false }
+        Test-EobExchangeConnected -Mode Hybrid | Should -BeFalse
+        Test-EobExchangeConnected -Mode Hybrid -Location Online | Should -BeTrue
+    }
+
+    It 'meldet im Hybridbetrieb ein fehlendes Exchange-Online-Modul' {
+        $config = New-TestConfig -Content "[Exchange]`nMode=Hybrid`nOnPremisesUri=http://exchange.example.local/PowerShell/"
+        Mock -ModuleName $script:ExModule Get-EobExchangeOnlineModuleVersion { '' }
+        (Get-EobExchangeStatus -Config $config).State | Should -Be 'NotInstalled'
+    }
+
+    It 'verbindet Exchange Online per Zertifikat, wenn konfiguriert' {
+        Mock -ModuleName $script:ExModule Connect-ExchangeOnline { }
+        $config = New-TestConfig -Content "[Exchange]`nMode=Online`nAppId=11111111-2222-3333-4444-555555555555`nCertificateThumbprint=0123456789ABCDEF0123456789ABCDEF01234567`nOrganization=example.onmicrosoft.com"
+        Test-EobExchangeAppOnlyConfigured -Config $config | Should -BeTrue
+        $null = Connect-EobExchange -Config $config -Confirm:$false
+        Should -Invoke -ModuleName $script:ExModule Connect-ExchangeOnline -Times 1 -ParameterFilter {
+            $AppId -eq '11111111-2222-3333-4444-555555555555' -and $CertificateThumbprint -eq '0123456789ABCDEF0123456789ABCDEF01234567' -and $Organization -eq 'example.onmicrosoft.com' -and -not $UserPrincipalName
+        }
     }
 
     It 'verbindet Exchange Online ohne Banner und ohne gespeicherte Anmeldedaten' {
@@ -78,6 +120,7 @@ Describe 'Exchange: Postfachaktionen' {
         Mock -ModuleName $script:ExModule Set-Mailbox { }
         Mock -ModuleName $script:ExModule Set-RemoteMailbox { }
         Mock -ModuleName $script:ExModule Set-MailboxAutoReplyConfiguration { }
+        Mock -ModuleName $script:ExModule Enable-EobOnPremRemoteMailbox { [pscustomobject]@{ Name = 'x' } }
     }
 
     It 'legt ein lokales Postfach in der angegebenen Datenbank an' {
@@ -88,7 +131,8 @@ Describe 'Exchange: Postfachaktionen' {
 
     It 'legt im Hybridbetrieb ein Remote-Postfach mit Routingadresse an' {
         $null = Enable-EobExchangeMailbox -Identity 'mmustermann' -Mode Hybrid -RemoteRoutingDomain 'example.mail.onmicrosoft.com' -Confirm:$false
-        Should -Invoke -ModuleName $script:ExModule Enable-RemoteMailbox -Times 1 -ParameterFilter { $RemoteRoutingAddress -eq 'mmustermann@example.mail.onmicrosoft.com' }
+        # Hybrid: lokal importierte Befehle tragen das Präfix EobOnPrem.
+        Should -Invoke -ModuleName $script:ExModule Enable-EobOnPremRemoteMailbox -Times 1 -ParameterFilter { $RemoteRoutingAddress -eq 'mmustermann@example.mail.onmicrosoft.com' }
     }
 
     It 'verlangt im Hybridbetrieb eine Routingdomäne' {
@@ -131,10 +175,50 @@ Describe 'Exchange: Postfachaktionen' {
     }
 
     It 'wandelt in ein freigegebenes Postfach um (<Mode>)' -ForEach @(
-        @{ Mode = 'Online'; Command = 'Set-Mailbox' }, @{ Mode = 'OnPremises'; Command = 'Set-Mailbox' }, @{ Mode = 'Hybrid'; Command = 'Set-RemoteMailbox' }
+        @{ Mode = 'Online'; Command = 'Set-Mailbox' }, @{ Mode = 'OnPremises'; Command = 'Set-Mailbox' }
     ) {
         $null = ConvertTo-EobSharedMailbox -Identity 'mmustermann' -Mode $Mode -Confirm:$false
         Should -Invoke -ModuleName $script:ExModule $Command -Times 1 -ParameterFilter { $Type -eq 'Shared' }
+    }
+
+    It 'wandelt im Hybridbetrieb erst in Exchange Online um und gleicht dann das lokale Objekt an' {
+        Mock -ModuleName $script:ExModule Get-Mailbox { [pscustomobject]@{ RecipientTypeDetails = 'UserMailbox' } }
+        Mock -ModuleName $script:ExModule Set-EobOnPremRemoteMailbox { }
+        (ConvertTo-EobSharedMailbox -Identity 'mmustermann' -Mode Hybrid -Confirm:$false).Status | Should -Be 'Succeeded'
+        Should -Invoke -ModuleName $script:ExModule Set-Mailbox -Times 1 -ParameterFilter { $Type -eq 'Shared' }
+        Should -Invoke -ModuleName $script:ExModule Set-EobOnPremRemoteMailbox -Times 1 -ParameterFilter { $Type -eq 'Shared' }
+    }
+
+    It 'meldet eine Warnung, wenn das lokale Objekt im Hybridbetrieb nicht angeglichen werden kann' {
+        Mock -ModuleName $script:ExModule Get-Mailbox { [pscustomobject]@{ RecipientTypeDetails = 'UserMailbox' } }
+        Mock -ModuleName $script:ExModule Set-EobOnPremRemoteMailbox { throw 'Parameter Type not supported.' }
+        $result = ConvertTo-EobSharedMailbox -Identity 'mmustermann' -Mode Hybrid -Confirm:$false
+        $result.Status | Should -Be 'Warning'
+        $result.Message | Should -Match 'Set-RemoteMailbox'
+    }
+
+    It 'bearbeitet im Hybridbetrieb ein lokal verbliebenes Postfach über die lokale Sitzung' {
+        Mock -ModuleName $script:ExModule Get-Mailbox { throw "The operation couldn't be performed because object 'x' couldn't be found." }
+        Mock -ModuleName $script:ExModule Get-EobOnPremMailbox { [pscustomobject]@{ RecipientTypeDetails = 'UserMailbox' } }
+        Mock -ModuleName $script:ExModule Set-EobOnPremMailbox { }
+        Mock -ModuleName $script:ExModule Set-EobOnPremMailboxAutoReplyConfiguration { }
+        $null = Set-EobMailboxForwarding -Identity 'mmustermann' -Mode Hybrid -ForwardTo 'chefin@example.com' -InternalDomains 'example.com' -Confirm:$false
+        $null = Set-EobMailboxAutoReply -Identity 'mmustermann' -Mode Hybrid -Message 'Nicht mehr im Unternehmen' -Confirm:$false
+        Should -Invoke -ModuleName $script:ExModule Set-EobOnPremMailbox -Times 1 -ParameterFilter { $ForwardingSmtpAddress -eq 'smtp:chefin@example.com' }
+        Should -Invoke -ModuleName $script:ExModule Set-EobOnPremMailboxAutoReplyConfiguration -Times 1
+        Should -Invoke -ModuleName $script:ExModule Set-Mailbox -Times 0
+    }
+
+    It 'bearbeitet im Hybridbetrieb ein Cloud-Postfach über Exchange Online' {
+        Mock -ModuleName $script:ExModule Get-Mailbox { [pscustomobject]@{ RecipientTypeDetails = 'UserMailbox' } }
+        $null = Set-EobMailboxAutoReply -Identity 'mmustermann' -Mode Hybrid -Message 'Nicht mehr im Unternehmen' -Confirm:$false
+        Should -Invoke -ModuleName $script:ExModule Set-MailboxAutoReplyConfiguration -Times 1
+    }
+
+    It 'bricht im Hybridbetrieb ab, wenn das Postfach weder online noch lokal existiert' {
+        Mock -ModuleName $script:ExModule Get-Mailbox { throw "couldn't be found" }
+        Mock -ModuleName $script:ExModule Get-EobOnPremMailbox { throw "couldn't be found" }
+        { Set-EobMailboxHidden -Identity 'mmustermann' -Mode Hybrid -Confirm:$false } | Should -Throw '*weder in Exchange Online noch lokal*'
     }
 
     It 'blendet ein Postfach aus den Adresslisten aus' {
@@ -159,6 +243,13 @@ Describe 'Exchange: Lesen' {
         $info.PrimarySmtpAddress | Should -Be 'max@example.com'
         $info.RecipientTypeDetails | Should -Be 'UserMailbox'
         $info.ForwardingSmtpAddress | Should -Be ''
+        $info.Location | Should -Be 'Online'
+    }
+
+    It 'findet im Hybridbetrieb lokal verbliebene Postfächer' {
+        Mock -ModuleName $script:ExModule Get-Mailbox { throw "couldn't be found" }
+        Mock -ModuleName $script:ExModule Get-EobOnPremMailbox { [pscustomobject]@{ PrimarySmtpAddress = 'max@example.com'; RecipientTypeDetails = 'UserMailbox' } }
+        (Get-EobMailboxInfo -Identity 'mmustermann' -Mode Hybrid).Location | Should -Be 'OnPremises'
     }
 
     It 'dokumentiert nur explizite Berechtigungen' {
@@ -203,6 +294,26 @@ Describe 'Microsoft Graph' {
         { Connect-EobGraph -Config (New-TestConfig) -Confirm:$false } | Should -Throw '*deaktiviert*'
     }
 
+    It 'verbindet per Zertifikat als Anwendung ohne Scopes' {
+        Mock -ModuleName $script:EntraModule Connect-MgGraph { }
+        $config = New-TestConfig -Content "[Graph]`nEnabled=1`nTenantId=example.onmicrosoft.com`nClientId=11111111-2222-3333-4444-555555555555`nCertificateThumbprint=0123456789ABCDEF0123456789ABCDEF01234567"
+        Test-EobGraphAppOnlyConfigured -Config $config | Should -BeTrue
+        $null = Connect-EobGraph -Config $config -Confirm:$false
+        Should -Invoke -ModuleName $script:EntraModule Connect-MgGraph -Times 1 -ParameterFilter {
+            $ClientId -eq '11111111-2222-3333-4444-555555555555' -and $CertificateThumbprint -eq '0123456789ABCDEF0123456789ABCDEF01234567' -and $TenantId -eq 'example.onmicrosoft.com' -and -not $Scopes
+        }
+    }
+
+    It 'bewertet App-only-Verbindungen nach der Anwendungsberechtigung' {
+        $config = New-TestConfig -Content "[Graph]`nEnabled=1"
+        Mock -ModuleName $script:EntraModule Get-MgContext { [pscustomobject]@{ AuthType = 'AppOnly'; ClientId = 'abc'; Scopes = @('User.RevokeSessions.All') } }
+        $status = Get-EobGraphStatus -Config $config
+        $status.State | Should -Be 'Connected'
+        $status.Detail | Should -Match 'Anwendung abc'
+        Mock -ModuleName $script:EntraModule Get-MgContext { [pscustomobject]@{ AuthType = 'AppOnly'; ClientId = 'abc'; Scopes = @('User.Read.All') } }
+        (Get-EobGraphStatus -Config $config).State | Should -Be 'Error'
+    }
+
     It 'widerruft Sitzungen nur mit Verbindung' {
         Mock -ModuleName $script:EntraModule Revoke-MgUserSignInSession { $true }
         Mock -ModuleName $script:EntraModule Get-MgContext { $null }
@@ -244,6 +355,23 @@ Describe 'Entra Connect Sync' {
         Mock -ModuleName $script:EntraModule Invoke-Command { }
         (Start-EobEntraConnectSync -Server 'sync01.example.local' -WhatIf).Message | Should -Match '^Simulation'
         Should -Invoke -ModuleName $script:EntraModule Invoke-Command -Times 0
+    }
+
+    It 'prüft den Server auf Wunsch (Erreichbarkeit, Zyklus, Stagingmodus)' {
+        $config = New-TestConfig -Content "[ADSync]`nEnableADSync=1`nADSyncServer=sync01.example.local"
+        Mock -ModuleName $script:EntraModule Invoke-Command { [pscustomobject]@{ SyncCycleEnabled = $true; SyncCycleInProgress = $true; StagingModeEnabled = $false; NextSyncCycle = [datetime]'2027-01-04 10:00' } }
+        $status = Get-EobEntraConnectStatus -Config $config -TestConnection
+        $status.State | Should -Be 'Connected'
+        $status.Detail | Should -Match 'läuft gerade'
+        Should -Invoke -ModuleName $script:EntraModule Invoke-Command -Times 1 -ParameterFilter { $ComputerName -eq 'sync01.example.local' -and $ScriptBlock.ToString() -match 'Get-ADSyncScheduler' }
+
+        Mock -ModuleName $script:EntraModule Invoke-Command { [pscustomobject]@{ SyncCycleEnabled = $true; SyncCycleInProgress = $false; StagingModeEnabled = $true; NextSyncCycle = $null } }
+        $staging = Get-EobEntraConnectStatus -Config $config -TestConnection
+        $staging.State | Should -Be 'Error'
+        $staging.Detail | Should -Match 'Stagingmodus'
+
+        Mock -ModuleName $script:EntraModule Invoke-Command { throw 'WinRM cannot complete the operation.' }
+        (Get-EobEntraConnectStatus -Config $config -TestConnection).State | Should -Be 'Error'
     }
 
     It 'lehnt ungültige Servernamen ab' {
