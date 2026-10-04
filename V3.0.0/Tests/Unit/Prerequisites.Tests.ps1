@@ -33,7 +33,7 @@ Describe 'Skript Install-PS7_PDF.ps1' {
         $errors = $null
         $ast = [System.Management.Automation.Language.Parser]::ParseFile((Resolve-Path $script:PrereqScript).Path, [ref]$tokens, [ref]$errors)
         $errors | Should -BeNullOrEmpty
-        $ast.ScriptBlock.ParamBlock | Should -Not -BeNullOrEmpty
+        $ast.ParamBlock | Should -Not -BeNullOrEmpty
         @($ast.FindAll({ param($node) $node -is [System.Management.Automation.Language.TernaryExpressionAst] -or $node -is [System.Management.Automation.Language.PipelineChainAst] }, $true)) | Should -HaveCount 0
         @($tokens | Where-Object { $_.Kind -in @('QuestionQuestion', 'QuestionQuestionEquals', 'QuestionDot', 'QuestionLBracket') }) | Should -HaveCount 0
         @($ast.FindAll({ param($node) $node -is [System.Management.Automation.Language.VariableExpressionAst] -and $node.VariablePath.UserPath -eq 'IsWindows' }, $true)) | Should -HaveCount 0
