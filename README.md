@@ -178,5 +178,3 @@ Andreas Hepp · PHINIT.DE · [www.PSscripts.de](https://www.PSscripts.de) · inf
 
 Fehler und Wünsche bitte als [GitHub-Issue](https://github.com/PS-easyIT/easyONBOARDING/issues)
 melden. Sicherheitsrelevante Funde bitte vertraulich, siehe [SECURITY.md](SECURITY.md).
-
-Im Repository liegt derzeit keine Lizenzdatei. Die Nutzungsbedingungen legt der Autor fest.
