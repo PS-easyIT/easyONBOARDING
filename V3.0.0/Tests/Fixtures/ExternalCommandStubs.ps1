@@ -195,13 +195,47 @@ function global:Set-RemoteMailbox {
 }
 function global:Connect-ExchangeOnline {
     [CmdletBinding()]
-    param([string]$UserPrincipalName, [switch]$ShowBanner)
+    param([string]$UserPrincipalName, [switch]$ShowBanner, [string]$AppId, [string]$CertificateThumbprint, [string]$Organization)
     Invoke-EobUnmockedStub -Name 'Connect-ExchangeOnline'
 }
 function global:Disconnect-ExchangeOnline {
     [CmdletBinding(SupportsShouldProcess)]
     param()
     Invoke-EobUnmockedStub -Name 'Disconnect-ExchangeOnline'
+}
+
+# Exchange Server im Hybridbetrieb: lokal importierte Befehle mit Präfix 'EobOnPrem'
+function global:Get-EobOnPremMailbox {
+    [CmdletBinding()]
+    param([object]$Identity, [object]$ResultSize)
+    Invoke-EobUnmockedStub -Name 'Get-EobOnPremMailbox'
+}
+function global:Set-EobOnPremMailbox {
+    [CmdletBinding(SupportsShouldProcess)]
+    param([object]$Identity, [string]$Type, [object]$HiddenFromAddressListsEnabled, [string]$ForwardingSmtpAddress,
+        [object]$ForwardingAddress, [object]$DeliverToMailboxAndForward)
+    Invoke-EobUnmockedStub -Name 'Set-EobOnPremMailbox'
+}
+function global:Set-EobOnPremMailboxAutoReplyConfiguration {
+    [CmdletBinding(SupportsShouldProcess)]
+    param([object]$Identity, [string]$AutoReplyState, [string]$InternalMessage, [string]$ExternalMessage,
+        [string]$ExternalAudience, [object]$StartTime, [object]$EndTime)
+    Invoke-EobUnmockedStub -Name 'Set-EobOnPremMailboxAutoReplyConfiguration'
+}
+function global:Get-EobOnPremMailboxPermission {
+    [CmdletBinding()]
+    param([object]$Identity)
+    Invoke-EobUnmockedStub -Name 'Get-EobOnPremMailboxPermission'
+}
+function global:Enable-EobOnPremRemoteMailbox {
+    [CmdletBinding(SupportsShouldProcess)]
+    param([object]$Identity, [string]$RemoteRoutingAddress, [string]$Alias)
+    Invoke-EobUnmockedStub -Name 'Enable-EobOnPremRemoteMailbox'
+}
+function global:Set-EobOnPremRemoteMailbox {
+    [CmdletBinding(SupportsShouldProcess)]
+    param([object]$Identity, [string]$Type)
+    Invoke-EobUnmockedStub -Name 'Set-EobOnPremRemoteMailbox'
 }
 
 # ---------------------------------------------------------------- Microsoft Graph
@@ -217,7 +251,7 @@ function global:Revoke-MgUserSignInSession {
 }
 function global:Connect-MgGraph {
     [CmdletBinding()]
-    param([string[]]$Scopes, [string]$TenantId, [switch]$NoWelcome)
+    param([string[]]$Scopes, [string]$TenantId, [switch]$NoWelcome, [string]$ClientId, [string]$CertificateThumbprint)
     Invoke-EobUnmockedStub -Name 'Connect-MgGraph'
 }
 function global:Disconnect-MgGraph {

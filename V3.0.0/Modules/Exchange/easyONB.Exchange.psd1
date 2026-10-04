@@ -19,6 +19,7 @@
         'Set-EobMailboxAutoReply'
         'Set-EobMailboxForwarding'
         'Set-EobMailboxHidden'
+        'Test-EobExchangeAppOnlyConfigured'
         'Test-EobExchangeConnected'
     )
     CmdletsToExport      = @()

@@ -484,6 +484,9 @@ Exchange-Anbindung (optional).
 | `Mode` | Enum (None, Online, OnPremises, Hybrid) | `None` | Betriebsart. |
 | `OnPremisesUri` | Url | – | PowerShell-Endpunkt (z. B. http://exchange.example.com/PowerShell), Kerberos. |
 | `RemoteRoutingDomain` | Domain | – | Hybrid: Routingdomäne (z. B. &lt;Mandant&gt;.mail.onmicrosoft.com). |
+| `AppId` | Guid | – | Online/Hybrid: Anwendungs-ID für die Zertifikatsanmeldung (geplante Aufgabe). Leer = interaktiv. |
+| `CertificateThumbprint` | Thumbprint | – | Fingerabdruck des Zertifikats im Speicher des ausführenden Kontos (kein Secret). |
+| `Organization` | Domain | – | Mandant für die Zertifikatsanmeldung (z. B. contoso.onmicrosoft.com). |
 
 ## [Graph]
 
@@ -493,6 +496,8 @@ Microsoft Graph (optional, z. B. Sitzungen widerrufen).
 |---|---|---|---|
 | `Enabled` | Bool | `0` | Graph-Funktionen anbieten. |
 | `TenantId` | String | – | Tenant-ID oder -Domäne (keine Secrets). |
+| `ClientId` | Guid | – | Anwendungs-ID für die Zertifikatsanmeldung (geplante Aufgabe). Leer = interaktiv. |
+| `CertificateThumbprint` | Thumbprint | – | Fingerabdruck des Zertifikats im Speicher des ausführenden Kontos (kein Secret). |
 
 ## Dynamische Abschnitte
 

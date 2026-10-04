@@ -174,6 +174,24 @@ Describe 'Laden und Zusammenführen' {
         $config.Sections['EigenerAbschnitt']['Foo'] | Should -Be 'Bar'
     }
 
+    It 'prüft die Zertifikatsanmeldung auf Format und Vollständigkeit, ohne sie als Secret zu werten' {
+        $complete = "`n[Exchange]`nMode=Online`nAppId=11111111-2222-3333-4444-555555555555`nCertificateThumbprint=0123456789ABCDEF0123456789ABCDEF01234567`nOrganization=example.onmicrosoft.com`n"
+        $config = Import-EobConfiguration -Path (New-TestConfigDirectory -MainContent ($script:MinimalIni + $complete))
+        @($config.Findings | Where-Object { $_.Field -like 'Exchange.*' }) | Should -BeNullOrEmpty
+
+        # Gültige, aber unvollständige Angaben: Warnung statt stillem Rückfall auf die interaktive Anmeldung.
+        $partial = "`n[Graph]`nEnabled=1`nClientId=11111111-2222-3333-4444-555555555555`n"
+        $config = Import-EobConfiguration -Path (New-TestConfigDirectory -MainContent ($script:MinimalIni + $partial))
+        @($config.Findings | Where-Object { $_.Field -like 'Graph.*' } | ForEach-Object Code) | Should -Contain 'CFG_CERTIFICATE_AUTH_INCOMPLETE'
+
+        # Ungültige Formate werden als ungültiger Wert gemeldet, nicht als Secret.
+        $invalid = "`n[Graph]`nEnabled=1`nClientId=keine-guid`nCertificateThumbprint=1234`n"
+        $config = Import-EobConfiguration -Path (New-TestConfigDirectory -MainContent ($script:MinimalIni + $invalid))
+        $codes = @($config.Findings | Where-Object { $_.Field -like 'Graph.*' } | ForEach-Object Code)
+        @($codes | Where-Object { $_ -eq 'CFG_INVALID_VALUE' }).Count | Should -Be 2
+        $codes | Should -Not -Contain 'CFG_SECRET_IN_FILE'
+    }
+
     It 'meldet Secrets, auch in unbekannten Schlüsseln' {
         $main = New-TestConfigDirectory -MainContent ($script:MinimalIni + "`n[CompanyVPN]`nCompanyVPNPassword=Geheim!1`n[Eigen]`nApiToken=abc123456`n")
         $config = Import-EobConfiguration -Path $main

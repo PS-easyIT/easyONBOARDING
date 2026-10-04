@@ -468,6 +468,9 @@
                 Mode                = @{ Type = 'Enum'; Values = @('None', 'Online', 'OnPremises', 'Hybrid'); Default = 'None'; Description = 'Betriebsart.' }
                 OnPremisesUri       = @{ Type = 'Url'; Default = ''; Description = 'PowerShell-Endpunkt (z. B. http://exchange.example.com/PowerShell), Kerberos.' }
                 RemoteRoutingDomain = @{ Type = 'Domain'; Default = ''; Description = 'Hybrid: Routingdomäne (z. B. <Mandant>.mail.onmicrosoft.com).' }
+                AppId                 = @{ Type = 'Guid'; Default = ''; Description = 'Online/Hybrid: Anwendungs-ID für die Zertifikatsanmeldung (geplante Aufgabe). Leer = interaktiv.' }
+                CertificateThumbprint = @{ Type = 'Thumbprint'; Default = ''; Description = 'Fingerabdruck des Zertifikats im Speicher des ausführenden Kontos (kein Secret).' }
+                Organization          = @{ Type = 'Domain'; Default = ''; Description = 'Mandant für die Zertifikatsanmeldung (z. B. contoso.onmicrosoft.com).' }
             }
         }
 
@@ -476,6 +479,8 @@
             Keys        = @{
                 Enabled  = @{ Type = 'Bool'; Default = '0'; Description = 'Graph-Funktionen anbieten.' }
                 TenantId = @{ Type = 'String'; Default = ''; Description = 'Tenant-ID oder -Domäne (keine Secrets).' }
+                ClientId              = @{ Type = 'Guid'; Default = ''; Description = 'Anwendungs-ID für die Zertifikatsanmeldung (geplante Aufgabe). Leer = interaktiv.' }
+                CertificateThumbprint = @{ Type = 'Thumbprint'; Default = ''; Description = 'Fingerabdruck des Zertifikats im Speicher des ausführenden Kontos (kein Secret).' }
             }
         }
     }

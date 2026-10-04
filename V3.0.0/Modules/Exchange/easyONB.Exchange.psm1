@@ -5,10 +5,19 @@
     Postfach anlegen, Abwesenheitsnotiz, Weiterleitung, Umwandlung in ein freigegebenes Postfach,
     Ausblenden aus Adresslisten und Dokumentation von Postfachberechtigungen.
 
+    Betriebsarten
+    - Online: Exchange Online (ExchangeOnlineManagement), interaktiv oder per Zertifikat (App-only).
+    - OnPremises: Exchange Server über eine Kerberos-Sitzung (Befehle ohne Präfix importiert).
+    - Hybrid: beide Verbindungen. Die lokalen Befehle werden mit dem Präfix 'EobOnPrem' importiert
+      (z. B. Enable-EobOnPremRemoteMailbox), damit sie nicht mit Exchange Online kollidieren.
+      Postfachaktionen ermitteln vorher, ob das Postfach in Exchange Online oder lokal liegt.
+
     Implementierungsstand: vorbereitet. Die Funktionen sind mit Mocks getestet, aber nicht gegen
     eine reale Exchange-Umgebung. Der Status meldet das über Implementation = 'Prepared'.
     Es werden keine Module installiert; ExchangeOnlineManagement muss bei Bedarf vom Administrator
     bereitgestellt werden (Install-Module ExchangeOnlineManagement -Scope CurrentUser).
+    Für die unbeaufsichtigte Anmeldung (geplante Aufgabe) liegt nur der Fingerabdruck eines
+    Zertifikats im Zertifikatspeicher des Kontos in der Konfiguration, kein Secret.
 #>
 
 Set-StrictMode -Version 3.0
@@ -17,15 +26,21 @@ $script:ExchangeState = @{
     Mode          = 'None'
     Session       = $null
     ImportedName  = ''
+    OnlineConnected = $false
     ConnectedAt   = $null
     LastError     = ''
 }
+
+# Präfix der lokalen Befehle im Hybridbetrieb (Get-Mailbox -> Get-EobOnPremMailbox).
+$script:OnPremisesPrefix = 'EobOnPrem'
 
 # Befehle, die aus einer Exchange-Server-Sitzung importiert werden (Allowlist).
 $script:OnPremisesCommands = @(
     'Get-Mailbox', 'Set-Mailbox', 'Enable-Mailbox', 'Enable-RemoteMailbox', 'Set-RemoteMailbox', 'Get-RemoteMailbox',
     'Set-MailboxAutoReplyConfiguration', 'Get-MailboxAutoReplyConfiguration', 'Get-MailboxPermission'
 )
+
+$script:NotFoundPattern = "(?i)couldn't be found|could not be found|not found|nicht gefunden|wurde nicht gefunden"
 
 #region Hilfsfunktionen
 
@@ -56,20 +71,38 @@ function Test-EobExchangeOnlineConnected {
     }
 }
 
+function Test-EobExchangeOnPremisesConnected {
+    [CmdletBinding()]
+    [OutputType([bool])]
+    param()
+
+    $session = $script:ExchangeState.Session
+    return ($null -ne $session -and [string](Get-EobPropertyValue -InputObject $session -Name 'State' -Default '') -eq 'Opened')
+}
+
 function Test-EobExchangeConnected {
     <#
     .SYNOPSIS
         Prüft, ob für den Modus eine nutzbare Exchange-Verbindung besteht.
+    .PARAMETER Location
+        Hybrid: All (Standard) verlangt beide Verbindungen; Online bzw. OnPremises prüft nur eine.
     #>
     [CmdletBinding()]
     [OutputType([bool])]
-    param([ValidateSet('None', 'Online', 'OnPremises', 'Hybrid')][string]$Mode = $script:ExchangeState.Mode)
+    param(
+        [ValidateSet('None', 'Online', 'OnPremises', 'Hybrid')][string]$Mode = $script:ExchangeState.Mode,
+        [ValidateSet('All', 'Online', 'OnPremises')][string]$Location = 'All'
+    )
 
     switch ($Mode) {
         'Online' { return (Test-EobExchangeOnlineConnected) }
-        { $_ -in @('OnPremises', 'Hybrid') } {
-            $session = $script:ExchangeState.Session
-            return ($null -ne $session -and [string](Get-EobPropertyValue -InputObject $session -Name 'State' -Default '') -eq 'Opened')
+        'OnPremises' { return (Test-EobExchangeOnPremisesConnected) }
+        'Hybrid' {
+            switch ($Location) {
+                'Online' { return (Test-EobExchangeOnlineConnected) }
+                'OnPremises' { return (Test-EobExchangeOnPremisesConnected) }
+                default { return ((Test-EobExchangeOnPremisesConnected) -and (Test-EobExchangeOnlineConnected)) }
+            }
         }
         default { return $false }
     }
@@ -77,17 +110,129 @@ function Test-EobExchangeConnected {
 
 function Assert-EobExchangeConnected {
     [CmdletBinding()]
-    param([Parameter(Mandatory)][string]$Mode)
+    param(
+        [Parameter(Mandatory)][string]$Mode,
+        [ValidateSet('All', 'Online', 'OnPremises')][string]$Location = 'All'
+    )
 
     if ($Mode -eq 'None') { throw 'Die Exchange-Integration ist deaktiviert ([Exchange] Mode=None).' }
-    if (-not (Test-EobExchangeConnected -Mode $Mode)) {
-        throw "Keine Verbindung zu Exchange ($Mode). Bitte zuerst unter Tools/Einstellungen verbinden."
+    if (-not (Test-EobExchangeConnected -Mode $Mode -Location $Location)) {
+        $part = if ($Mode -eq 'Hybrid' -and $Location -ne 'All') { "$Mode, $Location" } else { $Mode }
+        throw "Keine Verbindung zu Exchange ($part). Bitte zuerst unter Tools verbinden."
     }
+}
+
+function Get-EobExchangeCommandName {
+    <#
+    .SYNOPSIS
+        Liefert den Befehlsnamen für einen Endpunkt (Hybrid: lokale Befehle mit Präfix).
+    #>
+    [CmdletBinding()]
+    [OutputType([string])]
+    param(
+        [Parameter(Mandatory)][ValidatePattern('^[A-Za-z]+-[A-Za-z]+$')][string]$Name,
+        [Parameter(Mandatory)][ValidateSet('Online', 'OnPremises')][string]$Location,
+        [Parameter(Mandatory)][ValidateSet('Online', 'OnPremises', 'Hybrid')][string]$Mode
+    )
+
+    if ($Mode -eq 'Hybrid' -and $Location -eq 'OnPremises') {
+        $verb, $noun = $Name -split '-', 2
+        return "$verb-$($script:OnPremisesPrefix)$noun"
+    }
+    return $Name
+}
+
+function Invoke-EobExchangeCommand {
+    <#
+        Ruft einen Exchange-Befehl am richtigen Endpunkt auf (fester Befehlsname, Parameter als Hashtable).
+    #>
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)][string]$Name,
+        [Parameter(Mandatory)][ValidateSet('Online', 'OnPremises')][string]$Location,
+        [Parameter(Mandatory)][ValidateSet('Online', 'OnPremises', 'Hybrid')][string]$Mode,
+        [hashtable]$Parameters = @{}
+    )
+
+    $command = Get-EobExchangeCommandName -Name $Name -Location $Location -Mode $Mode
+    $arguments = @{} + $Parameters
+    $arguments['ErrorAction'] = 'Stop'
+    return (& $command @arguments)
+}
+
+function Find-EobMailbox {
+    <#
+    .SYNOPSIS
+        Sucht ein Postfach; im Hybridbetrieb zuerst in Exchange Online, dann lokal.
+    .OUTPUTS
+        Objekt mit Location (Online/OnPremises) und Mailbox oder $null.
+    #>
+    [CmdletBinding()]
+    [OutputType([pscustomobject])]
+    param(
+        [Parameter(Mandatory)][string]$Identity,
+        [Parameter(Mandatory)][ValidateSet('Online', 'OnPremises', 'Hybrid')][string]$Mode
+    )
+
+    $locations = switch ($Mode) { 'Hybrid' { @('Online', 'OnPremises') } default { @($Mode) } }
+    foreach ($location in $locations) {
+        $mailbox = $null
+        try {
+            $mailbox = Invoke-EobExchangeCommand -Name 'Get-Mailbox' -Location $location -Mode $Mode -Parameters @{ Identity = $Identity }
+        }
+        catch {
+            if ($_.Exception.Message -match $script:NotFoundPattern) { continue }
+            throw
+        }
+        if ($null -ne $mailbox) { return [pscustomobject]@{ Location = $location; Mailbox = @($mailbox)[0] } }
+    }
+    return $null
+}
+
+function Get-EobMailboxLocation {
+    <#
+        Ermittelt den Endpunkt für Postfachaktionen. Online und OnPremises sind fest; Hybrid sucht.
+    #>
+    [CmdletBinding()]
+    [OutputType([string])]
+    param(
+        [Parameter(Mandatory)][string]$Identity,
+        [Parameter(Mandatory)][ValidateSet('Online', 'OnPremises', 'Hybrid')][string]$Mode
+    )
+
+    if ($Mode -ne 'Hybrid') { return $Mode }
+    $found = Find-EobMailbox -Identity $Identity -Mode $Mode
+    if ($null -eq $found) { throw "Postfach '$Identity' wurde weder in Exchange Online noch lokal gefunden." }
+    return $found.Location
 }
 
 #endregion
 
 #region Status und Verbindung
+
+function Test-EobExchangeAppOnlyConfigured {
+    <#
+    .SYNOPSIS
+        Prüft, ob die Zertifikatsanmeldung an Exchange Online konfiguriert ist (AppId, Fingerabdruck, Organisation).
+    #>
+    [CmdletBinding()]
+    [OutputType([bool])]
+    param([AllowNull()][object]$Config)
+
+    $values = foreach ($key in @('AppId', 'CertificateThumbprint', 'Organization')) { [string](Get-EobConfigValue -Config $Config -Section 'Exchange' -Key $key) }
+    return (@($values | Where-Object { $_ }).Count -eq 3)
+}
+
+function Get-EobExchangeOnlineModuleVersion {
+    [CmdletBinding()]
+    [OutputType([string])]
+    param()
+
+    $module = Get-Module -ListAvailable -Name 'ExchangeOnlineManagement' -ErrorAction SilentlyContinue | Sort-Object -Property Version -Descending | Select-Object -First 1
+    if ($null -ne $module) { return [string]$module.Version }
+    if ($null -ne (Get-Command -Name 'Connect-ExchangeOnline' -ErrorAction SilentlyContinue)) { return '?' }
+    return ''
+}
 
 function Get-EobExchangeStatus {
     <#
@@ -102,17 +247,21 @@ function Get-EobExchangeStatus {
     if ($mode -eq 'None' -or [string]::IsNullOrEmpty($mode)) {
         return New-EobIntegrationStatus -Name 'Exchange' -State Disabled -Detail 'Exchange-Integration deaktiviert ([Exchange] Mode=None).' -Implementation Prepared
     }
-    if ($mode -eq 'Online') {
-        $module = Get-Module -ListAvailable -Name 'ExchangeOnlineManagement' -ErrorAction SilentlyContinue | Sort-Object -Property Version -Descending | Select-Object -First 1
-        if ($null -eq $module -and $null -eq (Get-Command -Name 'Get-ConnectionInformation' -ErrorAction SilentlyContinue)) {
+    $auth = if (Test-EobExchangeAppOnlyConfigured -Config $Config) { 'Zertifikat' } else { 'interaktiv' }
+    $version = ''
+    if ($mode -in @('Online', 'Hybrid')) {
+        $version = Get-EobExchangeOnlineModuleVersion
+        if (-not $version) {
             return New-EobIntegrationStatus -Name 'Exchange' -State NotInstalled -Detail 'Modul ExchangeOnlineManagement nicht gefunden.' `
                 -Hint 'Install-Module ExchangeOnlineManagement -Scope CurrentUser (durch den Administrator, keine automatische Installation).' -Implementation Prepared
         }
-        $version = if ($null -ne $module) { [string]$module.Version } else { '' }
+        if ($version -eq '?') { $version = '' }
+    }
+    if ($mode -eq 'Online') {
         if (Test-EobExchangeOnlineConnected) {
-            return New-EobIntegrationStatus -Name 'Exchange' -State Connected -Detail 'Exchange Online verbunden.' -Version $version -Implementation Prepared
+            return New-EobIntegrationStatus -Name 'Exchange' -State Connected -Detail "Exchange Online verbunden ($auth)." -Version $version -Implementation Prepared
         }
-        return New-EobIntegrationStatus -Name 'Exchange' -State NotConnected -Detail 'Exchange Online nicht verbunden.' -Version $version `
+        return New-EobIntegrationStatus -Name 'Exchange' -State NotConnected -Detail "Exchange Online nicht verbunden (Anmeldung: $auth)." -Version $version `
             -Hint 'Verbindung über Tools > Exchange verbinden herstellen.' -Implementation Prepared
     }
     $uri = [string](Get-EobConfigValue -Config $Config -Section 'Exchange' -Key 'OnPremisesUri')
@@ -120,11 +269,86 @@ function Get-EobExchangeStatus {
         return New-EobIntegrationStatus -Name 'Exchange' -State NotConfigured -Detail "Modus $mode ohne [Exchange] OnPremisesUri." `
             -Hint 'OnPremisesUri setzen, z. B. http://exchange.example.local/PowerShell/' -Implementation Prepared
     }
-    if (Test-EobExchangeConnected -Mode $mode) {
-        return New-EobIntegrationStatus -Name 'Exchange' -State Connected -Detail "Exchange Server ($mode) verbunden: $uri" -Implementation Prepared
+    if ($mode -eq 'Hybrid') {
+        $local = Test-EobExchangeOnPremisesConnected
+        $online = Test-EobExchangeOnlineConnected
+        if ($local -and $online) {
+            return New-EobIntegrationStatus -Name 'Exchange' -State Connected -Detail "Hybrid verbunden: $uri und Exchange Online ($auth)." -Version $version -Implementation Prepared
+        }
+        $missing = @(if (-not $local) { "Exchange Server ($uri)" }; if (-not $online) { 'Exchange Online' }) -join ' und '
+        return New-EobIntegrationStatus -Name 'Exchange' -State NotConnected -Detail "Hybrid: nicht verbunden mit $missing." -Version $version `
+            -Hint 'Tools > Exchange verbinden stellt beide Verbindungen her.' -Implementation Prepared
     }
-    return New-EobIntegrationStatus -Name 'Exchange' -State NotConnected -Detail "Exchange Server ($mode) nicht verbunden: $uri" `
+    if (Test-EobExchangeOnPremisesConnected) {
+        return New-EobIntegrationStatus -Name 'Exchange' -State Connected -Detail "Exchange Server verbunden: $uri" -Implementation Prepared
+    }
+    return New-EobIntegrationStatus -Name 'Exchange' -State NotConnected -Detail "Exchange Server nicht verbunden: $uri" `
         -Hint 'Verbindung über Tools > Exchange verbinden herstellen (Kerberos).' -Implementation Prepared
+}
+
+function Connect-EobExchangeOnlineSession {
+    <#
+        Verbindet Exchange Online: per Zertifikat (App-only), sofern konfiguriert, sonst interaktiv.
+    #>
+    [CmdletBinding()]
+    param(
+        [AllowNull()][pscustomobject]$Config,
+        [string]$UserPrincipalName
+    )
+
+    if ($null -eq (Get-Command -Name 'Connect-ExchangeOnline' -ErrorAction SilentlyContinue)) {
+        throw 'Das Modul ExchangeOnlineManagement ist nicht installiert.'
+    }
+    $parameters = @{ ShowBanner = $false; ErrorAction = 'Stop' }
+    if (Test-EobExchangeAppOnlyConfigured -Config $Config) {
+        $parameters['AppId'] = [string](Get-EobConfigValue -Config $Config -Section 'Exchange' -Key 'AppId')
+        $parameters['CertificateThumbprint'] = [string](Get-EobConfigValue -Config $Config -Section 'Exchange' -Key 'CertificateThumbprint')
+        $parameters['Organization'] = [string](Get-EobConfigValue -Config $Config -Section 'Exchange' -Key 'Organization')
+    }
+    elseif ($UserPrincipalName) {
+        $parameters['UserPrincipalName'] = $UserPrincipalName
+    }
+    Connect-ExchangeOnline @parameters
+    $script:ExchangeState.OnlineConnected = $true
+}
+
+function Connect-EobExchangeOnPremisesSession {
+    <#
+        Öffnet die Kerberos-Sitzung zum Exchange Server und importiert nur die Befehle der Allowlist.
+    #>
+    [CmdletBinding()]
+    param(
+        [AllowNull()][pscustomobject]$Config,
+        [pscredential]$Credential,
+        [AllowEmptyString()][string]$Prefix = ''
+    )
+
+    $uri = [string](Get-EobConfigValue -Config $Config -Section 'Exchange' -Key 'OnPremisesUri')
+    if (-not $uri) { throw '[Exchange] OnPremisesUri ist nicht gesetzt.' }
+    $parsed = $null
+    if (-not [uri]::TryCreate($uri, [System.UriKind]::Absolute, [ref]$parsed) -or $parsed.Scheme -notin @('http', 'https')) {
+        throw "Ungültige OnPremisesUri '$uri'."
+    }
+    $sessionParameters = @{
+        ConfigurationName = 'Microsoft.Exchange'
+        ConnectionUri     = $parsed.AbsoluteUri
+        Authentication    = 'Kerberos'
+        ErrorAction       = 'Stop'
+    }
+    if ($null -ne $Credential) { $sessionParameters['Credential'] = $Credential }
+    $session = New-PSSession @sessionParameters
+    try {
+        $importParameters = @{ Session = $session; CommandName = $script:OnPremisesCommands; AllowClobber = $true; DisableNameChecking = $true; ErrorAction = 'Stop' }
+        if ($Prefix) { $importParameters['Prefix'] = $Prefix }
+        $imported = Import-PSSession @importParameters
+        Import-Module -ModuleInfo $imported -Global -DisableNameChecking -ErrorAction Stop
+    }
+    catch {
+        Remove-PSSession -Session $session -ErrorAction SilentlyContinue
+        throw
+    }
+    $script:ExchangeState.Session = $session
+    $script:ExchangeState.ImportedName = $imported.Name
 }
 
 function Connect-EobExchange {
@@ -132,9 +356,11 @@ function Connect-EobExchange {
     .SYNOPSIS
         Stellt die Exchange-Verbindung gemäß [Exchange] Mode her.
     .DESCRIPTION
-        Online: Connect-ExchangeOnline (moderne Authentifizierung, interaktiv).
-        OnPremises/Hybrid: PSSession mit Kerberos zu OnPremisesUri; importiert werden nur die
-        benötigten Befehle (Allowlist). Es werden keine Kennwörter gespeichert.
+        Online: Connect-ExchangeOnline, per Zertifikat ([Exchange] AppId, CertificateThumbprint,
+        Organization), sonst interaktiv mit moderner Authentifizierung.
+        OnPremises: PSSession mit Kerberos zu OnPremisesUri; importiert werden nur die benötigten
+        Befehle (Allowlist). Hybrid: beide Verbindungen, lokale Befehle mit Präfix 'EobOnPrem'.
+        Es werden keine Kennwörter gespeichert.
     #>
     [CmdletBinding(SupportsShouldProcess)]
     [OutputType([pscustomobject])]
@@ -151,34 +377,16 @@ function Connect-EobExchange {
     }
 
     try {
-        if ($mode -eq 'Online') {
-            if ($null -eq (Get-Command -Name 'Connect-ExchangeOnline' -ErrorAction SilentlyContinue)) {
-                throw 'Das Modul ExchangeOnlineManagement ist nicht installiert.'
+        if ($null -ne $script:ExchangeState.Session -or $script:ExchangeState.OnlineConnected) { Disconnect-EobExchange -Confirm:$false | Out-Null }
+        switch ($mode) {
+            'Online' { Connect-EobExchangeOnlineSession -Config $Config -UserPrincipalName $UserPrincipalName }
+            'OnPremises' { Connect-EobExchangeOnPremisesSession -Config $Config -Credential $Credential }
+            'Hybrid' {
+                # Lokal: Bereitstellung (Remote-Postfach) und lokal verbliebene Postfächer; Online: Cloud-Postfächer.
+                Connect-EobExchangeOnPremisesSession -Config $Config -Credential $Credential -Prefix $script:OnPremisesPrefix
+                Connect-EobExchangeOnlineSession -Config $Config -UserPrincipalName $UserPrincipalName
             }
-            $parameters = @{ ShowBanner = $false; ErrorAction = 'Stop' }
-            if ($UserPrincipalName) { $parameters['UserPrincipalName'] = $UserPrincipalName }
-            Connect-ExchangeOnline @parameters
-        }
-        else {
-            $uri = [string](Get-EobConfigValue -Config $Config -Section 'Exchange' -Key 'OnPremisesUri')
-            if (-not $uri) { throw '[Exchange] OnPremisesUri ist nicht gesetzt.' }
-            $parsed = $null
-            if (-not [uri]::TryCreate($uri, [System.UriKind]::Absolute, [ref]$parsed) -or $parsed.Scheme -notin @('http', 'https')) {
-                throw "Ungültige OnPremisesUri '$uri'."
-            }
-            if ($null -ne $script:ExchangeState.Session) { Disconnect-EobExchange -Confirm:$false | Out-Null }
-            $sessionParameters = @{
-                ConfigurationName = 'Microsoft.Exchange'
-                ConnectionUri     = $parsed.AbsoluteUri
-                Authentication    = 'Kerberos'
-                ErrorAction       = 'Stop'
-            }
-            if ($null -ne $Credential) { $sessionParameters['Credential'] = $Credential }
-            $session = New-PSSession @sessionParameters
-            $imported = Import-PSSession -Session $session -CommandName $script:OnPremisesCommands -AllowClobber -DisableNameChecking -ErrorAction Stop
-            Import-Module -ModuleInfo $imported -Global -DisableNameChecking -ErrorAction Stop
-            $script:ExchangeState.Session = $session
-            $script:ExchangeState.ImportedName = $imported.Name
+            default { throw "Unbekannter Exchange-Modus '$mode'." }
         }
         $script:ExchangeState.Mode = $mode
         $script:ExchangeState.ConnectedAt = Get-Date
@@ -205,7 +413,8 @@ function Disconnect-EobExchange {
     if (-not $PSCmdlet.ShouldProcess($script:ExchangeState.Mode, 'Exchange trennen')) {
         return New-EobNotProcessedResult -Message 'Exchange würde getrennt.'
     }
-    if ($script:ExchangeState.Mode -eq 'Online' -and $null -ne (Get-Command -Name 'Disconnect-ExchangeOnline' -ErrorAction SilentlyContinue)) {
+    if (($script:ExchangeState.OnlineConnected -or $script:ExchangeState.Mode -in @('Online', 'Hybrid')) -and
+        $null -ne (Get-Command -Name 'Disconnect-ExchangeOnline' -ErrorAction SilentlyContinue)) {
         Disconnect-ExchangeOnline -Confirm:$false -ErrorAction SilentlyContinue
     }
     if ($script:ExchangeState.ImportedName) {
@@ -216,6 +425,7 @@ function Disconnect-EobExchange {
     }
     $script:ExchangeState.Session = $null
     $script:ExchangeState.ImportedName = ''
+    $script:ExchangeState.OnlineConnected = $false
     $script:ExchangeState.Mode = 'None'
     $script:ExchangeState.ConnectedAt = $null
     return New-EobResult -Status Succeeded -Message 'Exchange-Verbindung getrennt.'
@@ -238,18 +448,13 @@ function Get-EobMailboxInfo {
     )
 
     Assert-EobExchangeConnected -Mode $Mode
-    $mailbox = $null
-    try {
-        $mailbox = Get-Mailbox -Identity $Identity -ErrorAction Stop
-    }
-    catch {
-        if ($_.Exception.Message -match "(?i)couldn't be found|not found|nicht gefunden") { return $null }
-        throw
-    }
-    if ($null -eq $mailbox) { return $null }
+    $found = Find-EobMailbox -Identity $Identity -Mode $Mode
+    if ($null -eq $found) { return $null }
+    $mailbox = $found.Mailbox
     [pscustomobject]@{
         PSTypeName                    = 'Eob.MailboxInfo'
         Identity                      = $Identity
+        Location                      = $found.Location
         PrimarySmtpAddress            = [string](Get-EobPropertyValue -InputObject $mailbox -Name 'PrimarySmtpAddress' -Default '')
         RecipientTypeDetails          = [string](Get-EobPropertyValue -InputObject $mailbox -Name 'RecipientTypeDetails' -Default '')
         HiddenFromAddressListsEnabled = [bool](Get-EobPropertyValue -InputObject $mailbox -Name 'HiddenFromAddressListsEnabled' -Default $false)
@@ -273,7 +478,8 @@ function Get-EobMailboxPermissionReport {
     )
 
     Assert-EobExchangeConnected -Mode $Mode
-    foreach ($permission in @(Get-MailboxPermission -Identity $Identity -ErrorAction Stop)) {
+    $location = Get-EobMailboxLocation -Identity $Identity -Mode $Mode
+    foreach ($permission in @(Invoke-EobExchangeCommand -Name 'Get-MailboxPermission' -Location $location -Mode $Mode -Parameters @{ Identity = $Identity })) {
         $user = [string](Get-EobPropertyValue -InputObject $permission -Name 'User' -Default '')
         $inherited = [bool](Get-EobPropertyValue -InputObject $permission -Name 'IsInherited' -Default $false)
         if ($inherited -or $user -match '(?i)^NT AUTHORITY\\SELF$|^S-1-5-10$') { continue }
@@ -316,10 +522,11 @@ function Enable-EobExchangeMailbox {
         if (-not $PSCmdlet.ShouldProcess($Identity, "Remote-Postfach aktivieren ($routing)")) {
             return New-EobNotProcessedResult -Message "Remote-Postfach würde für $Identity aktiviert ($routing)."
         }
-        Assert-EobExchangeConnected -Mode $Mode
-        $parameters = @{ Identity = $Identity; RemoteRoutingAddress = $routing; ErrorAction = 'Stop' }
+        # Die Bereitstellung erfolgt lokal; Exchange Online wird dafür nicht benötigt.
+        Assert-EobExchangeConnected -Mode $Mode -Location OnPremises
+        $parameters = @{ Identity = $Identity; RemoteRoutingAddress = $routing }
         if ($Alias) { $parameters['Alias'] = $Alias }
-        $null = Enable-RemoteMailbox @parameters
+        $null = Invoke-EobExchangeCommand -Name 'Enable-RemoteMailbox' -Location OnPremises -Mode $Mode -Parameters $parameters
         return New-EobResult -Status Succeeded -Message "Remote-Postfach für $Identity aktiviert ($routing)."
     }
 
@@ -327,10 +534,10 @@ function Enable-EobExchangeMailbox {
         return New-EobNotProcessedResult -Message "Postfach würde für $Identity aktiviert$(if ($Database) { " (Datenbank $Database)" })."
     }
     Assert-EobExchangeConnected -Mode $Mode
-    $parameters = @{ Identity = $Identity; ErrorAction = 'Stop' }
+    $parameters = @{ Identity = $Identity }
     if ($Database) { $parameters['Database'] = $Database }
     if ($Alias) { $parameters['Alias'] = $Alias }
-    $null = Enable-Mailbox @parameters
+    $null = Invoke-EobExchangeCommand -Name 'Enable-Mailbox' -Location OnPremises -Mode $Mode -Parameters $parameters
     return New-EobResult -Status Succeeded -Message "Postfach für $Identity aktiviert."
 }
 
@@ -357,12 +564,12 @@ function Set-EobMailboxAutoReply {
         return New-EobNotProcessedResult -Message "Abwesenheitsnotiz würde für $Identity aktiviert."
     }
     Assert-EobExchangeConnected -Mode $Mode
+    $location = Get-EobMailboxLocation -Identity $Identity -Mode $Mode
     $parameters = @{
         Identity         = $Identity
         InternalMessage  = (& $html $Message)
         ExternalMessage  = (& $html $ExternalMessage)
         ExternalAudience = $ExternalAudience
-        ErrorAction      = 'Stop'
     }
     if ($null -ne $StartTime -and $null -ne $EndTime) {
         if ($EndTime -le $StartTime) { throw 'Das Ende der Abwesenheitsnotiz muss nach dem Beginn liegen.' }
@@ -373,7 +580,7 @@ function Set-EobMailboxAutoReply {
     else {
         $parameters['AutoReplyState'] = 'Enabled'
     }
-    Set-MailboxAutoReplyConfiguration @parameters
+    $null = Invoke-EobExchangeCommand -Name 'Set-MailboxAutoReplyConfiguration' -Location $location -Mode $Mode -Parameters $parameters
     return New-EobResult -Status Succeeded -Message "Abwesenheitsnotiz für $Identity aktiviert ($($parameters['AutoReplyState']))."
 }
 
@@ -406,7 +613,10 @@ function Set-EobMailboxForwarding {
         return New-EobNotProcessedResult -Message "Weiterleitung von $Identity an $ForwardTo würde eingerichtet."
     }
     Assert-EobExchangeConnected -Mode $Mode
-    Set-Mailbox -Identity $Identity -ForwardingSmtpAddress "smtp:$ForwardTo" -DeliverToMailboxAndForward ([bool]$DeliverToMailboxAndForward) -ErrorAction Stop
+    $location = Get-EobMailboxLocation -Identity $Identity -Mode $Mode
+    $null = Invoke-EobExchangeCommand -Name 'Set-Mailbox' -Location $location -Mode $Mode -Parameters @{
+        Identity = $Identity; ForwardingSmtpAddress = "smtp:$ForwardTo"; DeliverToMailboxAndForward = [bool]$DeliverToMailboxAndForward
+    }
     return New-EobResult -Status Succeeded -Message "Weiterleitung von $Identity an $ForwardTo eingerichtet."
 }
 
@@ -429,7 +639,8 @@ function Set-EobMailboxHidden {
         return New-EobNotProcessedResult -Message "$Identity würde aus den Adresslisten ausgeblendet."
     }
     Assert-EobExchangeConnected -Mode $Mode
-    Set-Mailbox -Identity $Identity -HiddenFromAddressListsEnabled $true -ErrorAction Stop
+    $location = Get-EobMailboxLocation -Identity $Identity -Mode $Mode
+    $null = Invoke-EobExchangeCommand -Name 'Set-Mailbox' -Location $location -Mode $Mode -Parameters @{ Identity = $Identity; HiddenFromAddressListsEnabled = $true }
     return New-EobResult -Status Succeeded -Message "$Identity aus den Adresslisten ausgeblendet."
 }
 
@@ -438,8 +649,10 @@ function ConvertTo-EobSharedMailbox {
     .SYNOPSIS
         Wandelt ein Benutzerpostfach in ein freigegebenes Postfach um.
     .DESCRIPTION
-        Online/OnPremises: Set-Mailbox -Type Shared. Hybrid (Postfach in Exchange Online, Objekt
-        lokal verwaltet): Set-RemoteMailbox -Type Shared in der lokalen Exchange-Sitzung.
+        Online/OnPremises: Set-Mailbox -Type Shared. Hybrid mit Postfach in Exchange Online (Verfahren
+        nach Microsoft): erst in Exchange Online umwandeln, dann das lokale Objekt mit
+        Set-RemoteMailbox -Type Shared angleichen (Exchange 2013 CU21 / 2016 CU10 oder neuer).
+        Hybrid mit lokal verbliebenem Postfach: Set-Mailbox -Type Shared lokal.
         Hinweis: Freigegebene Postfächer über 50 GB oder mit Archiv benötigen weiterhin eine Lizenz.
     #>
     [CmdletBinding(SupportsShouldProcess, ConfirmImpact = 'High')]
@@ -453,11 +666,16 @@ function ConvertTo-EobSharedMailbox {
         return New-EobNotProcessedResult -Message "Postfach $Identity würde in ein freigegebenes Postfach umgewandelt."
     }
     Assert-EobExchangeConnected -Mode $Mode
-    if ($Mode -eq 'Hybrid') {
-        Set-RemoteMailbox -Identity $Identity -Type Shared -ErrorAction Stop
-    }
-    else {
-        Set-Mailbox -Identity $Identity -Type Shared -ErrorAction Stop
+    $location = Get-EobMailboxLocation -Identity $Identity -Mode $Mode
+    $null = Invoke-EobExchangeCommand -Name 'Set-Mailbox' -Location $location -Mode $Mode -Parameters @{ Identity = $Identity; Type = 'Shared' }
+    if ($Mode -eq 'Hybrid' -and $location -eq 'Online') {
+        try {
+            $null = Invoke-EobExchangeCommand -Name 'Set-RemoteMailbox' -Location OnPremises -Mode $Mode -Parameters @{ Identity = $Identity; Type = 'Shared' }
+        }
+        catch {
+            return New-EobResult -Status Warning -Message ("Postfach $Identity in Exchange Online umgewandelt, das lokale Objekt aber nicht angeglichen: " +
+                "$($_.Exception.Message) Bitte lokal 'Set-RemoteMailbox -Identity $Identity -Type Shared' ausführen.")
+        }
     }
     return New-EobResult -Status Succeeded -Message "Postfach $Identity in ein freigegebenes Postfach umgewandelt. Lizenzbedarf prüfen (Größe/Archiv)."
 }

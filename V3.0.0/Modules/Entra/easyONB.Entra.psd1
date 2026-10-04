@@ -15,6 +15,7 @@
         'Get-EobGraphStatus'
         'Revoke-EobEntraUserSession'
         'Start-EobEntraConnectSync'
+        'Test-EobGraphAppOnlyConfigured'
     )
     CmdletsToExport      = @()
     VariablesToExport    = @()
