@@ -19,6 +19,7 @@ $script:EobModuleOrder = @(
     'Reporting'
     'Onboarding'
     'Offboarding'
+    'Setup'
     'UI'
 )
 

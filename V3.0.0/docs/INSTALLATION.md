@@ -27,13 +27,36 @@ Bedarf gezielt, z. B. mit `Install-PSResource <Name> -Scope CurrentUser`.
 3. Ausführungsrichtlinie: easyONBOARDING ändert sie nicht und benötigt kein `Bypass`. Empfohlen ist
    `RemoteSigned` (lokale, freigegebene Skripte) bzw. `AllSigned`, wenn die Skripte mit dem
    Codesignaturzertifikat der Organisation signiert werden.
-4. Konfiguration anlegen: `Copy-Item .\Config\easyONB.ini.template .\Config\easyONB.ini` und anpassen
-   ([CONFIGURATION.md](CONFIGURATION.md)). Alternativ eine Konfiguration der Version 1.x übernehmen
+4. Konfiguration anlegen, am einfachsten mit dem Installer (siehe unten):
+   `pwsh -STA -NoProfile -File .\Install-easyONBOARDING.ps1`. Alternativ manuell
+   `Copy-Item .\Config\easyONB.ini.template .\Config\easyONB.ini` und anpassen
+   ([CONFIGURATION.md](CONFIGURATION.md)) oder eine Konfiguration der Version 1.x übernehmen
    ([MIGRATION.md](MIGRATION.md)).
 5. Prüfen: `pwsh -NoProfile -File .\Start-easyONBOARDING.ps1 -CheckOnly` (Exitcode 0 = keine Fehler,
    2 = Fehler in der Konfiguration). Warnungen und Hinweise beachten.
 6. Starten: `pwsh -NoProfile -File .\Start-easyONBOARDING.ps1`. Eine Verknüpfung kann auf
    `pwsh.exe -NoProfile -File "D:\Tools\easyONBOARDING\V3.0.0\Start-easyONBOARDING.ps1"` zeigen.
+
+### Installer (Install-easyONBOARDING.ps1)
+
+Der Installer erstellt `Config\easyONB.ini` aus der Vorlage über eine eigene Oberfläche mit den
+Seiten Unternehmen, Active Directory, Dateien und E-Mail, Integrationen, Sicherheit und Darstellung
+sowie Prüfen und erstellen. Zu jedem Feld und Bereich erscheint nach 250 ms ein Hinweistext.
+
+* **Auf einem Domänencontroller** (mit ActiveDirectory-Modul) werden vorbelegt: UPN-Suffixe und
+  E-Mail-Domäne, Domänencontroller, Ziel-OU und OU für ausgeschiedene Konten, Suchbasis, bei
+  vorhandenem Entra Connect Server und Mandant (aus dem Konto `MSOL_…`) sowie bei vorhandener
+  Exchange-Organisation Endpunkt, Betriebsart und Routingdomäne. "Werte aus dem AD laden" liest
+  erneut. Alle Werte bleiben änderbar.
+* **Auf einem Client oder Mitgliedsserver** werden alle Werte manuell eingetragen; Pflichtfelder
+  sind mit `*` markiert.
+* "Eingaben prüfen" meldet fehlende Pflichtfelder und ungültige Formate. "Konfiguration erstellen"
+  schreibt die Datei (UTF-8, Kommentare der Vorlage bleiben erhalten), entfernt auf Wunsch die
+  Beispieldaten der Vorlage und lädt das Ergebnis mit derselben Prüfung wie die Anwendung. Eine
+  vorhandene Datei wird nur nach Rückfrage ersetzt und vorher als `.bak` gesichert.
+* Der Installer schreibt keine Kennwörter, ändert keine Ausführungsrichtlinie und installiert
+  keine Module. Gruppen, Lizenzgruppen und Offboarding-Vorlagen danach in der INI bzw. unter
+  `Config\templates` ergänzen.
 
 Parameter von `Start-easyONBOARDING.ps1`: `-ConfigPath` (sonst `Config\easyONB.ini` bzw. Umgebungsvariable
 `EASYONB_CONFIG`), `-CheckOnly`, `-Simulation` (erzwingt den Simulationsmodus), `-Theme Light|Dark`.

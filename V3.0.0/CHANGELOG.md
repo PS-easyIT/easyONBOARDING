@@ -8,6 +8,12 @@ Alle nennenswerten Änderungen an easyONBOARDING. Format angelehnt an
 
 ### Hinzugefügt
 
+- Installer `Install-easyONBOARDING.ps1` mit eigener WPF-Oberfläche (Modul `easyONB.Setup`): erstellt
+  `Config\easyONB.ini` aus der Vorlage. Auf einem Domänencontroller werden Domäne, UPN-Suffixe,
+  Domänencontroller, OUs sowie Entra Connect und Exchange aus dem AD vorbelegt; auf Clients werden die
+  Werte manuell eingetragen. Jedes Feld und jeder Bereich hat einen Hinweistext (Anzeige nach 250 ms).
+  Die erzeugte Datei wird wie in der Anwendung geprüft; vorhandene Dateien werden gesichert.
+
 - Exchange Hybrid: Verbindung zu Exchange Server **und** Exchange Online. Lokale Befehle werden mit dem
   Präfix `EobOnPrem` importiert; Postfachaktionen ermitteln, ob das Postfach online oder lokal liegt.
   Die Umwandlung in ein freigegebenes Postfach erfolgt bei Cloud-Postfächern nach dem

@@ -6,6 +6,7 @@ Alle Pfade in diesem Dokument sind relativ zum Versionsordner `V3.0.0`.
 
 ```
 Start-easyONBOARDING.ps1          Einstieg (GUI, -CheckOnly)
+Install-easyONBOARDING.ps1        Installer: erstellt Config\easyONB.ini (eigene Oberfläche)
 │
 ├── Modules/easyONB.Modules.ps1   Ladereihenfolge der Module
 ├── Modules/Core                  Version, Pfade, Logging/Audit, Redaktion, Plan-Engine
@@ -17,6 +18,7 @@ Start-easyONBOARDING.ps1          Einstieg (GUI, -CheckOnly)
 ├── Modules/Reporting             Report-Modell, HTML/CSV/JSON/TXT/PDF, Legacy-Templates, Mail
 ├── Modules/Onboarding            Identitäten, Anfrage, Plan, Ausführung, CSV, Benutzer-Update
 ├── Modules/Offboarding           Vorlagen, Schutzprüfung, Snapshot, Plan, Phasen, Löschschutz, CSV
+├── Modules/Setup                 Installer: Felder, AD-Vorbelegung (Domänencontroller), INI-Erzeugung
 └── Modules/UI                    WPF: XAML-Laden, Themes, Dialoge, Views, kooperative Ausführung
 ```
 

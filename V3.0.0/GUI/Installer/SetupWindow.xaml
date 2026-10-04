@@ -1,0 +1,87 @@
+<!--
+    easyONBOARDING Installer: erstellt Config\easyONB.ini.
+    Die Eingabefelder der Seiten erzeugt das Modul easyONB.Setup aus seiner Feldtabelle (mit Hinweistext
+    je Feld); hier stehen nur Rahmen, Umgebungshinweis und die Seite "Prüfen und erstellen".
+    Hinweistexte erscheinen nach 250 ms (ToolTipService wird an alle Elemente vererbt).
+-->
+<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="easyONBOARDING Installer"
+        Width="1150" Height="820" MinWidth="900" MinHeight="600"
+        WindowStartupLocation="CenterScreen"
+        Background="{DynamicResource WindowBackgroundBrush}"
+        Foreground="{DynamicResource TextPrimaryBrush}"
+        FontFamily="Segoe UI" FontSize="13"
+        UseLayoutRounding="True" SnapsToDevicePixels="True"
+        TextOptions.TextFormattingMode="Display"
+        ToolTipService.InitialShowDelay="250" ToolTipService.ShowDuration="30000" ToolTipService.BetweenShowDelay="100">
+    <DockPanel>
+        <!-- Kopf -->
+        <Border DockPanel.Dock="Top" Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource DividerBrush}" BorderThickness="0,0,0,1" Padding="20,12">
+            <StackPanel>
+                <TextBlock x:Name="SetupTitleText" Style="{StaticResource HeadingTextStyle}" Text="easyONBOARDING einrichten" />
+                <TextBlock x:Name="SetupSubtitleText" Style="{StaticResource CaptionTextStyle}" />
+            </StackPanel>
+        </Border>
+
+        <!-- Fußleiste -->
+        <Border DockPanel.Dock="Bottom" Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource DividerBrush}" BorderThickness="0,1,0,0" Padding="20,8">
+            <DockPanel>
+                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                    <Button x:Name="SetupCheckButton" Content="Eingaben _prüfen" ToolTip="Prüft Pflichtfelder und Formate, ohne etwas zu schreiben." />
+                    <Button x:Name="SetupCreateButton" Style="{StaticResource PrimaryButtonStyle}" Content="Konfiguration _erstellen"
+                            ToolTip="Schreibt die INI-Datei und prüft sie wie die Anwendung. Eine vorhandene Datei wird vorher gesichert." />
+                    <Button x:Name="SetupCloseButton" Content="_Schließen" Margin="0" ToolTip="Installer beenden. Nicht erstellte Eingaben gehen verloren." />
+                </StackPanel>
+                <Button x:Name="SetupReloadButton" DockPanel.Dock="Left" HorizontalAlignment="Left" Content="Werte aus dem _AD laden"
+                        ToolTip="Nur auf einem Domänencontroller: liest Domäne, OUs, Domänencontroller, Entra Connect und Exchange erneut aus dem Active Directory." />
+            </DockPanel>
+        </Border>
+
+        <Grid Margin="20,12,20,8">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
+            <Border x:Name="SetupEnvironmentBanner" Grid.Row="0" Style="{StaticResource InfoBannerStyle}"
+                    ToolTip="Erkannte Umgebung: Auf einem Domänencontroller werden Felder aus dem Active Directory vorbelegt, sonst manuell ausgefüllt.">
+                <TextBlock x:Name="SetupEnvironmentText" Style="{StaticResource BodyTextStyle}" />
+            </Border>
+            <TabControl x:Name="SetupTabs" Grid.Row="1">
+                <TabItem x:Name="SetupCreateTab" Header="Prüfen und erstellen">
+                    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                        <StackPanel Margin="0,4,4,8">
+                            <Border Style="{StaticResource CardStyle}" ToolTip="Speicherort der Konfiguration. Standard: Config\easyONB.ini im Anwendungsordner.">
+                                <StackPanel>
+                                    <TextBlock Style="{StaticResource SubheadingTextStyle}" Text="Zieldatei" />
+                                    <DockPanel>
+                                        <Button x:Name="SetupBrowseButton" DockPanel.Dock="Right" Content="_Durchsuchen …" Margin="8,0,0,0" ToolTip="Anderen Speicherort wählen." />
+                                        <TextBox x:Name="SetupTargetText" AutomationProperties.Name="Zieldatei" ToolTip="Vollständiger Pfad der zu erstellenden INI-Datei." />
+                                    </DockPanel>
+                                    <CheckBox x:Name="SetupRemoveSamplesCheck" Content="Beispieldaten der Vorlage entfernen" IsChecked="True" Margin="0,10,0,0"
+                                              ToolTip="Entfernt Beispielgruppen, -links, WLAN- und VPN-Angaben der Vorlage. Eigene Werte später in der INI ergänzen." />
+                                </StackPanel>
+                            </Border>
+                            <Border x:Name="SetupResultBanner" Style="{StaticResource InfoBannerStyle}" Visibility="Collapsed">
+                                <TextBlock x:Name="SetupResultText" Style="{StaticResource BodyTextStyle}" />
+                            </Border>
+                            <Border Style="{StaticResource CardStyle}" ToolTip="Ergebnis der Prüfung: fehlende Pflichtfelder, ungültige Formate und Befunde der erstellten Konfiguration.">
+                                <StackPanel>
+                                    <TextBlock Style="{StaticResource SubheadingTextStyle}" Text="Prüfergebnisse" />
+                                    <ListBox x:Name="SetupFindingsList" MinHeight="120" MaxHeight="320" AutomationProperties.Name="Prüfergebnisse"
+                                             ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                                        <ListBox.ItemTemplate>
+                                            <DataTemplate>
+                                                <TextBlock Text="{Binding}" TextWrapping="Wrap" />
+                                            </DataTemplate>
+                                        </ListBox.ItemTemplate>
+                                    </ListBox>
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
+                    </ScrollViewer>
+                </TabItem>
+            </TabControl>
+        </Grid>
+    </DockPanel>
+</Window>
