@@ -7,15 +7,6 @@ Datei `VERSION` im Repository-Stamm.
 | Reihe | Stand | Ordner bzw. Quelle |
 |---|---|---|
 | **3.0.x** | aktuell, unterstützt | `V3.0.0/` |
-| 1.4.x | Entwicklungsstand, nie freigegeben | nur noch in der Git-Historie |
-| 1.3.x | letzte freigegebene Reihe der Version 1, veraltet | nur noch in der Git-Historie |
-| 0.1 – 1.1 | Vorversionen, veraltet | nur noch in der Git-Historie |
-
-Eine Version 2 gab es nicht: Nach 1.4.x folgte direkt die Neuentwicklung 3.0.
-
-## [Unreleased]
-
-Noch keine Änderungen.
 
 ## [3.0.2] - 2026-10-04
 
@@ -225,11 +216,7 @@ M-xx, F-xx) beziehen sich auf die Bestandsaufnahme in [ANALYSIS.md](V3.0.0/docs/
 
 ## Version 1 und Vorversionen (veraltet)
 
-Die folgenden Einträge sind aus der Git-Historie und den Dateinamen rekonstruiert. Für die Versionen
-1.x gab es kein Änderungsprotokoll, keine zentrale Versionsquelle und keine Git-Tags. Die Daten sind
-Commit-Daten; Vorversionen ohne eigenen Commit sind als undatiert gekennzeichnet. Die Versionen 1.x
-haben bekannte kritische Sicherheitsmängel (siehe [SECURITY.md](SECURITY.md)) und werden nicht mehr
-unterstützt.
+Die folgenden Einträge sind veraltet und zeigen den Entwicklungsstand
 
 ## [1.4.23] - 2025-07-12 (Entwicklungsstand, nicht freigegeben)
 
@@ -278,7 +265,7 @@ Letzte als final markierte Version der Reihe 1 (`V1.3.10`, Commit `bd6cef8`).
 - Umstieg auf eine XAML-basierte WPF-Oberfläche (`MainGUI.xaml`); Fehlerkorrekturen und
   Erweiterungen bei Benutzeranlage und Berichten.
 
-## [1.1.4] - undatiert
+## [1.1.4] - 2025-03-16
 
 - Erste WPF-Oberfläche; flexibler Log-Pfad, Ausweichwert für den Anzeigenamen; Berichte als HTML,
   TXT und optional PDF.
@@ -291,12 +278,12 @@ Erste Version im Repository (Commit `0bab756`, zusammen mit dem Paket `VERSION_1
   PowerShell 7, Prüfung der Windows-Version, Konfiguration per INI-Datei, HTML-Berichtsvorlage,
   Installations- und PDF-Skript.
 
-## [0.9] - undatiert
+## [0.9] - 2025-02-01
 
 - 0.9 und 0.9.7: Umstieg auf PowerShell 7 (`#requires -Version 7.0`), Prüfung auf Windows 10 bzw.
   Windows Server 2016 oder höher.
 
-## [0.1.0 – 0.8] - undatiert
+## [0.1.0 – 0.8] - 2024-12-27
 
 - Erste Skriptversionen für Windows PowerShell 5.1 mit Windows-Forms-Oberfläche,
   INI-Konfiguration und HTML-/PDF-Berichten (0.1.0 bis 0.1.5, 0.5, 0.6, 0.7, 0.8).
