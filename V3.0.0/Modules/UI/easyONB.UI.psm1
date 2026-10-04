@@ -1028,12 +1028,12 @@ function Show-EobCredentialDialog {
     $c.CredUserText.Text = $SamAccountName
     $c.CredUpnText.Text = $UserPrincipalName
     $c.CredPasswordText.Text = ConvertTo-EobPlainText -SecureString $Password
-    $c.CredHintText.Text = 'Nach dem Schließen wird das Kennwort aus dem Speicher entfernt und kann nicht erneut angezeigt werden.'
+    $c.CredHintText.Text = 'Nach dem Schließen ist das Kennwort nicht mehr abrufbar.'
     if ($clearSeconds -le 0) {
         $c.CredCopyButton.Visibility = 'Collapsed'
     }
     else {
-        $c.CredClipboardText.Text = "Kopierte Kennwörter werden nach $clearSeconds Sekunden aus der Zwischenablage entfernt und nicht in den Zwischenablageverlauf übernommen."
+        $c.CredClipboardText.Text = "Zwischenablage wird nach $clearSeconds s geleert (ohne Verlauf)."
     }
     if (-not $allowPrint) { $c.CredPrintButton.Visibility = 'Collapsed' }
     $dialog.Tag = @{ ClearSeconds = [Math]::Max(5, $clearSeconds); Password = $Password; Name = $DisplayName; Sam = $SamAccountName; Upn = $UserPrincipalName }
@@ -1098,6 +1098,7 @@ function Start-EobGui {
     $loaded = Import-EobXamlWithControl -RelativePath 'MainWindow.xaml'
     $script:Ui.Window = $loaded.Root
     $script:Ui.C = $loaded.Controls
+    Set-EobWindowBound -Window $script:Ui.Window
     Initialize-EobMainWindow
     Show-EobView -Name 'Dashboard'
     Start-EobLogPump
@@ -1108,6 +1109,49 @@ function Start-EobGui {
     finally {
         Stop-EobUi
     }
+}
+
+function Get-EobWindowBound {
+    <#
+    .SYNOPSIS
+        Begrenzt Fenster- und Mindestgröße auf die Arbeitsfläche (Bildschirm ohne Taskleiste).
+    .DESCRIPTION
+        Ausgelegt ist die Oberfläche auf 1400 x 900. Auf kleineren Arbeitsflächen (z. B. 1366 x 768
+        oder bei Anzeigeskalierung) wird das Fenster verkleinert, damit es vollständig sichtbar bleibt.
+    #>
+    [CmdletBinding()]
+    [OutputType([pscustomobject])]
+    param(
+        [Parameter(Mandatory)][double]$Width,
+        [Parameter(Mandatory)][double]$Height,
+        [Parameter(Mandatory)][double]$MinWidth,
+        [Parameter(Mandatory)][double]$MinHeight,
+        [Parameter(Mandatory)][double]$WorkAreaWidth,
+        [Parameter(Mandatory)][double]$WorkAreaHeight
+    )
+
+    $newWidth = [Math]::Min($Width, $WorkAreaWidth)
+    $newHeight = [Math]::Min($Height, $WorkAreaHeight)
+    [pscustomobject]@{
+        Width     = $newWidth
+        Height    = $newHeight
+        MinWidth  = [Math]::Min($MinWidth, $newWidth)
+        MinHeight = [Math]::Min($MinHeight, $newHeight)
+    }
+}
+
+function Set-EobWindowBound {
+    [CmdletBinding()]
+    param([Parameter(Mandatory)][object]$Window)
+
+    $workArea = [System.Windows.SystemParameters]::WorkArea
+    if ($workArea.Width -le 0 -or $workArea.Height -le 0) { return }
+    $bound = Get-EobWindowBound -Width $Window.Width -Height $Window.Height -MinWidth $Window.MinWidth -MinHeight $Window.MinHeight `
+        -WorkAreaWidth $workArea.Width -WorkAreaHeight $workArea.Height
+    $Window.MinWidth = $bound.MinWidth
+    $Window.MinHeight = $bound.MinHeight
+    $Window.Width = $bound.Width
+    $Window.Height = $bound.Height
 }
 
 function Stop-EobUi {
@@ -1596,7 +1640,7 @@ function Initialize-EobOnboardingView {
         $groups.Add([pscustomobject]@{ Text = $key; Value = $key; ToolTip = $groupName })
     }
     Set-EobListSource -List $c.OnbGroupsList -Items $groups.ToArray()
-    $c.OnbGroupsInfo.Text = if ($hidden -gt 0) { "$hidden privilegierte Gruppe(n) aus [ADGroups] ausgeblendet: Sie werden nie automatisch zugewiesen." } else { '' }
+    $c.OnbGroupsInfo.Text = if ($hidden -gt 0) { "$hidden privilegierte Gruppe(n) ausgeblendet." } else { '' }
 
     $c.OnbEnabledCheck.IsChecked = [bool]$defaults.Enabled
     $c.OnbChangePasswordCheck.IsChecked = [bool]$defaults.ChangePasswordAtLogon
@@ -1610,10 +1654,10 @@ function Initialize-EobOnboardingView {
 
     $info = [System.Collections.Generic.List[string]]::new()
     $exchangeMode = [string](Get-EobConfigValue -Config $config -Section 'Exchange' -Key 'Mode')
-    if ($exchangeMode -notin @('OnPremises', 'Hybrid')) { $c.OnbMailboxCheck.IsChecked = $false; $c.OnbMailboxCheck.IsEnabled = $false; $info.Add('Postfach: nur mit [Exchange] Mode=OnPremises oder Hybrid (Exchange Online über Lizenz).') }
-    if ((Get-EobSmtpStatus -Config $config).State -eq 'NotConfigured') { $c.OnbWelcomeMailCheck.IsChecked = $false; $c.OnbWelcomeMailCheck.IsEnabled = $false; $info.Add('Welcome-Mail: SMTP ist nicht konfiguriert.') }
+    if ($exchangeMode -notin @('OnPremises', 'Hybrid')) { $c.OnbMailboxCheck.IsChecked = $false; $c.OnbMailboxCheck.IsEnabled = $false; $info.Add('Postfach: nur bei [Exchange] Mode=OnPremises/Hybrid.') }
+    if ((Get-EobSmtpStatus -Config $config).State -eq 'NotConfigured') { $c.OnbWelcomeMailCheck.IsChecked = $false; $c.OnbWelcomeMailCheck.IsEnabled = $false; $info.Add('Welcome-Mail: SMTP nicht konfiguriert.') }
     if (-not (Get-EobConfigValue -Config $config -Section 'ADSync' -Key 'EnableADSync' -As Bool)) { $c.OnbSyncCheck.IsChecked = $false; $c.OnbSyncCheck.IsEnabled = $false; $info.Add('Synchronisation: [ADSync] EnableADSync=0.') }
-    if (@(Get-EobConfigValue -Config $config -Section 'FileServer' -Key 'AllowedRoots' -As List).Count -eq 0) { $c.OnbHomeDirCheck.IsChecked = $false; $c.OnbHomeDirCheck.IsEnabled = $false; $info.Add('Home-Verzeichnis: keine [FileServer] AllowedRoots konfiguriert.') }
+    if (@(Get-EobConfigValue -Config $config -Section 'FileServer' -Key 'AllowedRoots' -As List).Count -eq 0) { $c.OnbHomeDirCheck.IsChecked = $false; $c.OnbHomeDirCheck.IsEnabled = $false; $info.Add('Home-Verzeichnis: [FileServer] AllowedRoots fehlt.') }
     $c.OnbOptionsInfo.Text = $info -join "`n"
 
     if (-not (Get-EobConfigValue -Config $config -Section 'Security' -Key 'AllowManualPassword' -As Bool)) {
@@ -2658,13 +2702,13 @@ function Update-EobBulkMode {
     $c.BulkProgressBar.Value = 0
     $c.BulkProgressText.Text = ''
     if ($state.Mode -eq 'Onboarding') {
-        $c.BulkFormatHint.Text = 'Spalten (Semikolon oder Komma): FirstName/Vorname; LastName/Nachname; optional Department, Position, OU, Manager, License, Groups, StartDate, ExpirationDate, EmployeeID, Ticket ...'
+        $c.BulkFormatHint.Text = 'Pflicht: Vorname/FirstName, Nachname/LastName. Optional u. a. Department, OU, Manager, Groups, StartDate.'
         $delivery = [string](Get-EobConfigValue -Config $script:Ui.Config -Section 'Bulk' -Key 'PasswordDelivery')
-        $c.BulkPasswordHint.Text = if ($delivery -eq 'Print') { 'Kennwörter: werden nach Abschluss als Zugangsdatenblätter gedruckt (nur aus dem Speicher) und danach verworfen.' } else { 'Kennwörter: werden nicht angezeigt ([Bulk] PasswordDelivery=Discard). Konten bei der Übergabe per Kennwort-Reset freischalten.' }
+        $c.BulkPasswordHint.Text = if ($delivery -eq 'Print') { 'Kennwörter werden nach Abschluss gedruckt und danach verworfen.' } else { 'Kennwörter werden nicht angezeigt; bei Übergabe per Kennwort-Reset freischalten.' }
     }
     else {
-        $c.BulkFormatHint.Text = 'Spalten: SamAccountName/UPN/Mail; ExitDate/Austrittsdatum; optional Template/Vorlage, Ticket, Reason/Grund, ForwardTo, Notes, Assets.'
-        $c.BulkPasswordHint.Text = 'Offboarding: Zufallskennwörter werden weder angezeigt noch gespeichert.'
+        $c.BulkFormatHint.Text = 'Pflicht: SamAccountName/UPN/Mail, ExitDate. Optional u. a. Template, Ticket, Reason, ForwardTo.'
+        $c.BulkPasswordHint.Text = 'Zufallskennwörter werden weder angezeigt noch gespeichert.'
     }
 }
 

@@ -5,10 +5,10 @@
 <UserControl xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
     <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
-        <StackPanel Margin="24,20,24,24">
+        <StackPanel Margin="24,16,24,16">
             <TextBlock Style="{StaticResource HeadingTextStyle}" Text="Benutzer aktualisieren" />
             <TextBlock Style="{StaticResource CaptionTextStyle}" Margin="0,0,0,12"
-                       Text="Nur geänderte Werte werden geschrieben. Die Vorschau zeigt jeden Wert vorher und nachher." />
+                       Text="Nur geänderte Werte werden geschrieben; die Vorschau zeigt alt und neu." />
 
             <Border Style="{StaticResource CardStyle}">
                 <StackPanel>
@@ -18,7 +18,7 @@
                         <TextBox x:Name="UpdSearchText" AutomationProperties.Name="Suchbegriff" ToolTip="Name, Anmeldename, UPN oder E-Mail (mindestens 2 Zeichen)" />
                     </DockPanel>
                     <TextBlock x:Name="UpdSearchInfo" Style="{StaticResource CaptionTextStyle}" Margin="0,6,0,6" />
-                    <DataGrid x:Name="UpdResultsGrid" MaxHeight="260" AutomationProperties.Name="Suchergebnisse">
+                    <DataGrid x:Name="UpdResultsGrid" MaxHeight="200" AutomationProperties.Name="Suchergebnisse">
                         <DataGrid.Columns>
                             <DataGridTextColumn Header="Name" Binding="{Binding DisplayName}" Width="2*" />
                             <DataGridTextColumn Header="Anmeldename" Binding="{Binding SamAccountName}" Width="*" />
@@ -40,41 +40,52 @@
                     </Grid.ColumnDefinitions>
                     <StackPanel Grid.Column="0">
                         <TextBlock Style="{StaticResource SubheadingTextStyle}" Text="Attribute" />
-                        <TextBlock Style="{StaticResource FieldLabelStyle}" Text="Anzeigename" />
-                        <TextBox x:Name="UpdDisplayNameText" AutomationProperties.Name="Anzeigename" />
-                        <TextBlock Style="{StaticResource FieldLabelStyle}" Text="Position" />
-                        <TextBox x:Name="UpdTitleText" AutomationProperties.Name="Position" />
-                        <TextBlock Style="{StaticResource FieldLabelStyle}" Text="Abteilung" />
-                        <TextBox x:Name="UpdDepartmentText" AutomationProperties.Name="Abteilung" />
-                        <TextBlock Style="{StaticResource FieldLabelStyle}" Text="Firma" />
-                        <TextBox x:Name="UpdCompanyText" AutomationProperties.Name="Firma" />
-                        <TextBlock Style="{StaticResource FieldLabelStyle}" Text="Büro / Raum" />
-                        <TextBox x:Name="UpdOfficeText" AutomationProperties.Name="Büro" />
-                        <TextBlock Style="{StaticResource FieldLabelStyle}" Text="Telefon" />
-                        <TextBox x:Name="UpdOfficePhoneText" AutomationProperties.Name="Telefon" />
-                        <TextBlock Style="{StaticResource FieldLabelStyle}" Text="Mobil" />
-                        <TextBox x:Name="UpdMobilePhoneText" AutomationProperties.Name="Mobil" />
-                        <TextBlock Style="{StaticResource FieldLabelStyle}" Text="Personalnummer" />
-                        <TextBox x:Name="UpdEmployeeIdText" AutomationProperties.Name="Personalnummer" />
-                        <TextBlock Style="{StaticResource FieldLabelStyle}" Text="Beschreibung" />
-                        <TextBox x:Name="UpdDescriptionText" AutomationProperties.Name="Beschreibung" />
-                        <TextBlock Style="{StaticResource FieldLabelStyle}" Text="Führungskraft (Anmeldename, UPN oder E-Mail; leer = entfernen)" />
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="12" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Grid.Column="0">
+                                <TextBlock Style="{StaticResource FieldLabelStyle}" Text="Anzeigename" />
+                                <TextBox x:Name="UpdDisplayNameText" AutomationProperties.Name="Anzeigename" />
+                                <TextBlock Style="{StaticResource FieldLabelStyle}" Text="Abteilung" />
+                                <TextBox x:Name="UpdDepartmentText" AutomationProperties.Name="Abteilung" />
+                                <TextBlock Style="{StaticResource FieldLabelStyle}" Text="Büro / Raum" />
+                                <TextBox x:Name="UpdOfficeText" AutomationProperties.Name="Büro" />
+                                <TextBlock Style="{StaticResource FieldLabelStyle}" Text="Mobil" />
+                                <TextBox x:Name="UpdMobilePhoneText" AutomationProperties.Name="Mobil" />
+                                <TextBlock Style="{StaticResource FieldLabelStyle}" Text="Beschreibung" />
+                                <TextBox x:Name="UpdDescriptionText" AutomationProperties.Name="Beschreibung" />
+                            </StackPanel>
+                            <StackPanel Grid.Column="2">
+                                <TextBlock Style="{StaticResource FieldLabelStyle}" Text="Position" />
+                                <TextBox x:Name="UpdTitleText" AutomationProperties.Name="Position" />
+                                <TextBlock Style="{StaticResource FieldLabelStyle}" Text="Firma" />
+                                <TextBox x:Name="UpdCompanyText" AutomationProperties.Name="Firma" />
+                                <TextBlock Style="{StaticResource FieldLabelStyle}" Text="Telefon" />
+                                <TextBox x:Name="UpdOfficePhoneText" AutomationProperties.Name="Telefon" />
+                                <TextBlock Style="{StaticResource FieldLabelStyle}" Text="Personalnummer" />
+                                <TextBox x:Name="UpdEmployeeIdText" AutomationProperties.Name="Personalnummer" />
+                            </StackPanel>
+                        </Grid>
+                        <TextBlock Style="{StaticResource FieldLabelStyle}" Text="Führungskraft (Anmeldename, UPN, E-Mail; leer = entfernen)" />
                         <TextBox x:Name="UpdManagerText" AutomationProperties.Name="Führungskraft" />
                         <TextBlock x:Name="UpdFormError" Style="{StaticResource FieldErrorStyle}" />
+                        <TextBlock Style="{StaticResource FieldLabelStyle}" Text="Ticket / Vorgangsnummer" />
+                        <TextBox x:Name="UpdTicketText" AutomationProperties.Name="Ticketnummer" />
                     </StackPanel>
                     <StackPanel Grid.Column="2">
                         <TextBlock Style="{StaticResource SubheadingTextStyle}" Text="Gruppen" />
-                        <TextBlock Style="{StaticResource FieldLabelStyle}" Text="Aktuelle Mitgliedschaften (Auswahl = entfernen)" />
-                        <ListBox x:Name="UpdCurrentGroupsList" SelectionMode="Extended" Height="170" AutomationProperties.Name="Aktuelle Gruppen" />
+                        <TextBlock Style="{StaticResource FieldLabelStyle}" Text="Aktuelle Gruppen (Auswahl = entfernen)" />
+                        <ListBox x:Name="UpdCurrentGroupsList" SelectionMode="Extended" Height="150" AutomationProperties.Name="Aktuelle Gruppen" />
                         <TextBlock Style="{StaticResource FieldLabelStyle}" Text="Gruppen hinzufügen (Auswahl = hinzufügen)" />
-                        <ListBox x:Name="UpdAddGroupsList" SelectionMode="Extended" Height="170" AutomationProperties.Name="Gruppen hinzufügen" />
+                        <ListBox x:Name="UpdAddGroupsList" SelectionMode="Extended" Height="150" AutomationProperties.Name="Gruppen hinzufügen" />
                         <TextBlock Style="{StaticResource CaptionTextStyle}" Margin="0,6,0,0"
-                                   Text="Privilegierte Gruppen werden nicht angeboten und nie automatisch zugewiesen." />
+                                   Text="Privilegierte Gruppen werden nicht angeboten." />
                         <CheckBox x:Name="UpdEnableAccountCheck" Content="Konto aktivieren (derzeit deaktiviert)" Visibility="Collapsed" Margin="0,12,0,0"
                                   ToolTip="Für Konten, die bei der Anlage deaktiviert wurden (Aktivierung bei Übergabe)." />
-                        <TextBlock Style="{StaticResource FieldLabelStyle}" Text="Ticket / Vorgangsnummer" />
-                        <TextBox x:Name="UpdTicketText" AutomationProperties.Name="Ticketnummer" />
-                        <WrapPanel Margin="0,16,0,0">
+                        <WrapPanel Margin="0,14,0,0">
                             <Button x:Name="UpdPreviewButton" Style="{StaticResource PrimaryButtonStyle}" Content="_Vorschau" Margin="0,0,8,8" />
                             <Button x:Name="UpdExecuteButton" Content="Änderungen _ausführen" IsEnabled="False" Margin="0,0,8,8" />
                             <Button x:Name="UpdResetPasswordButton" Style="{StaticResource DangerButtonStyle}" Content="_Kennwort zurücksetzen …" Margin="0,0,8,8" />
@@ -90,7 +101,7 @@
             <Border Style="{StaticResource CardStyle}">
                 <StackPanel>
                     <TextBlock Style="{StaticResource SubheadingTextStyle}" Text="Vorschau und Ergebnis" />
-                    <DataGrid x:Name="UpdPreviewStepsGrid" MaxHeight="360" AutomationProperties.Name="Geplante Änderungen">
+                    <DataGrid x:Name="UpdPreviewStepsGrid" MaxHeight="260" AutomationProperties.Name="Geplante Änderungen">
                         <DataGrid.Columns>
                             <DataGridTextColumn Header="Schritt" Binding="{Binding Title}" Width="2*" />
                             <DataGridTextColumn Header="Details" Binding="{Binding DetailsText}" Width="3*" />
@@ -98,7 +109,7 @@
                             <DataGridTextColumn Header="Meldung" Binding="{Binding Message}" Width="2*" />
                         </DataGrid.Columns>
                     </DataGrid>
-                    <DataGrid x:Name="UpdPreviewFindingsGrid" MaxHeight="200" Margin="0,12,0,0" AutomationProperties.Name="Prüfergebnisse">
+                    <DataGrid x:Name="UpdPreviewFindingsGrid" MaxHeight="150" Margin="0,12,0,0" AutomationProperties.Name="Prüfergebnisse">
                         <DataGrid.Columns>
                             <DataGridTextColumn Header="Schwere" Binding="{Binding SeverityText}" Width="110" />
                             <DataGridTextColumn Header="Meldung" Binding="{Binding Message}" Width="*" />

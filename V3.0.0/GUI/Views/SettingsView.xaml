@@ -5,10 +5,10 @@
 <UserControl xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
     <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
-        <StackPanel Margin="24,20,24,24">
+        <StackPanel Margin="24,16,24,16">
             <TextBlock Style="{StaticResource HeadingTextStyle}" Text="Einstellungen" />
             <TextBlock Style="{StaticResource CaptionTextStyle}" Margin="0,0,0,12"
-                       Text="Fachliche Einstellungen werden in der INI-Datei gepflegt. Kennwörter und andere Secrets gehören nicht in die Konfiguration und werden ignoriert." />
+                       Text="Fachliche Einstellungen stehen in der INI-Datei. Secrets werden dort ignoriert." />
 
             <Border Style="{StaticResource CardStyle}">
                 <StackPanel>
@@ -27,11 +27,11 @@
                 <StackPanel>
                     <TextBlock Style="{StaticResource SubheadingTextStyle}" Text="Prüfergebnisse der Konfiguration" />
                     <TextBlock x:Name="SetFindingsSummaryText" Style="{StaticResource CaptionTextStyle}" Margin="0,0,0,8" />
-                    <DataGrid x:Name="SetFindingsGrid" MaxHeight="420" AutomationProperties.Name="Prüfergebnisse der Konfiguration">
+                    <DataGrid x:Name="SetFindingsGrid" MaxHeight="280" AutomationProperties.Name="Prüfergebnisse der Konfiguration">
                         <DataGrid.Columns>
                             <DataGridTextColumn Header="Schwere" Binding="{Binding SeverityText}" Width="110" />
-                            <DataGridTextColumn Header="Code" Binding="{Binding Code}" Width="210" />
-                            <DataGridTextColumn Header="Ort" Binding="{Binding Field}" Width="200" />
+                            <DataGridTextColumn Header="Code" Binding="{Binding Code}" Width="190" />
+                            <DataGridTextColumn Header="Ort" Binding="{Binding Field}" Width="180" />
                             <DataGridTextColumn Header="Meldung" Binding="{Binding Message}" Width="*" />
                         </DataGrid.Columns>
                     </DataGrid>
@@ -67,7 +67,7 @@
                         <Button x:Name="SetSaveAppearanceButton" Style="{StaticResource PrimaryButtonStyle}" Content="In Konfiguration _speichern" Margin="0,0,8,8" />
                     </WrapPanel>
                     <TextBlock Style="{StaticResource CaptionTextStyle}"
-                               Text="Speichern schreibt nur [UI] Theme und AccentColor. Kommentare der INI bleiben erhalten; vorher wird eine Sicherung angelegt." />
+                               Text="Speichert nur [UI] Theme und AccentColor, mit Sicherung der INI." />
                 </StackPanel>
             </Border>
 

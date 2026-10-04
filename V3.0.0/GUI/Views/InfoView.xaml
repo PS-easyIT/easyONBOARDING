@@ -4,7 +4,7 @@
 <UserControl xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
     <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
-        <StackPanel Margin="24,20,24,24">
+        <StackPanel Margin="24,16,24,16">
             <TextBlock Style="{StaticResource HeadingTextStyle}" Text="Info" />
             <Border Style="{StaticResource CardStyle}">
                 <StackPanel>
@@ -26,7 +26,7 @@
             <Border Style="{StaticResource CardStyle}">
                 <StackPanel>
                     <TextBlock Style="{StaticResource SubheadingTextStyle}" Text="Module" />
-                    <DataGrid x:Name="InfoModulesGrid" MaxHeight="320" AutomationProperties.Name="Geladene Module">
+                    <DataGrid x:Name="InfoModulesGrid" MaxHeight="300" AutomationProperties.Name="Geladene Module">
                         <DataGrid.Columns>
                             <DataGridTextColumn Header="Modul" Binding="{Binding Name}" Width="220" />
                             <DataGridTextColumn Header="Version" Binding="{Binding Version}" Width="90" />

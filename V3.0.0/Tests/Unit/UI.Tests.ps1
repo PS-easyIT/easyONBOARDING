@@ -218,6 +218,28 @@ Describe 'Hilfsfunktionen der Oberfläche' {
         }
     }
 
+    It 'begrenzt das Fenster (1400 x 900) auf die Arbeitsfläche' {
+        InModuleScope 'easyONB.UI' {
+            $full = Get-EobWindowBound -Width 1400 -Height 900 -MinWidth 1100 -MinHeight 680 -WorkAreaWidth 1920 -WorkAreaHeight 1040
+            $full.Width | Should -Be 1400
+            $full.Height | Should -Be 900
+            $laptop = Get-EobWindowBound -Width 1400 -Height 900 -MinWidth 1100 -MinHeight 680 -WorkAreaWidth 1366 -WorkAreaHeight 728
+            $laptop.Width | Should -Be 1366
+            $laptop.Height | Should -Be 728
+            $laptop.MinHeight | Should -Be 680
+            $small = Get-EobWindowBound -Width 1400 -Height 900 -MinWidth 1100 -MinHeight 680 -WorkAreaWidth 1024 -WorkAreaHeight 600
+            $small.MinWidth | Should -Be 1024
+            $small.MinHeight | Should -Be 600
+        }
+    }
+
+    It 'zeigt lange Detaillisten im Dialog scrollbar über der Tippbestätigung an' {
+        $xaml = [xml](Get-Content -LiteralPath (Join-Path $script:GuiRoot 'Dialogs/ConfirmDialog.xaml') -Raw)
+        $details = $xaml.SelectSingleNode("//*[@*[local-name()='Name']='DlgDetailsList']")
+        $details.ParentNode.LocalName | Should -Be 'ScrollViewer'
+        [int]$details.ParentNode.MaxHeight | Should -BeLessOrEqual 300
+    }
+
     It 'meldet die Oberfläche außerhalb von Windows als nicht verfügbar' -Skip:$IsWindows {
         $result = Test-EobGuiEnvironment
         $result.IsSupported | Should -BeFalse
@@ -317,6 +339,10 @@ Describe 'WPF-Ladeprüfung (Windows)' -Tag 'Windows' {
             $loaded = Import-EobXamlWithControl -RelativePath 'MainWindow.xaml'
             $script:Ui.Window = $loaded.Root
             $script:Ui.C = $loaded.Controls
+            $script:Ui.Window.Width | Should -Be 1400
+            $script:Ui.Window.Height | Should -Be 900
+            Set-EobWindowBound -Window $script:Ui.Window
+            $script:Ui.Window.Width | Should -BeLessOrEqual 1400
             Initialize-EobMainWindow
             foreach ($name in $script:ViewDefinitions.Keys) {
                 Show-EobView -Name $name

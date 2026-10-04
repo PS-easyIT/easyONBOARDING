@@ -5,10 +5,10 @@
 <UserControl xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
     <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
-        <StackPanel Margin="24,20,24,24">
+        <StackPanel Margin="24,16,24,16">
             <TextBlock Style="{StaticResource HeadingTextStyle}" Text="Massenverarbeitung" />
             <TextBlock Style="{StaticResource CaptionTextStyle}" Margin="0,0,0,12"
-                       Text="CSV-Dateien werden vollständig geprüft, bevor eine Zeile ausgeführt wird. Fehlerhafte Zeilen werden übersprungen." />
+                       Text="Die CSV wird vor der Ausführung vollständig geprüft; fehlerhafte Zeilen werden übersprungen." />
 
             <Border Style="{StaticResource CardStyle}">
                 <StackPanel>
@@ -33,7 +33,7 @@
             <Border Style="{StaticResource CardStyle}">
                 <StackPanel>
                     <TextBlock Style="{StaticResource SubheadingTextStyle}" Text="2. Prüfung und Ausführung" />
-                    <DataGrid x:Name="BulkItemsGrid" MinHeight="160" MaxHeight="460" AutomationProperties.Name="Zeilen der CSV-Datei">
+                    <DataGrid x:Name="BulkItemsGrid" MinHeight="150" MaxHeight="330" AutomationProperties.Name="Zeilen der CSV-Datei">
                         <DataGrid.Columns>
                             <DataGridTextColumn Header="Zeile" Binding="{Binding RowNumber}" Width="60" />
                             <DataGridTextColumn Header="Person / Konto" Binding="{Binding Name}" Width="2*" />
