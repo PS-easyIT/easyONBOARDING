@@ -34,7 +34,7 @@ Sie enthalten bekannte kritische Sicherheitsmängel und sollten nicht mehr produ
 
 ```powershell
 cd .\V3.0.0
-Copy-Item .\Config\easyONB.ini.template .\Config\easyONB.ini   # anpassen
+pwsh -STA -NoProfile -File .\Install-easyONBOARDING.ps1                  # Konfiguration erstellen
 pwsh -NoProfile -File .\Start-easyONBOARDING.ps1 -CheckOnly    # prüfen
 pwsh -NoProfile -File .\Start-easyONBOARDING.ps1               # Oberfläche (Simulation voreingestellt)
 ```
