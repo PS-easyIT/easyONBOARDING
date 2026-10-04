@@ -1,110 +1,184 @@
-# easyONBOARDING 3
+# easyONBOARDING
 
-Version **3.0.0** · PowerShell 7.2+ · Windows (Oberfläche) · Autor: Andreas Hepp (PHINIT.DE)
+[![V3 CI](https://github.com/PS-easyIT/easyONBOARDING/actions/workflows/v3-ci.yml/badge.svg)](https://github.com/PS-easyIT/easyONBOARDING/actions/workflows/v3-ci.yml)
 
-easyONBOARDING legt neue Mitarbeitende im Active Directory an, pflegt bestehende Konten und
-führt Austritte in mehreren Phasen durch – mit Vorschau, Simulation, Bestätigung, Audit und
-Berichten. Version 3 ist eine vollständige Neuentwicklung auf Basis der Versionen 1.3.10 und
-1.4.x. Diese liegen unverändert in den Ordnern `V1.3.10` und `V1.4.XX` des Repositorys und
-gelten als veraltet.
+Version **3.0.0** · PowerShell 7.2+ · Windows 10/11, Windows Server 2019+ · Autor: Andreas Hepp (PHINIT.DE)
+
+easyONBOARDING ist ein PowerShell-Werkzeug mit WPF-Oberfläche für den Lebenszyklus von
+Benutzerkonten im Active Directory. Damit lassen sich neue Mitarbeitende anlegen, bestehende Konten
+pflegen und Austritte in Phasen abwickeln. Jede Ausführung beginnt mit Vorschau und Simulation und
+wird erst nach Bestätigung live ausgeführt. Audit-Log und Berichte entstehen automatisch.
+Exchange (Online, Server, Hybrid), Microsoft Graph und Entra Connect lassen sich optional anbinden.
+
+> Version 3 ist eine vollständige Neuentwicklung. Die früheren Versionen 1.x und die separaten
+> Zusatzwerkzeuge sind nicht mehr Teil des Repositorys; der Umstieg ist in
+> [MIGRATION.md](V3.0.0/docs/MIGRATION.md) beschrieben.
+
+## Inhalt
+
+- [Funktionen](#funktionen)
+- [Voraussetzungen](#voraussetzungen)
+- [Schnellstart](#schnellstart)
+- [Die drei Skripte](#die-drei-skripte)
+- [Sicherheitsgrundsätze](#sicherheitsgrundsätze)
+- [Aufbau des Repositorys](#aufbau-des-repositorys)
+- [Dokumentation](#dokumentation)
+- [Entwicklung und Qualitätssicherung](#entwicklung-und-qualitätssicherung)
+- [Autor, Support und Lizenz](#autor-support-und-lizenz)
 
 ## Funktionen
 
-| Bereich | Umfang | Status |
-|---|---|---|
-| Onboarding | Assistent in 8 Schritten, Rollenvorlagen, Kontonamen mit Transliteration und Kollisionsprüfung, Gruppen und Lizenzgruppen, Vorschau, Simulation, einmalige Anzeige des Startkennworts | produktiv |
-| Offboarding | 7 Vorlagen (Standardaustritt, Sofortige Sperrung, Befristeter Mitarbeiter, Externer Dienstleister, Ruhestand, Interner Wechsel, Testmodus), Phasen Sofort / Zum Austritt / Aufbewahrung / Endgültige Löschung, Warteschlange, Zustandsberichte vorher/nachher | produktiv (AD, Dateiserver) |
-| Benutzer aktualisieren | Attribute, Führungskraft, Gruppen mit Vorher/Nachher-Vorschau; Kennwort-Reset nur als eigene, bestätigte Aktion | produktiv |
-| Massenverarbeitung | CSV-Import für Onboarding und Offboarding, Tippbestätigung ab einstellbarer Anzahl | produktiv |
-| Berichte und Audit | HTML, JSON, CSV, TXT, PDF (Microsoft Edge, alternativ wkhtmltopdf); Audit-Log als JSON Lines | produktiv |
-| Exchange (Online, Server, Hybrid) | Postfach anlegen (Server/Hybrid), Abwesenheitsnotiz, Weiterleitung, Ausblenden, Umwandlung in freigegebenes Postfach, Berechtigungsbericht; Hybrid mit Verbindung zu Exchange Server und Exchange Online (Postfach wird online oder lokal gefunden); Zertifikatsanmeldung für die geplante Aufgabe | vorbereitet¹ |
-| Microsoft Graph | Anmeldesitzungen widerrufen (delegiert `User.Read.All`, `User.RevokeSessions.All` oder als Anwendung per Zertifikat) | vorbereitet¹ |
-| Entra Connect Sync | Delta-/Initial-Synchronisation per WinRM; Serverprüfung (Erreichbarkeit, laufender Zyklus, Stagingmodus) | vorbereitet¹ |
+| Bereich | Umfang |
+|---|---|
+| **Onboarding** | Assistent in 8 Schritten mit Rollenvorlagen und Kontonamen (Transliteration, Kollisionsprüfung). Gruppen und Lizenzgruppen, Vorschau und Simulation. Das Startkennwort wird genau einmal angezeigt. |
+| **Benutzer aktualisieren** | Attribute, Führungskraft und Gruppen mit Vorher/Nachher-Vorschau. Kennwort-Reset nur als eigene, bestätigte Aktion. |
+| **Offboarding** | 7 Vorlagen, z. B. Standardaustritt, Sofortige Sperrung, Externer Dienstleister, Ruhestand und Testmodus. Phasen: Sofort, Zum Austritt, Aufbewahrung, Endgültige Löschung. Warteschlange für geplante Phasen, Zustandsberichte vorher und nachher. |
+| **Massenverarbeitung** | CSV-Import für Onboarding und Offboarding, ab einstellbarer Anzahl mit Tippbestätigung. |
+| **Berichte und Audit** | HTML, PDF, JSON, CSV und TXT; Willkommensdokument aus Vorlagen. PDF über Microsoft Edge, alternativ wkhtmltopdf. Audit-Log als JSON Lines. |
+| **Exchange** ¹ | Online, Server und Hybrid. Postfach anlegen (Server/Hybrid), Abwesenheitsnotiz, Weiterleitung, Ausblenden, Umwandlung in ein freigegebenes Postfach, Berechtigungsbericht. Im Hybridbetrieb wird erkannt, ob ein Postfach online oder lokal liegt. |
+| **Microsoft Graph** ¹ | Anmeldesitzungen beim Offboarding widerrufen: delegiert oder als Anwendung mit Zertifikat. |
+| **Entra Connect Sync** ¹ | Delta- oder Initial-Synchronisation per WinRM. Serverprüfung: Erreichbarkeit, laufender Zyklus, Stagingmodus. |
+| **Unbeaufsichtigter Betrieb** | Fällige Offboarding-Phasen über eine geplante Aufgabe. Exchange Online und Graph melden sich dabei per Zertifikat (App-only) an. |
+| **Einrichtung** | `Install-PS7_PDF.ps1` prüft die Voraussetzungen und richtet sie ein. `Install-easyONBOARDING.ps1` erstellt die Konfiguration; auf einem Domänencontroller sind die Felder vorbelegt. |
+| **Oberfläche** | Ausgelegt für 1400 x 900, helles und dunkles Design, Hinweistexte an allen Feldern. Mehrere Unternehmen über eigene Konfigurationsdateien. |
 
-¹ *Vorbereitet* heißt: implementiert, mit Mocks getestet, per Konfiguration abschaltbar (Standard: aus)
-und im Dashboard mit Status angezeigt, aber nicht gegen reale Exchange-, Graph- oder
-Entra-Connect-Umgebungen verifiziert. Vor dem
-produktiven Einsatz in einer Testumgebung prüfen (siehe [docs/TESTING.md](docs/TESTING.md)).
+¹ Optional und standardmäßig ausgeschaltet. Implementiert und mit Mocks getestet, aber nicht gegen
+reale Umgebungen geprüft. Vor dem produktiven Einsatz in einer Testumgebung prüfen
+([TESTING.md](V3.0.0/docs/TESTING.md)).
 
-## Sicherheitsgrundsätze
+## Voraussetzungen
 
-* **Simulation zuerst:** Neue Vorgänge starten standardmäßig im Simulationsmodus
-  (`[Security] SimulationByDefault=1`). Der Live-Modus wird bewusst und mit Bestätigung aktiviert.
-* **Keine Kennwörter in Logs, Berichten, CSV-/JSON-Dateien oder E-Mails.** Startkennwörter entstehen
-  mit einem kryptografischen Zufallsgenerator, liegen nur als `SecureString` im Speicher und werden
-  genau einmal angezeigt (Kopieren mit automatischem Leeren der Zwischenablage, Druck aus dem Speicher).
-* **Privilegierte Gruppen und Konten sind gesperrt:** Domain Admins, Enterprise Admins, Schema Admins
-  und vergleichbare Gruppen werden nie zugewiesen (Erkennung über SID/RID, Namen, `adminCount` und
-  verschachtelte Mitgliedschaft). Geschützte Konten werden nie bearbeitet.
-* **Keine automatische endgültige Löschung:** Löschen setzt eine Aufbewahrungsfrist, einen gesicherten
-  Zustandsbericht, eine Vorschau und die Eingabe `LÖSCHEN <Konto>` voraus.
-* **Keine Klartext-Secrets in der Konfiguration**, kein Ändern der Ausführungsrichtlinie, keine
-  pauschalen Administratorrechte, keine automatische Installation von Abhängigkeiten.
+| Komponente | Anforderung |
+|---|---|
+| Betriebssystem | Windows 10/11 oder Windows Server 2019+ für die Oberfläche; `-CheckOnly` und Tests laufen auch unter Linux/macOS |
+| PowerShell | 7.2 oder höher |
+| Active Directory | Modul `ActiveDirectory` (RSAT) und delegierte Rechte auf die benötigten OUs und Gruppen; keine Domain-Admin-Rechte nötig |
+| PDF (optional) | Microsoft Edge, alternativ wkhtmltopdf; ohne Engine entstehen HTML-Berichte |
+| Exchange / Graph (optional) | `ExchangeOnlineManagement`, `Microsoft.Graph.Authentication`, `Microsoft.Graph.Users.Actions` bzw. Remote-PowerShell zu Exchange Server |
+| Entra Connect (optional) | WinRM zum Synchronisationsserver, Mitglied in `ADSyncOperators` |
 
-Details: [SECURITY.md](SECURITY.md).
+Details zu Rechten und Modulen: [INSTALLATION.md](V3.0.0/docs/INSTALLATION.md).
 
 ## Schnellstart
 
+Alle Befehle im Ordner `V3.0.0` ausführen. Heruntergeladene ZIP-Dateien zuerst freigeben:
+`Get-ChildItem -Recurse | Unblock-File`.
+
 ```powershell
-# 1. Voraussetzungen prüfen: PowerShell 7.2+, RSAT-ActiveDirectory
-$PSVersionTable.PSVersion
-Get-Module -ListAvailable ActiveDirectory
+# 1. Voraussetzungen prüfen und bei Bedarf einrichten (läuft auch unter Windows PowerShell 5.1).
+#    Ohne Auswahl wird nichts geändert; Installationen nur in einer Administrator-PowerShell.
+powershell.exe -STA -NoProfile -File .\Install-PS7_PDF.ps1
 
-# 2. Konfiguration mit dem Installer erstellen (Oberfläche; auf einem Domänencontroller
-#    werden Domäne, OUs, Entra Connect und Exchange aus dem AD vorbelegt)
+# 2. Konfiguration mit dem Installer erstellen. Auf einem Domänencontroller werden Domäne,
+#    OUs, Entra Connect und Exchange aus dem AD vorbelegt, auf Clients manuell eingetragen.
 pwsh -STA -NoProfile -File .\Install-easyONBOARDING.ps1
-#    alternativ manuell: Copy-Item .\Config\easyONB.ini.template .\Config\easyONB.ini
 
-# 3. Konfiguration und Umgebung prüfen (ohne Oberfläche)
+# 3. Konfiguration und Umgebung prüfen (ohne Oberfläche, Exitcode 0 = in Ordnung)
 pwsh -NoProfile -File .\Start-easyONBOARDING.ps1 -CheckOnly
 
-# 4. Oberfläche starten (Simulation ist voreingestellt)
+# 4. Oberfläche starten. Simulation ist voreingestellt.
 pwsh -NoProfile -File .\Start-easyONBOARDING.ps1
 ```
 
-Heruntergeladene ZIP-Dateien vorher mit `Unblock-File` freigeben. Die Ausführungsrichtlinie wird
-nicht verändert; empfohlen ist `RemoteSigned` bzw. `AllSigned` mit signierten Skripten. Ausführlich:
-[docs/INSTALLATION.md](docs/INSTALLATION.md).
+Ohne Installer: `Copy-Item .\Config\easyONB.ini.template .\Config\easyONB.ini` und die Datei
+anpassen ([CONFIGURATION.md](V3.0.0/docs/CONFIGURATION.md)). Eine Konfiguration der Version 1.x
+übernimmt *Tools › Konfiguration migrieren* bzw. `Scripts\Convert-LegacyConfiguration.ps1`.
 
-## Aufbau
+## Die drei Skripte
+
+| Skript | Zweck | Wichtige Parameter |
+|---|---|---|
+| `Install-PS7_PDF.ps1` | Prüft PowerShell 7, das ActiveDirectory-Modul, die PDF-Erzeugung und die Ausführungsrichtlinie. Richtet Fehlendes nur auf Auswahl ein und kopiert die Anwendung auf Wunsch in einen Zielordner. Eine vorhandene Konfiguration bleibt dabei erhalten. | `-CheckOnly`, `-Install PowerShell7, ActiveDirectory, Wkhtmltopdf, ExecutionPolicy`, `-TargetPath`, `-WhatIf` |
+| `Install-easyONBOARDING.ps1` | Erstellt `Config\easyONB.ini` über eine eigene Oberfläche. Auf einem Domänencontroller werden die Werte aus dem AD vorbelegt. Prüft die Eingaben wie die Anwendung und sichert eine vorhandene Datei als `.bak`. | `-ConfigPath` |
+| `Start-easyONBOARDING.ps1` | Startet die Anwendung. Mit `-CheckOnly` werden nur Konfiguration und Umgebung geprüft. | `-CheckOnly`, `-Simulation`, `-Theme Light\|Dark`, `-ConfigPath` |
+
+Alle Skripte haben eine Hilfe: `Get-Help .\<Skript>.ps1 -Detailed`.
+
+## Sicherheitsgrundsätze
+
+- **Simulation zuerst.** Jede Ausführung startet als Simulation. Live geht es erst nach Vorschau und
+  Bestätigung; Massenvorgänge und Löschungen verlangen eine Tippbestätigung.
+- **Keine Kennwörter in Dateien.** Startkennwörter kommen aus einem kryptografischen Zufallsgenerator
+  und liegen nur als `SecureString` im Speicher. Sie werden einmal angezeigt und erscheinen nie in
+  Logs, Berichten, CSV/JSON oder E-Mails. Die Zwischenablage wird automatisch geleert.
+- **Keine Secrets in der Konfiguration.** Kennwörter, Tokens oder Webhook-URLs in INI-Dateien werden
+  als Befund gemeldet und nie verwendet. Exchange und Graph melden sich interaktiv, per Kerberos oder
+  per Zertifikat an.
+- **Privilegierte Gruppen und geschützte Konten sind gesperrt.** Domain Admins, Enterprise Admins und
+  vergleichbare Gruppen werden nie zugewiesen; die Erkennung läuft über SID/RID, `adminCount` und
+  verschachtelte Mitgliedschaft. Geschützte Konten werden nie bearbeitet.
+- **Keine automatische Löschung.** Endgültig gelöscht wird nur nach Ablauf der Aufbewahrungsfrist,
+  mit gesichertem Zustandsbericht und nach Eingabe von `LÖSCHEN <Konto>`.
+- **Least Privilege.** Die Anwendung braucht keine Administratorrechte, erhöht sich nie selbst,
+  ändert nie die Ausführungsrichtlinie und installiert keine Module. Das Hilfsskript
+  `Install-PS7_PDF.ps1` ändert nur, was ausdrücklich ausgewählt wird. Downloads prüft es auf eine
+  gültige Microsoft-Signatur.
+
+Details und Meldung von Schwachstellen: [SECURITY.md](SECURITY.md).
+
+## Aufbau des Repositorys
 
 ```
-V3.0.0/
-├── Start-easyONBOARDING.ps1     Einstieg: Oberfläche oder -CheckOnly
-├── VERSION                      einzige Versionsquelle
-├── Config/                      easyONB.ini.template, templates/ (Rollen, Offboarding), companies/, schemas/
-├── GUI/                         MainWindow, Views/, Dialogs/, Styles/ (Light/Dark, Controls)
-├── Modules/                     Core, Configuration, Security, ActiveDirectory, Exchange, Entra,
-│                                Reporting, Onboarding, Offboarding, UI
-├── ReportTemplates/             Vorlagen des Willkommensdokuments
-├── Assets/                      Bilder für Berichte
-├── Scripts/                     geplante Offboarding-Phasen, Migration, Qualitätsprüfung, Doku-Generator
-├── Tests/                       Pester (Unit, Integration, Fixtures)
-└── docs/                        Installation, Konfiguration, Onboarding, Offboarding, Migration, Tests, Architektur
+.
+├── README.md, CHANGELOG.md, SECURITY.md, CONTRIBUTING.md
+├── VERSION                         einzige Versionsquelle
+├── .github/workflows/v3-ci.yml     CI: statische Prüfungen und Pester unter Windows und Linux
+└── V3.0.0/                         die Anwendung
+    ├── Start-easyONBOARDING.ps1    Einstieg: Oberfläche oder -CheckOnly
+    ├── Install-easyONBOARDING.ps1  Installer der Konfiguration (WPF)
+    ├── Install-PS7_PDF.ps1         Prüfung und Einrichtung der Voraussetzungen (WPF/Konsole)
+    ├── Config/                     easyONB.ini.template, companies/, templates/ (Rollen, Offboarding), schemas/
+    ├── GUI/                        MainWindow, Views/, Dialogs/, Installer/, Styles/ (Light/Dark)
+    ├── Modules/                    Core, Configuration, Security, ActiveDirectory, Exchange, Entra,
+    │                               Reporting, Onboarding, Offboarding, Setup, UI
+    ├── ReportTemplates/            Vorlagen des Willkommensdokuments
+    ├── Assets/                     Bilder für Berichte
+    ├── Scripts/                    geplante Offboarding-Phasen, Migration, Qualitätsprüfung, Doku-Generator
+    ├── Tests/                      Pester: Unit, Integration, Fixtures
+    └── docs/                       ausführliche Dokumentation
 ```
 
-Laufzeitdaten entstehen in `Logs/`, `Reports/` und `Data/` (per `.gitignore` ausgeschlossen, da sie
-personenbezogene Daten enthalten).
+Laufzeitdaten liegen in `V3.0.0/Logs`, `Reports` und `Data`. Sie enthalten personenbezogene Daten
+und sind per `.gitignore` ausgeschlossen.
 
 ## Dokumentation
 
 | Dokument | Inhalt |
 |---|---|
-| [docs/INSTALLATION.md](docs/INSTALLATION.md) | Voraussetzungen, Installation, Rechte, geplante Aufgabe |
-| [docs/CONFIGURATION.md](docs/CONFIGURATION.md) | Aufbau der INI, Zusammenführung, Vorlagen, Beispiele |
-| [docs/CONFIGURATION-REFERENCE.md](docs/CONFIGURATION-REFERENCE.md) | alle Schlüssel (aus dem Schema erzeugt) |
-| [docs/ONBOARDING.md](docs/ONBOARDING.md) | Assistent, Kontonamen, Gruppen, Kennwörter, CSV |
-| [docs/OFFBOARDING.md](docs/OFFBOARDING.md) | Vorlagen, Phasen, Warteschlange, Löschschutz |
-| [docs/MIGRATION.md](docs/MIGRATION.md) | Umstieg von 1.3.10 / 1.4.x |
-| [docs/TESTING.md](docs/TESTING.md) | automatische Tests, CI, manuelle Prüfliste |
-| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Architektur und Entscheidungen |
-| [CHANGELOG.md](CHANGELOG.md) | Änderungen |
-| [SECURITY.md](SECURITY.md) | Sicherheitsrichtlinie und Meldung von Schwachstellen |
-| [CONTRIBUTING.md](CONTRIBUTING.md) | Entwicklung, Konventionen, Qualitätsprüfung |
+| [INSTALLATION.md](V3.0.0/docs/INSTALLATION.md) | Voraussetzungen, Hilfsskripte, Installation, Rechte, geplante Aufgabe |
+| [CONFIGURATION.md](V3.0.0/docs/CONFIGURATION.md) | Aufbau der INI, Unternehmen, Vorlagen, Beispiele |
+| [CONFIGURATION-REFERENCE.md](V3.0.0/docs/CONFIGURATION-REFERENCE.md) | alle Schlüssel, aus dem Schema erzeugt |
+| [ONBOARDING.md](V3.0.0/docs/ONBOARDING.md) | Assistent, Kontonamen, Gruppen, Kennwörter, CSV |
+| [OFFBOARDING.md](V3.0.0/docs/OFFBOARDING.md) | Vorlagen, Phasen, Warteschlange, Löschschutz |
+| [MIGRATION.md](V3.0.0/docs/MIGRATION.md) | Umstieg von 1.3.10 / 1.4.x |
+| [TESTING.md](V3.0.0/docs/TESTING.md) | automatische Tests, CI, manuelle Prüfliste |
+| [ARCHITECTURE.md](V3.0.0/docs/ARCHITECTURE.md) | Architektur und Entscheidungen |
+| [ReportTemplates/README.md](V3.0.0/ReportTemplates/README.md) | Platzhalter der Berichtsvorlagen |
+| [CHANGELOG.md](CHANGELOG.md) | Änderungen je Version |
+| [SECURITY.md](SECURITY.md) | Sicherheitskonzept, unterstützte Versionen, Meldung von Schwachstellen |
+| [CONTRIBUTING.md](CONTRIBUTING.md) | Entwicklungsumgebung, Konventionen, Qualitätsprüfung |
 
-## Autor und Lizenz
+## Entwicklung und Qualitätssicherung
 
-Autor und Maintainer: **Andreas Hepp** (PHINIT.DE, [www.PSscripts.de](https://www.PSscripts.de)).
+```powershell
+Set-Location ./V3.0.0
 
-Im Repository liegt derzeit keine Lizenzdatei. Die Dokumentation der Version 1.4.x nennt die
-MIT-Lizenz; die verbindliche Festlegung für Version 3 trifft der Autor.
+# statische Prüfungen: Parser, Kodierung, XAML, PSScriptAnalyzer, Secrets, Doku, Version
+pwsh -NoProfile -File ./Scripts/Invoke-EobQualityCheck.ps1
+
+# Tests (Pester 5.7.1): kein Active Directory, Exchange oder Graph nötig
+pwsh -NoProfile -Command "Invoke-Pester -Path ./Tests/Unit, ./Tests/Integration -Output Detailed"
+```
+
+Die CI prüft jede Änderung unter Windows und Linux. Unter Windows lädt sie zusätzlich alle
+WPF-Fenster ohne Anzeige und erzeugt eine PDF mit Microsoft Edge. Konventionen und Ablauf:
+[CONTRIBUTING.md](CONTRIBUTING.md).
+
+## Autor, Support und Lizenz
+
+Andreas Hepp · PHINIT.DE · [www.PSscripts.de](https://www.PSscripts.de) · info@phinit.de
+
+Fehler und Wünsche bitte als [GitHub-Issue](https://github.com/PS-easyIT/easyONBOARDING/issues)
+melden. Sicherheitsrelevante Funde bitte vertraulich, siehe [SECURITY.md](SECURITY.md).
+
+Im Repository liegt derzeit keine Lizenzdatei. Die Nutzungsbedingungen legt der Autor fest.

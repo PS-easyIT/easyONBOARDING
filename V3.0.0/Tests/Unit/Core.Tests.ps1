@@ -50,7 +50,9 @@ AfterAll {
 
 Describe 'Version' {
     It 'liest die Version aus der VERSION-Datei' {
-        $expected = (Get-Content -LiteralPath (Join-Path (Get-EobTestRepoRoot) 'VERSION') -Raw).Trim()
+        # VERSION liegt im Anwendungsordner oder im Repository-Stamm darüber.
+        $file = @((Join-Path (Get-EobTestRepoRoot) 'VERSION'), (Join-Path (Split-Path -Parent (Get-EobTestRepoRoot)) 'VERSION')) | Where-Object { Test-Path -LiteralPath $_ } | Select-Object -First 1
+        $expected = (Get-Content -LiteralPath $file -Raw).Trim()
         Get-EobVersion | Should -Be $expected
         Get-EobVersion | Should -Match '^\d+\.\d+\.\d+'
     }

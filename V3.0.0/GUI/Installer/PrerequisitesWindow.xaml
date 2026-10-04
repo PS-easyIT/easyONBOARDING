@@ -1,0 +1,78 @@
+<!--
+    easyONBOARDING: Voraussetzungen prüfen und installieren (Install-PS7_PDF.ps1).
+    Die Zeilen der Voraussetzungen erzeugt das Skript; hier stehen Rahmen, Hinweise und Aktionen.
+    Hinweistexte erscheinen nach 250 ms (ToolTipService wird an alle Elemente vererbt).
+-->
+<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="easyONBOARDING - Voraussetzungen"
+        Width="900" Height="720" MinWidth="760" MinHeight="560"
+        WindowStartupLocation="CenterScreen"
+        Background="{DynamicResource WindowBackgroundBrush}"
+        Foreground="{DynamicResource TextPrimaryBrush}"
+        FontFamily="Segoe UI" FontSize="13"
+        UseLayoutRounding="True" SnapsToDevicePixels="True"
+        TextOptions.TextFormattingMode="Display"
+        ToolTipService.InitialShowDelay="250" ToolTipService.ShowDuration="30000" ToolTipService.BetweenShowDelay="100">
+    <DockPanel>
+        <Border DockPanel.Dock="Top" Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource DividerBrush}" BorderThickness="0,0,0,1" Padding="20,12">
+            <StackPanel>
+                <TextBlock Style="{StaticResource HeadingTextStyle}" Text="Voraussetzungen" />
+                <TextBlock x:Name="PrereqSubtitleText" Style="{StaticResource CaptionTextStyle}" />
+            </StackPanel>
+        </Border>
+
+        <Border DockPanel.Dock="Bottom" Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource DividerBrush}" BorderThickness="0,1,0,0" Padding="20,8">
+            <DockPanel>
+                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                    <Button x:Name="PrereqRefreshButton" Content="Erneut _prüfen" ToolTip="Prüft alle Voraussetzungen erneut, ohne etwas zu ändern." />
+                    <Button x:Name="PrereqInstallButton" Style="{StaticResource PrimaryButtonStyle}" Content="Auswahl _ausführen"
+                            ToolTip="Installiert bzw. ändert nur die angehakten Punkte, nacheinander. Einzelne Schritte können einige Minuten dauern." />
+                    <Button x:Name="PrereqCloseButton" Content="_Schließen" Margin="0" ToolTip="Fenster schließen." />
+                </StackPanel>
+                <TextBlock x:Name="PrereqProgressText" Style="{StaticResource CaptionTextStyle}" VerticalAlignment="Center" Margin="0,0,16,0" />
+            </DockPanel>
+        </Border>
+
+        <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+            <StackPanel Margin="20,12,20,12">
+                <Border x:Name="PrereqAdminBanner" Style="{StaticResource InfoBannerStyle}"
+                        ToolTip="Installationen von PowerShell 7, RSAT und wkhtmltopdf benötigen Administratorrechte. Das Skript startet sich nicht selbst mit erhöhten Rechten.">
+                    <TextBlock x:Name="PrereqAdminText" Style="{StaticResource BodyTextStyle}" />
+                </Border>
+
+                <Border Style="{StaticResource CardStyle}" ToolTip="Ergebnis der Prüfung. Angehakte Punkte werden mit &quot;Auswahl ausführen&quot; installiert bzw. geändert.">
+                    <StackPanel>
+                        <TextBlock Style="{StaticResource SubheadingTextStyle}" Text="Prüfung" />
+                        <Grid x:Name="PrereqItemsGrid">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="40" />
+                                <ColumnDefinition Width="230" />
+                                <ColumnDefinition Width="130" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                        </Grid>
+                    </StackPanel>
+                </Border>
+
+                <Border Style="{StaticResource CardStyle}" ToolTip="Optional: kopiert den Anwendungsordner an einen festen Ort. Eine vorhandene Konfiguration (Config\easyONB.ini) wird nie überschrieben.">
+                    <StackPanel>
+                        <TextBlock Style="{StaticResource SubheadingTextStyle}" Text="Anwendung kopieren" />
+                        <CheckBox x:Name="PrereqCopyCheck" Content="Anwendungsordner kopieren nach" Margin="0,0,0,6"
+                                  ToolTip="Kopiert easyONBOARDING ohne Logs, Berichte und Laufzeitdaten. Vorhandene Konfiguration bleibt erhalten." />
+                        <TextBox x:Name="PrereqTargetText" AutomationProperties.Name="Zielordner"
+                                 ToolTip="Zielordner. Empfohlen: ein Ordner, auf den nur die IT-Administration Schreibzugriff hat." />
+                    </StackPanel>
+                </Border>
+
+                <Border Style="{StaticResource CardStyle}" ToolTip="Protokoll dieses Fensters. Es enthält keine Kennwörter.">
+                    <StackPanel>
+                        <TextBlock Style="{StaticResource SubheadingTextStyle}" Text="Protokoll" />
+                        <TextBox x:Name="PrereqLogText" IsReadOnly="True" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="110" MaxHeight="220"
+                                 VerticalContentAlignment="Top" VerticalScrollBarVisibility="Auto" FontFamily="Consolas" AutomationProperties.Name="Protokoll" />
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </ScrollViewer>
+    </DockPanel>
+</Window>

@@ -14,6 +14,9 @@
     - Docs       Pflichtdokumente vorhanden, relative Markdown-Links gültig, keine offenen Platzhalter.
     - Version    VERSION = ModuleVersion aller Manifeste = oberster CHANGELOG-Eintrag = README.
 
+    Projektdateien (README.md, CHANGELOG.md, SECURITY.md, CONTRIBUTING.md, VERSION) dürfen im
+    Anwendungsverzeichnis oder im Repository-Stamm (-RepositoryRoot) liegen.
+
     Das Skript ändert keine Dateien und benötigt außer PSScriptAnalyzer (nur für -Check Analyzer)
     keine weiteren Module. In GitHub Actions werden Befunde zusätzlich als Annotationen ausgegeben.
 
@@ -23,6 +26,9 @@
 
 .PARAMETER Root
     Anwendungsverzeichnis (Standard: übergeordnetes Verzeichnis von Scripts).
+
+.PARAMETER RepositoryRoot
+    Repository-Stamm für die Projektdateien (Standard: übergeordnetes Verzeichnis von -Root).
 
 .PARAMETER PassThru
     Gibt die Befunde als Objekte zurück, statt sie auszugeben und den Exitcode zu setzen.
@@ -41,6 +47,7 @@
 param(
     [string[]]$Check = @('Parser', 'Encoding', 'Xaml', 'Analyzer', 'Secrets', 'Docs', 'Version'),
     [string]$Root = (Split-Path -Parent $PSScriptRoot),
+    [string]$RepositoryRoot,
     [switch]$PassThru
 )
 
@@ -48,6 +55,8 @@ Set-StrictMode -Version 3.0
 $ErrorActionPreference = 'Stop'
 
 $Root = (Resolve-Path -LiteralPath $Root).ProviderPath
+if (-not $RepositoryRoot) { $RepositoryRoot = Split-Path -Parent $Root }
+$script:ProjectFiles = @('README.md', 'CHANGELOG.md', 'SECURITY.md', 'CONTRIBUTING.md', 'VERSION')
 # pwsh -File übergibt "-Check A,B" als einen String; Listen daher selbst zerlegen.
 $allowedChecks = @('Parser', 'Encoding', 'Xaml', 'Analyzer', 'Secrets', 'Docs', 'Version')
 $Check = @($Check | ForEach-Object { $_ -split '[,;\s]+' } | Where-Object { $_ })
@@ -71,6 +80,20 @@ function New-QualityFinding {
         Line       = $Line
         Message    = $Message
     }
+}
+
+function Get-ProjectFilePath {
+    <#
+        Projektdatei im Anwendungsverzeichnis, sonst im Repository-Stamm (Pfad im Anwendungsverzeichnis, falls keine existiert).
+    #>
+    param([string]$Name)
+    $local = Join-Path -Path $Root -ChildPath $Name
+    if (Test-Path -LiteralPath $local -PathType Leaf) { return $local }
+    if ($RepositoryRoot) {
+        $shared = Join-Path -Path $RepositoryRoot -ChildPath $Name
+        if (Test-Path -LiteralPath $shared -PathType Leaf) { return $shared }
+    }
+    return $local
 }
 
 function Get-RelativePath {
@@ -249,9 +272,13 @@ function Test-SecretCheck {
 }
 
 function Test-DocumentationCheck {
-    $required = @('README.md', 'CHANGELOG.md', 'SECURITY.md', 'CONTRIBUTING.md', 'VERSION', 'docs/ARCHITECTURE.md',
-        'docs/INSTALLATION.md', 'docs/CONFIGURATION.md', 'docs/ONBOARDING.md', 'docs/OFFBOARDING.md', 'docs/MIGRATION.md',
-        'docs/TESTING.md', 'docs/CONFIGURATION-REFERENCE.md', 'ReportTemplates/README.md')
+    $required = @('docs/ARCHITECTURE.md', 'docs/INSTALLATION.md', 'docs/CONFIGURATION.md', 'docs/ONBOARDING.md', 'docs/OFFBOARDING.md',
+        'docs/MIGRATION.md', 'docs/TESTING.md', 'docs/CONFIGURATION-REFERENCE.md', 'ReportTemplates/README.md')
+    foreach ($name in $script:ProjectFiles) {
+        if (-not (Test-Path -LiteralPath (Get-ProjectFilePath -Name $name) -PathType Leaf)) {
+            New-QualityFinding -Check 'Docs' -File $name -Message 'Pflichtdokument fehlt.'
+        }
+    }
     foreach ($name in $required) {
         if (-not (Test-Path -LiteralPath (Join-Path -Path $Root -ChildPath $name) -PathType Leaf)) {
             New-QualityFinding -Check 'Docs' -File $name -Message 'Pflichtdokument fehlt.'
@@ -267,7 +294,13 @@ function Test-DocumentationCheck {
             New-QualityFinding -Check 'Docs' -File 'docs/CONFIGURATION-REFERENCE.md' -Message 'Veraltet: mit Scripts/Export-EobConfigurationReference.ps1 neu erzeugen.'
         }
     }
-    foreach ($file in Get-RepositoryFile -Extension @('.md')) {
+    # Markdown im Anwendungsverzeichnis sowie Projektdokumente im Repository-Stamm
+    $markdown = @(Get-RepositoryFile -Extension @('.md'))
+    foreach ($name in @($script:ProjectFiles | Where-Object { $_ -like '*.md' })) {
+        $path = Get-ProjectFilePath -Name $name
+        if ((Test-Path -LiteralPath $path -PathType Leaf) -and -not $path.StartsWith($Root + [System.IO.Path]::DirectorySeparatorChar)) { $markdown += Get-Item -LiteralPath $path }
+    }
+    foreach ($file in $markdown) {
         $relative = Get-RelativePath -Path $file.FullName
         $lines = [System.IO.File]::ReadAllLines($file.FullName)
         $inCode = $false
@@ -296,7 +329,7 @@ function Test-DocumentationCheck {
 }
 
 function Test-VersionCheck {
-    $versionFile = Join-Path -Path $Root -ChildPath 'VERSION'
+    $versionFile = Get-ProjectFilePath -Name 'VERSION'
     if (-not (Test-Path -LiteralPath $versionFile -PathType Leaf)) {
         New-QualityFinding -Check 'Version' -File 'VERSION' -Message 'Datei VERSION fehlt.'
         return
@@ -312,14 +345,14 @@ function Test-VersionCheck {
             New-QualityFinding -Check 'Version' -File (Get-RelativePath -Path $manifest.FullName) -Message "ModuleVersion '$($data['ModuleVersion'])' weicht von VERSION '$version' ab."
         }
     }
-    $changelog = Join-Path -Path $Root -ChildPath 'CHANGELOG.md'
+    $changelog = Get-ProjectFilePath -Name 'CHANGELOG.md'
     if (Test-Path -LiteralPath $changelog -PathType Leaf) {
         $first = Select-String -LiteralPath $changelog -Pattern '^## \[(?<version>\d+\.\d+\.\d+)\]' | Select-Object -First 1
         if ($null -eq $first -or $first.Matches[0].Groups['version'].Value -ne $version) {
             New-QualityFinding -Check 'Version' -File 'CHANGELOG.md' -Message "Der oberste Eintrag im CHANGELOG entspricht nicht der Version '$version'."
         }
     }
-    $readme = Join-Path -Path $Root -ChildPath 'README.md'
+    $readme = Get-ProjectFilePath -Name 'README.md'
     if ((Test-Path -LiteralPath $readme -PathType Leaf) -and -not (Select-String -LiteralPath $readme -SimpleMatch -Pattern $version -Quiet)) {
         New-QualityFinding -Check 'Version' -File 'README.md' -Message "README.md nennt die Version '$version' nicht."
     }

@@ -18,10 +18,40 @@ easyONBOARDING installiert keine Module und ändert keine Systemeinstellungen. F
 zeigt das Dashboard bzw. `-CheckOnly` mit Hinweis an. Optionale Module installiert die IT bei
 Bedarf gezielt, z. B. mit `Install-PSResource <Name> -Scope CurrentUser`.
 
+### Voraussetzungen einrichten (Install-PS7_PDF.ps1, optional)
+
+Das Hilfsskript prüft PowerShell 7, das ActiveDirectory-Modul, die PDF-Erzeugung (Edge/wkhtmltopdf)
+und die Ausführungsrichtlinie und richtet Fehlendes **nur auf Auswahl** ein. Es läuft auch unter
+Windows PowerShell 5.1, also bevor PowerShell 7 installiert ist:
+
+```powershell
+# nur prüfen, nichts ändern (Exitcode 1, wenn Pflichtvoraussetzungen fehlen)
+powershell.exe -NoProfile -File .\Install-PS7_PDF.ps1 -CheckOnly
+
+# Oberfläche: Punkte auswählen und "Auswahl ausführen"
+powershell.exe -STA -NoProfile -File .\Install-PS7_PDF.ps1
+
+# ohne Oberfläche, z. B. per Softwareverteilung (als Administrator); -WhatIf simuliert
+powershell.exe -NoProfile -File .\Install-PS7_PDF.ps1 -Install PowerShell7, ActiveDirectory
+```
+
+* Installationen erfordern eine als Administrator gestartete PowerShell; das Skript erhöht sich nicht
+  selbst. Ohne Administratorrechte sind die Installationspunkte gesperrt.
+* PowerShell 7 wird per winget installiert, sonst als MSI (`-PowerShellMsiUrl`, nur https), das nur
+  ausgeführt wird, wenn es gültig von Microsoft signiert ist. RSAT kommt auf Clients als
+  Windows-Funktion, auf Servern als Windows-Feature. wkhtmltopdf nur per winget und nur, wenn Edge fehlt.
+* Die Ausführungsrichtlinie wird nur nach Rückfrage (bzw. mit `-Install ExecutionPolicy`) und nur für
+  den aktuellen Benutzer auf `RemoteSigned` gesetzt; per Gruppenrichtlinie festgelegt bleibt sie
+  unverändert.
+* Optional kopiert das Skript den Anwendungsordner in ein Zielverzeichnis (Standard
+  `C:\easyIT\easyONBOARDING`, `-TargetPath`). Logs, Berichte und Daten werden nicht kopiert, eine
+  vorhandene `Config\easyONB.ini` und Unternehmensdateien bleiben erhalten.
+
 ## Installation
 
-1. Den Ordner `V3.0.0` aus dem Repository bzw. Release in ein Verzeichnis kopieren, auf das nur die
-   IT-Administration Schreibzugriff hat, z. B. `D:\Tools\easyONBOARDING\V3.0.0`.
+1. Den Ordner `V3.0.0` (mit der Datei `VERSION` aus dem Repository-Stamm) in ein Verzeichnis
+   kopieren, auf das nur die IT-Administration Schreibzugriff hat, z. B.
+   `D:\Tools\easyONBOARDING\V3.0.0` – manuell oder mit `Install-PS7_PDF.ps1` (siehe oben).
 2. Nach dem Download einer ZIP-Datei die Dateien freigeben:
    `Get-ChildItem -Path D:\Tools\easyONBOARDING -Recurse | Unblock-File`.
 3. Ausführungsrichtlinie: easyONBOARDING ändert sie nicht und benötigt kein `Bypass`. Empfohlen ist
@@ -80,7 +110,7 @@ Rechten (Assistent "Objektverwaltung zuweisen" bzw. `dsacls`), beschränkt auf d
 | Entra Connect Sync | WinRM-Zugriff und Mitgliedschaft in der lokalen Gruppe `ADSyncOperators` auf dem Synchronisationsserver |
 
 Privilegierte Gruppen und geschützte Konten bearbeitet easyONBOARDING unabhängig von den Rechten nie
-([SECURITY.md](../SECURITY.md)).
+([SECURITY.md](../../SECURITY.md)).
 
 ## Datenablage und Schutz
 

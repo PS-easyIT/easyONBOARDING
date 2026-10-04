@@ -44,7 +44,7 @@ Details der Architekturentscheidungen: [ARCHITECTURE.md](ARCHITECTURE.md).
 
 ## Umsetzungsstand (27.09.2026)
 
-Alle Arbeitspakete WP1–WP10 sind umgesetzt (Details: [CHANGELOG.md](../CHANGELOG.md)). Offen und nur
+Alle Arbeitspakete WP1–WP10 sind umgesetzt (Details: [CHANGELOG.md](../../CHANGELOG.md)). Offen und nur
 außerhalb dieser Entwicklungsumgebung möglich: manuelle Prüfung der Oberfläche unter Windows,
 Verifikation der Exchange-, Graph- und Entra-Connect-Funktionen gegen reale Testumgebungen und die
 Code-Signatur durch den Maintainer (siehe [TESTING.md](TESTING.md#manuelle-prüfung)).

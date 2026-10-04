@@ -84,19 +84,32 @@ function Get-EobVersion {
     <#
     .SYNOPSIS
         Liefert die Anwendungsversion aus der Datei VERSION (einzige Versionsquelle).
+    .DESCRIPTION
+        Gesucht wird im Anwendungsordner und im Repository-Stamm darüber. Fehlt die Datei (z. B. wenn
+        nur der Anwendungsordner kopiert wurde), gilt die ModuleVersion des Core-Moduls; die
+        Qualitätsprüfung stellt sicher, dass beide übereinstimmen.
     #>
     [CmdletBinding()]
     [OutputType([string])]
     param()
 
     if ($null -eq $script:VersionCache) {
-        $versionFile = Join-Path -Path $script:AppRoot -ChildPath 'VERSION'
-        if (-not (Test-Path -LiteralPath $versionFile -PathType Leaf)) {
-            throw "Versionsdatei nicht gefunden: $versionFile"
+        $candidates = @(
+            (Join-Path -Path $script:AppRoot -ChildPath 'VERSION')
+            (Join-Path -Path (Split-Path -Parent $script:AppRoot) -ChildPath 'VERSION')
+        )
+        $versionFile = $candidates | Where-Object { Test-Path -LiteralPath $_ -PathType Leaf } | Select-Object -First 1
+        if ($versionFile) {
+            $raw = (Get-Content -LiteralPath $versionFile -Raw -ErrorAction Stop).Trim()
+            $source = $versionFile
         }
-        $raw = (Get-Content -LiteralPath $versionFile -Raw -ErrorAction Stop).Trim()
+        else {
+            $manifest = Join-Path -Path $PSScriptRoot -ChildPath 'easyONB.Core.psd1'
+            $raw = [string](Import-PowerShellDataFile -LiteralPath $manifest -ErrorAction Stop)['ModuleVersion']
+            $source = $manifest
+        }
         if ($raw -notmatch '^\d+\.\d+\.\d+(-[0-9A-Za-z\.\-]+)?$') {
-            throw "Ungültiges Versionsformat in ${versionFile}: '$raw'"
+            throw "Ungültiges Versionsformat in ${source}: '$raw'"
         }
         $script:VersionCache = $raw
     }

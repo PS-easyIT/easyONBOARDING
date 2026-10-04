@@ -1,6 +1,7 @@
 # Bestandsaufnahme easyONBOARDING (Phase A)
 
 Stand der Analyse: 27.09.2026, Basis-Commit `e395922` ("Code Signing").
+Historisches Dokument: Die analysierten Ordner der Versionen 1.x sind inzwischen aus dem Repository entfernt.
 Analysiert wurde der tatsächliche Repository-Inhalt. Aussagen aus README-Dateien wurden gegen den Code geprüft.
 
 Klassifizierung: **Critical**, **High**, **Medium**, **Low**, **Recommendation**.

@@ -18,9 +18,18 @@ Sicherheitsrelevante Funde bitte vertraulich melden ([SECURITY.md](SECURITY.md))
   sind in `Tests/Fixtures/ExternalCommandStubs.ps1` als Stubs definiert, die ohne Mock eine Ausnahme
   auslösen. Tests dürfen keine produktiven Benutzer, Gruppen oder Postfächer verändern.
 
+## Aufbau des Repositorys
+
+Projektdokumente (`README.md`, `CHANGELOG.md`, `SECURITY.md`, `CONTRIBUTING.md`) und die Datei
+`VERSION` liegen im Repository-Stamm, die Anwendung mit Modulen, Oberfläche, Tests und Skripten im
+Ordner `V3.0.0`. Alle Befehle unten werden **im Ordner `V3.0.0`** ausgeführt; die Qualitätsprüfung
+bezieht die Dateien im Stamm automatisch ein.
+
 ## Prüfen vor jedem Commit
 
 ```powershell
+Set-Location ./V3.0.0
+
 # statische Prüfungen: Parser, Kodierung, XAML, PSScriptAnalyzer, Secrets, Doku, Version
 pwsh -NoProfile -File ./Scripts/Invoke-EobQualityCheck.ps1
 
@@ -38,6 +47,9 @@ Windows aus; unter Windows zusätzlich das echte Laden der WPF-Oberfläche ohne 
   Kommentarblock mit mindestens `.SYNOPSIS`.
 * **Strenge:** `Set-StrictMode -Version 3.0` in allen Fachmodulen und Skripten (UI-Modul: 1.0, siehe
   ADR-13), `$ErrorActionPreference = 'Stop'` in Skripten.
+* **Windows PowerShell 5.1:** `Install-PS7_PDF.ps1` muss auch unter 5.1 laufen (keine Operatoren
+  ab PowerShell 7 wie `? :`, `??`, `&&`, kein `$IsWindows`; geprüft durch
+  `Tests/Unit/Prerequisites.Tests.ps1`).
 * **Systemänderungen** nur in Funktionen mit `[CmdletBinding(SupportsShouldProcess)]`; destruktive
   Aktionen mit `ConfirmImpact = 'High'`. Fachlogik erzeugt Pläne, die Ausführung läuft über die
   Plan-Engine.
@@ -56,7 +68,7 @@ Windows aus; unter Windows zusätzlich das echte Laden der WPF-Oberfläche ohne 
 
 ## Versionierung
 
-Semantic Versioning. Die Version steht ausschließlich in `VERSION`; `ModuleVersion` aller Manifeste,
+Semantic Versioning. Die Version steht ausschließlich in `VERSION` (Repository-Stamm); `ModuleVersion` aller Manifeste,
 der oberste Eintrag in `CHANGELOG.md` und die README müssen übereinstimmen (geprüft durch
 `Invoke-EobQualityCheck.ps1 -Check Version`). Jede nutzerrelevante Änderung erhält einen Eintrag im
 CHANGELOG.

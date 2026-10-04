@@ -59,7 +59,7 @@ Herkunft.
 
 **Privilegierte Gruppen werden nie zugewiesen** – auch nicht über Referenzbenutzer, Vorlagen oder CSV.
 Sie erscheinen in der Vorschau als blockiert mit Begründung. Welche Gruppen als privilegiert gelten,
-beschreibt [SECURITY.md](../SECURITY.md#sicherheitskonzept-version-3).
+beschreibt [SECURITY.md](../../SECURITY.md#sicherheitskonzept-version-3).
 
 ## Kennwörter
 

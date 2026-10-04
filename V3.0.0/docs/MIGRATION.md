@@ -1,8 +1,9 @@
 # Umstieg von Version 1.3.10 / 1.4.x
 
 Version 3 ersetzt die Versionen 1.3.10 und 1.4.x vollständig. Die alten Ordner `V1.3.10` und
-`V1.4.XX` bleiben unverändert erhalten (Rückfallebene, gültige Signaturen) und werden von Version 3
-weder gelesen noch verändert – mit Ausnahme der INI-Datei, die bei der Migration als Quelle dient.
+`V1.4.XX` sind nicht mehr im Repository (bei Bedarf über die Git-Historie erreichbar). Eine bestehende
+1.x-Installation bleibt als Rückfallebene unverändert; Version 3 liest von ihr nur die INI-Datei, die
+bei der Migration als Quelle dient.
 
 ## Vorgehen
 
@@ -32,7 +33,7 @@ weder gelesen noch verändert – mit Ausnahme der INI-Datei, die bei der Migrat
    Hinweise lesen – veraltete Schlüssel werden mit ihrem Ersatz genannt.
 5. **Testen** in der Simulation und anschließend in einer Test-OU ([TESTING.md](TESTING.md#manuelle-prüfung)).
 6. **Altlasten bereinigen:** Logs und Berichte der Version 1.x enthalten möglicherweise Kennwörter
-   ([SECURITY.md](../SECURITY.md#hinweise-für-bestehende-installationen-1x)).
+   ([SECURITY.md](../../SECURITY.md#hinweise-für-bestehende-installationen-1x)).
 7. **Umstellen:** Verknüpfungen auf `Start-easyONBOARDING.ps1` ändern, die alte Version archivieren.
 
 Ein Rückweg ist jederzeit möglich: Version 3 verändert die alten Ordner nicht; im Active Directory
@@ -86,4 +87,4 @@ Vollständige Liste mit allen veralteten und wirkungslosen Schlüsseln:
 
 Neu hinzugekommen sind unter anderem das mehrstufige Offboarding, die Warteschlange mit geplanter
 Ausführung, Audit-Log, Simulation als Standard und das helle/dunkle Farbschema
-([CHANGELOG.md](../CHANGELOG.md)).
+([CHANGELOG.md](../../CHANGELOG.md)).
