@@ -1719,6 +1719,8 @@ function Invoke-EobOnboardingBatch {
     }
     foreach ($item in $Batch.Items) {
         if ($item.State -eq 'Error') {
+            # Nicht ausführbare Zeilen: Kennwort sofort verwerfen (wird nie angezeigt oder verwendet).
+            Clear-EobPlanSecret -Plan $item.Plan -WhatIf:$false -Confirm:$false
             $item | Add-Member -NotePropertyName 'Outcome' -NotePropertyValue 'NotExecuted' -Force
             continue
         }
