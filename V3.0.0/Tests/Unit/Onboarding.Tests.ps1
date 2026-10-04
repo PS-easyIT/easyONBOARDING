@@ -527,6 +527,19 @@ Describe 'CSV-Massenverarbeitung' {
         $batch.RequiresTypedConfirmation | Should -BeTrue
     }
 
+    It 'verwirft die Kennwörter nicht ausführbarer Zeilen' {
+        $path = Join-Path $TestDrive 'stapel3.csv'
+        Set-Content -LiteralPath $path -Encoding utf8 -Value @('Vorname;Nachname;Personalnummer', 'Max;Mustermann;100', 'Erika;Muster;100')
+        $batch = New-EobOnboardingBatch -Import (Import-EobOnboardingCsv -Path $path -Config $script:Config) -Config $script:Config
+        $batch.Items[1].State | Should -Be 'Error'
+        $plain = ConvertTo-EobPlainText -SecureString $batch.Items[1].Plan.Secrets['InitialPassword']
+        $null = Invoke-EobOnboardingBatch -Batch $batch -WhatIf
+        $batch.Items[1].Outcome | Should -Be 'NotExecuted'
+        $batch.Items[1].Plan.Secrets.Count | Should -Be 0
+        Protect-EobSensitiveText -Text "x $plain" | Should -Be "x $plain"
+        foreach ($item in $batch.Items) { Clear-EobPlanSecret -Plan $item.Plan -Confirm:$false }
+    }
+
     It 'simuliert den Stapel und exportiert Ergebnisse ohne Kennwörter' {
         $path = Join-Path $TestDrive 'stapel2.csv'
         Set-Content -LiteralPath $path -Encoding utf8 -Value @('Vorname;Nachname', 'Anna;Beispiel', 'Ben;Beispiel')

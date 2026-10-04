@@ -4,6 +4,27 @@ Alle nennenswerten Änderungen an easyONBOARDING. Format angelehnt an
 [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), Versionierung nach
 [Semantic Versioning](https://semver.org/lang/de/). Einzige Versionsquelle ist die Datei `VERSION`.
 
+## [Unreleased]
+
+### Behoben
+
+- Massenverarbeitung: Ein Fehler außerhalb der Zeilenverarbeitung (z. B. beim Aktualisieren der
+  Ergebnistabelle) ließ die Ausführungssperre bestehen; Ansichtswechsel und Schließen des Fensters
+  waren danach blockiert. Der Stapel wird jetzt geordnet beendet; die Moduswahl ist während der
+  Ausführung gesperrt.
+- Massenverarbeitung: Kennwörter nicht ausgeführter Zeilen (Fehler, Abbruch, verworfener oder neu
+  importierter Stapel) blieben samt Klartext-Redaktionswert bis zum Programmende im Speicher. Sie
+  werden jetzt beim Abschluss, beim Moduswechsel, beim Neuimport und beim Beenden verworfen
+  (`Invoke-EobOnboardingBatch`: Fehlerzeilen sofort).
+- Audit: `Get-EobAuditEntry` liest nur noch die Monatsdateien des angefragten Zeitraums (plus ein
+  Monat Puffer) und filtert eine Operation-ID vor dem JSON-Parsen. Das Dashboard las bisher bei
+  jedem Aufruf das gesamte Audit-Archiv.
+- Audit-Ansicht: Filtertexte mit `[` oder `]` führten zu einem Fehler (Platzhaltermuster); gefiltert
+  wird jetzt als Teilzeichenfolge ohne Beachtung der Groß-/Kleinschreibung.
+- Offboarding-Warteschlange: Eine leere oder unvollständige JSON-Datei brach das Lesen der gesamten
+  Warteschlange ab (Dashboard, Offboarding-Ansicht, geplante Aufgabe). Defekte Einträge werden jetzt
+  protokolliert und übersprungen.
+
 ## [3.0.0] - 2026-09-27
 
 Vollständige Neuentwicklung im Ordner `V3.0.0`. Die Versionen 1.3.10 und 1.4.x bleiben unverändert

@@ -273,6 +273,25 @@ Describe 'Logging und Audit' {
         @(Get-EobAuditEntry -OperationId 'op-2').Count | Should -Be 1
     }
 
+    It 'liest nur Audit-Monatsdateien im Zeitraum und filtert die Operation-ID vor' {
+        $auditDir = Join-Path $TestDrive ('audit-' + [guid]::NewGuid().ToString('N'))
+        $null = New-Item -ItemType Directory -Path $auditDir
+        $write = {
+            param([datetime]$Time, [string]$Id, [string]$File)
+            $line = [ordered]@{ Timestamp = $Time.ToString('o'); Level = 'Audit'; OperationId = $Id; Action = 'X' } | ConvertTo-Json -Compress
+            Add-Content -LiteralPath (Join-Path $auditDir $File) -Value $line
+        }
+        & $write ([datetime]'2026-08-31 23:30') 'aug' 'easyONB_audit_202608.jsonl'
+        & $write ([datetime]'2026-09-15') 'sep' 'easyONB_audit_202609.jsonl'
+        # Absichtlich falsch einsortiert: liegt die Datei mehr als einen Monat außerhalb, wird sie nicht gelesen.
+        & $write ([datetime]'2026-09-16') 'alt' 'easyONB_audit_202401.jsonl'
+        @(Get-EobAuditEntry -Directory $auditDir -From ([datetime]'2026-09-01') -To ([datetime]'2026-09-30')).OperationId | Should -Be @('sep')
+        @(Get-EobAuditEntry -Directory $auditDir -From ([datetime]'2026-08-31') -To ([datetime]'2026-09-30')).OperationId | Should -Be @('aug', 'sep')
+        @(Get-EobAuditEntry -Directory $auditDir).Count | Should -Be 3
+        @(Get-EobAuditEntry -Directory $auditDir -OperationId 'sep').OperationId | Should -Be @('sep')
+        @(Get-EobAuditEntry -Directory $auditDir -OperationId 'se"p').Count | Should -Be 0
+    }
+
     It 'filtert Einträge unterhalb des Mindestlevels' {
         Write-EobLog -Message 'nur Debug' -Level Debug
         Get-ChildItem -LiteralPath $script:LogDir -Filter '*.log' | Should -BeNullOrEmpty

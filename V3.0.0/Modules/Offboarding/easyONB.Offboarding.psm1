@@ -1189,6 +1189,10 @@ function Get-EobOffboardingQueue {
     foreach ($file in Get-ChildItem -LiteralPath $directory -Filter '*.json' -File | Sort-Object -Property Name) {
         try {
             $entry = Get-Content -LiteralPath $file.FullName -Raw -Encoding utf8 | ConvertFrom-Json -AsHashtable
+            # Leere Dateien oder JSON ohne Objekt bzw. ohne Phasendaten würden sonst das Lesen der gesamten
+            # Warteschlange abbrechen (Dashboard, Offboarding-Ansicht, geplante Aufgabe).
+            if ($entry -isnot [System.Collections.IDictionary]) { throw 'Kein JSON-Objekt.' }
+            if ($entry['PhaseDates'] -isnot [System.Collections.IDictionary]) { throw 'PhaseDates fehlt oder ist ungültig.' }
         }
         catch {
             Write-EobLog -Level Warning -Action 'OffboardingQueueRead' -Target $file.Name -Message "Warteschlangeneintrag ist beschädigt: $($_.Exception.Message)"

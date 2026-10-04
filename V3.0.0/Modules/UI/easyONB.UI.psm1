@@ -1123,6 +1123,7 @@ function Stop-EobUi {
             try { Clear-EobPlanSecret -Plan $state['Plan'] -Confirm:$false } catch { Write-Verbose $_.Exception.Message }
         }
     }
+    Clear-EobUiBulkSecret
     if ($script:Ui.Bulk -is [hashtable] -and $null -ne $script:Ui.Bulk['Credentials']) {
         foreach ($entry in @($script:Ui.Bulk['Credentials'])) { if ($entry.Password -is [securestring]) { $entry.Password.Dispose() } }
         $script:Ui.Bulk['Credentials'] = $null
@@ -2645,7 +2646,10 @@ function Update-EobBulkMode {
 
     $c = $script:Ui.C
     $state = $script:Ui.Bulk
+    # Während einer Ausführung darf der Stapel nicht verworfen werden (die Auswahl ist dann gesperrt).
+    if ($null -ne $script:Ui.Execution) { return }
     $state.Mode = if ($c.BulkModeOffboardingRadio.IsChecked) { 'Offboarding' } else { 'Onboarding' }
+    Clear-EobUiBulkSecret
     $state.Batch = $null
     Set-EobGridSource -Grid $c.BulkItemsGrid -Items @()
     $c.BulkExecuteButton.IsEnabled = $false
@@ -2684,6 +2688,8 @@ function Import-EobBulkFile {
         $import = Import-EobOffboardingCsv -Path $path -Config $script:Ui.Config
         $batch = New-EobOffboardingBatch -Import $import -Config $script:Ui.Config -Simulation:$script:Ui.Simulation
     }
+    # Kennwörter des bisherigen Stapels erst verwerfen, wenn der neue Stapel vollständig erstellt ist.
+    Clear-EobUiBulkSecret
     $state.Batch = $batch
     Update-EobBulkGrid
     $importErrors = @($batch.ImportFindings | Where-Object Severity -EQ 'Error')
@@ -2745,6 +2751,8 @@ function Start-EobBulkExecution {
     Set-EobUiBusy -Busy $true
     $c.BulkExecuteButton.IsEnabled = $false
     $c.BulkImportButton.IsEnabled = $false
+    $c.BulkModeOnboardingRadio.IsEnabled = $false
+    $c.BulkModeOffboardingRadio.IsEnabled = $false
     $c.BulkCancelButton.IsEnabled = $true
     $timer.Start()
 }
@@ -2757,45 +2765,55 @@ function Invoke-EobBulkTick {
     $state = $script:Ui.Bulk
     $batch = $state.Batch
     $state.Timer.Stop()
-    $items = @($batch.Items)
-    if ($state.Index -lt $items.Count -and -not $state.Cancel) {
-        $item = $items[$state.Index]
-        $state.Index++
-        if ($item.State -eq 'Error') {
-            Add-Member -InputObject $item -NotePropertyName 'Outcome' -NotePropertyValue 'NotExecuted' -Force
-        }
-        else {
-            try {
-                if ($script:Ui.Simulation) { $item.Plan.Simulation = $true }
-                if ($state.Mode -eq 'Onboarding') {
-                    $result = Invoke-EobOnboardingPlan -Plan $item.Plan -WhatIf:$item.Plan.Simulation -Confirm:$false
-                    $secure = Get-EobPlanCredential -Plan $result
-                    if ($null -ne $secure -and [string](Get-EobConfigValue -Config $script:Ui.Config -Section 'Bulk' -Key 'PasswordDelivery') -eq 'Print') {
-                        $state.Credentials.Add([pscustomobject]@{
-                                Name = [string]$result.Subject['DisplayName']; SamAccountName = [string]$result.Subject['SamAccountName']
-                                UserPrincipalName = [string]$result.Subject['UserPrincipalName']; Password = $secure.Copy()
-                            })
+    $failure = $null
+    try {
+        $items = @($batch.Items)
+        if ($state.Index -lt $items.Count -and -not $state.Cancel) {
+            $item = $items[$state.Index]
+            $state.Index++
+            if ($item.State -eq 'Error') {
+                Add-Member -InputObject $item -NotePropertyName 'Outcome' -NotePropertyValue 'NotExecuted' -Force
+            }
+            else {
+                try {
+                    if ($script:Ui.Simulation) { $item.Plan.Simulation = $true }
+                    if ($state.Mode -eq 'Onboarding') {
+                        $result = Invoke-EobOnboardingPlan -Plan $item.Plan -WhatIf:$item.Plan.Simulation -Confirm:$false
+                        $secure = Get-EobPlanCredential -Plan $result
+                        if ($null -ne $secure -and [string](Get-EobConfigValue -Config $script:Ui.Config -Section 'Bulk' -Key 'PasswordDelivery') -eq 'Print') {
+                            $state.Credentials.Add([pscustomobject]@{
+                                    Name = [string]$result.Subject['DisplayName']; SamAccountName = [string]$result.Subject['SamAccountName']
+                                    UserPrincipalName = [string]$result.Subject['UserPrincipalName']; Password = $secure.Copy()
+                                })
+                        }
                     }
+                    else {
+                        $result = Invoke-EobOffboardingPlan -Plan $item.Plan -WhatIf:$item.Plan.Simulation -Confirm:$false
+                    }
+                    Add-Member -InputObject $item -NotePropertyName 'Outcome' -NotePropertyValue ([string]$result.Status) -Force
                 }
-                else {
-                    $result = Invoke-EobOffboardingPlan -Plan $item.Plan -WhatIf:$item.Plan.Simulation -Confirm:$false
+                catch {
+                    Add-Member -InputObject $item -NotePropertyName 'Outcome' -NotePropertyValue 'Failed' -Force
+                    $item.Messages = @($item.Messages) + (Protect-EobSensitiveText -Text $_.Exception.Message)
                 }
-                Add-Member -InputObject $item -NotePropertyName 'Outcome' -NotePropertyValue ([string]$result.Status) -Force
+                finally {
+                    Clear-EobPlanSecret -Plan $item.Plan -Confirm:$false
+                }
             }
-            catch {
-                Add-Member -InputObject $item -NotePropertyName 'Outcome' -NotePropertyValue 'Failed' -Force
-                $item.Messages = @($item.Messages) + (Protect-EobSensitiveText -Text $_.Exception.Message)
-            }
-            finally {
-                Clear-EobPlanSecret -Plan $item.Plan -Confirm:$false
-            }
+            $c.BulkProgressBar.Value = [Math]::Round(100.0 * $state.Index / [Math]::Max(1, $items.Count))
+            $c.BulkProgressText.Text = "Zeile $($state.Index) von $($items.Count) verarbeitet."
+            Update-EobBulkGrid
+            if ($state.Index -lt $items.Count -and -not $state.Cancel) { $state.Timer.Start(); return }
         }
-        $c.BulkProgressBar.Value = [Math]::Round(100.0 * $state.Index / [Math]::Max(1, $items.Count))
-        $c.BulkProgressText.Text = "Zeile $($state.Index) von $($items.Count) verarbeitet."
-        Update-EobBulkGrid
-        if ($state.Index -lt $items.Count -and -not $state.Cancel) { $state.Timer.Start(); return }
+    }
+    catch {
+        # Ein Fehler außerhalb der Zeilenverarbeitung (z. B. Anzeige) beendet den Stapel geordnet;
+        # sonst bliebe die Ausführungssperre bestehen und das Fenster ließe sich nicht mehr schließen.
+        $state.Cancel = $true
+        $failure = $_
     }
     Complete-EobBulkExecution
+    if ($null -ne $failure) { throw $failure }
 }
 
 function Complete-EobBulkExecution {
@@ -2810,10 +2828,15 @@ function Complete-EobBulkExecution {
     $c.BulkCancelButton.IsEnabled = $false
     $c.BulkImportButton.IsEnabled = $true
     $c.BulkExportButton.IsEnabled = $true
+    $c.BulkModeOnboardingRadio.IsEnabled = $true
+    $c.BulkModeOffboardingRadio.IsEnabled = $true
     foreach ($item in @($batch.Items)) {
         if ($null -eq (Get-EobPropertyValue -InputObject $item -Name 'Outcome' -Default $null)) { Add-Member -InputObject $item -NotePropertyName 'Outcome' -NotePropertyValue 'NotExecuted' -Force }
     }
-    Update-EobBulkGrid
+    # Nicht ausgeführte Zeilen (Fehler, Abbruch) halten sonst ihre Kennwörter bis zum Programmende.
+    Clear-EobUiBulkSecret
+    # Ein Anzeigefehler darf Protokoll und Behandlung der Zugangsdaten unten nicht verhindern.
+    try { Update-EobBulkGrid } catch { Write-EobLog -Level Warning -Action 'UI' -Message "Ergebnistabelle konnte nicht aktualisiert werden: $($_.Exception.Message)" }
     $failed = @($batch.Items | Where-Object { $_.Outcome -eq 'Failed' }).Count
     $level = if ($script:Ui.Simulation) { 'Information' } else { 'Audit' }
     Write-EobLog -Level $level -OperationId $batch.OperationId -Action "Bulk$($state.Mode)Completed" -Result $(if ($failed -gt 0) { 'Failed' } else { 'Succeeded' }) `
@@ -2835,6 +2858,22 @@ function Complete-EobBulkExecution {
         finally {
             foreach ($entry in $credentials) { $entry.Password.Dispose() }
         }
+    }
+}
+
+function Clear-EobUiBulkSecret {
+    <#
+    .SYNOPSIS
+        Entfernt die Kennwörter aller Pläne des geladenen Stapels aus dem Speicher und der Redaktionsliste.
+    #>
+    [CmdletBinding()]
+    param()
+
+    if ($null -eq $script:Ui -or $script:Ui.Bulk -isnot [hashtable] -or $null -eq $script:Ui.Bulk['Batch']) { return }
+    foreach ($item in @($script:Ui.Bulk['Batch'].Items)) {
+        $plan = Get-EobPropertyValue -InputObject $item -Name 'Plan'
+        if ($null -eq $plan) { continue }
+        try { Clear-EobPlanSecret -Plan $plan -Confirm:$false } catch { Write-Verbose $_.Exception.Message }
     }
 }
 
@@ -2929,7 +2968,12 @@ function Update-EobAuditList {
     $filter = ([string]$c.AuditFilterText.Text).Trim()
     $entries = @(Get-EobAuditEntry -From $range.From -To $range.To)
     if ($filter) {
-        $entries = @($entries | Where-Object { [string]$_.Target -like "*$filter*" -or [string]$_.Action -like "*$filter*" -or [string]$_.OperationId -like "*$filter*" -or [string]$_.Actor -like "*$filter*" })
+        # Teilzeichenfolge statt -like: Eingaben wie "[" oder "*" sind kein ungültiges Platzhaltermuster.
+        $comparison = [System.StringComparison]::OrdinalIgnoreCase
+        $entries = @($entries | Where-Object {
+                ([string]$_.Target).IndexOf($filter, $comparison) -ge 0 -or ([string]$_.Action).IndexOf($filter, $comparison) -ge 0 -or
+                ([string]$_.OperationId).IndexOf($filter, $comparison) -ge 0 -or ([string]$_.Actor).IndexOf($filter, $comparison) -ge 0
+            })
     }
     $rows = @($entries | Sort-Object -Property Timestamp -Descending | Select-Object -First 2000 | ForEach-Object {
             [pscustomobject]@{

@@ -167,6 +167,57 @@ Describe 'Hilfsfunktionen der Oberfläche' {
         }
     }
 
+    It 'gibt nach einem Fehler in der Massenverarbeitung die Ausführungssperre frei und verwirft Kennwörter' {
+        $null = Initialize-EobLogging -Directory (Join-Path $TestDrive 'logs-bulk')
+        InModuleScope 'easyONB.UI' {
+            $new = { param([string]$Property) [pscustomobject]@{ $Property = $null } }
+            $script:Ui = New-EobUiState
+            $script:Ui.Headless = $true
+            $c = @{ BulkProgressBar = & $new 'Value'; BulkProgressText = & $new 'Text'; ModeToggleButton = & $new 'IsEnabled' }
+            foreach ($name in 'BulkCancelButton', 'BulkImportButton', 'BulkExportButton', 'BulkModeOnboardingRadio', 'BulkModeOffboardingRadio') { $c[$name] = & $new 'IsEnabled' }
+            foreach ($view in $script:ViewDefinitions.Values) { $c[$view.Nav] = & $new 'IsEnabled' }
+            $script:Ui.C = $c
+            $timer = [pscustomobject]@{ Running = $false }
+            $timer | Add-Member -MemberType ScriptMethod -Name Stop -Value { $this.Running = $false }
+            $timer | Add-Member -MemberType ScriptMethod -Name Start -Value { $this.Running = $true }
+            $plans = foreach ($index in 1..2) {
+                $plan = New-EobPlan -Kind 'Onboarding' -Context (New-EobOperationContext -Kind 'Onboarding' -Simulation) -Simulation
+                $plan.Secrets['InitialPassword'] = New-EobPassword
+                Add-EobRedactionValue -Value $plan.Secrets['InitialPassword']
+                $plan
+            }
+            $plain = ConvertTo-EobPlainText -SecureString $plans[1].Secrets['InitialPassword']
+            $items = @($plans | ForEach-Object { [pscustomobject]@{ RowNumber = 2; State = 'Error'; Plan = $_; Messages = @() } })
+            $script:Ui.Bulk = @{ Batch = [pscustomobject]@{ Items = $items; OperationId = 'op-bulk' }; Mode = 'Onboarding'; Index = 0; Timer = $timer; Cancel = $false; Credentials = [System.Collections.Generic.List[object]]::new() }
+            $script:Ui.Execution = @{ Plan = $null; Timer = $timer; Bulk = $true }
+            Mock Update-EobBulkGrid { throw 'Anzeige fehlgeschlagen' }
+
+            { Invoke-EobBulkTick } | Should -Throw 'Anzeige fehlgeschlagen'
+            $script:Ui.Execution | Should -BeNullOrEmpty
+            $timer.Running | Should -BeFalse
+            $c.BulkModeOnboardingRadio.IsEnabled | Should -BeTrue
+            @($items | ForEach-Object Outcome) | Should -Be @('NotExecuted', 'NotExecuted')
+            @($plans | Where-Object { $_.Secrets.Count -gt 0 }).Count | Should -Be 0
+            Protect-EobSensitiveText -Text $plain | Should -Be $plain
+        }
+    }
+
+    It 'filtert das Audit-Log ohne Platzhaltersyntax' {
+        $null = Initialize-EobLogging -Directory (Join-Path $TestDrive 'logs-auditfilter')
+        Write-EobLog -Level Audit -Action 'Test' -Target 'konto[1]' -Message 'Filtertest'
+        Write-EobLog -Level Audit -Action 'Test' -Target 'anderes' -Message 'Filtertest'
+        InModuleScope 'easyONB.UI' {
+            $script:Ui = New-EobUiState
+            $script:Ui.Headless = $true
+            $script:Ui.C = @{
+                AuditFilterText = [pscustomobject]@{ Text = 'KONTO[' }; AuditFromPicker = [pscustomobject]@{ SelectedDate = (Get-Date).AddDays(-1) }
+                AuditToPicker = [pscustomobject]@{ SelectedDate = (Get-Date) }; AuditGrid = [pscustomobject]@{ ItemsSource = $null }; AuditSummaryText = [pscustomobject]@{ Text = '' }
+            }
+            { Update-EobAuditList } | Should -Not -Throw
+            @($script:Ui.C.AuditGrid.ItemsSource).Target | Should -Be @('konto[1]')
+        }
+    }
+
     It 'meldet die Oberfläche außerhalb von Windows als nicht verfügbar' -Skip:$IsWindows {
         $result = Test-EobGuiEnvironment
         $result.IsSupported | Should -BeFalse

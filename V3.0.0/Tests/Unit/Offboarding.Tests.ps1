@@ -480,6 +480,18 @@ Describe 'Ausführung und Warteschlange' {
         @($result.Offboarding.CompletedPhases) | Should -Be @('Immediate', 'ExitDate')
     }
 
+    It 'überspringt defekte Warteschlangeneinträge, statt das Lesen abzubrechen' {
+        $plan = New-EobOffboardingPlan -Request (New-TestRequest -Config $script:Config) -Config $script:Config -Now $script:BeforeExit
+        $null = Invoke-EobOffboardingPlan -Plan $plan -Now $script:BeforeExit -Confirm:$false
+        $directory = Split-Path -Parent @(Get-EobOffboardingQueue -Config $script:Config)[0].Path
+        Set-Content -LiteralPath (Join-Path $directory '0-leer.json') -Value '' -NoNewline
+        Set-Content -LiteralPath (Join-Path $directory '1-liste.json') -Value '[1, 2]'
+        Set-Content -LiteralPath (Join-Path $directory '2-ohne-phasen.json') -Value '{"OperationId":"x","Status":"Open"}'
+        $queue = @(Get-EobOffboardingQueue -Config $script:Config -WarningAction SilentlyContinue)
+        $queue.Count | Should -Be 1
+        $queue[0].OperationId | Should -Be $plan.OperationId
+    }
+
     It 'bricht einen Vorgang in der Warteschlange ab' {
         $plan = New-EobOffboardingPlan -Request (New-TestRequest -Config $script:Config) -Config $script:Config -Now $script:BeforeExit
         $null = Invoke-EobOffboardingPlan -Plan $plan -Now $script:BeforeExit -Confirm:$false

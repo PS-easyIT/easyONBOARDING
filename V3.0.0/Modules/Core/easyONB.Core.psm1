@@ -1127,9 +1127,21 @@ function Get-EobAuditEntry {
     if ([string]::IsNullOrWhiteSpace($Directory) -or -not (Test-Path -LiteralPath $Directory)) {
         return
     }
+    # Audit-Dateien sind monatlich benannt (easyONB_audit_yyyyMM.jsonl). Monate außerhalb des Zeitraums
+    # werden nicht gelesen; ein Monat Puffer je Seite deckt Zeitzonenwechsel zwischen Schreiben und Lesen ab.
+    $monthKey = { param([datetime]$Value) $Value.Year * 100 + $Value.Month }
+    $fromKey = if ($From -gt [datetime]::MinValue.AddMonths(1)) { & $monthKey $From.AddMonths(-1) } else { 0 }
+    $toKey = if ($To -lt [datetime]::MaxValue.AddMonths(-1)) { & $monthKey $To.AddMonths(1) } else { [int]::MaxValue }
+    # Vorfilter ohne JSON-Auswertung; nur für Werte, die im JSON unverändert (ohne Escaping) stehen.
+    $operationNeedle = if ($OperationId -match '^[0-9A-Za-z\-_\.]+$') { $OperationId } else { $null }
     foreach ($file in Get-ChildItem -LiteralPath $Directory -Filter 'easyONB_audit_*.jsonl' -File | Sort-Object -Property Name) {
+        if ($file.Name -match '^easyONB_audit_(\d{6})\.jsonl$') {
+            $fileKey = [int]$Matches[1]
+            if ($fileKey -lt $fromKey -or $fileKey -gt $toKey) { continue }
+        }
         foreach ($line in [System.IO.File]::ReadLines($file.FullName)) {
             if ([string]::IsNullOrWhiteSpace($line)) { continue }
+            if ($operationNeedle -and $line.IndexOf($operationNeedle, [System.StringComparison]::Ordinal) -lt 0) { continue }
             try {
                 $entry = $line | ConvertFrom-Json -ErrorAction Stop
             }
