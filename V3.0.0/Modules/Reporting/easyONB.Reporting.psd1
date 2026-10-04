@@ -1,6 +1,6 @@
 ﻿@{
     RootModule           = 'easyONB.Reporting.psm1'
-    ModuleVersion        = '3.0.0'
+    ModuleVersion        = '3.0.2'
     GUID                 = '760966c1-277d-41e7-a899-4ba240f131d4'
     Author               = 'Andreas Hepp'
     CompanyName          = 'PHINIT.DE'

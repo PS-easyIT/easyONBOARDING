@@ -1,123 +1,166 @@
 # Änderungsprotokoll
 
-Alle nennenswerten Änderungen an easyONBOARDING. Format angelehnt an
-[Keep a Changelog](https://keepachangelog.com/de/1.1.0/), Versionierung nach
-[Semantic Versioning](https://semver.org/lang/de/). Einzige Versionsquelle ist die Datei `VERSION`.
+Alle nennenswerten Änderungen an easyONBOARDING, neueste Version zuerst. Das Format ist an
+[Keep a Changelog](https://keepachangelog.com/de/1.1.0/) angelehnt. Einzige Versionsquelle ist die
+Datei `VERSION` im Repository-Stamm.
+
+| Reihe | Stand | Ordner bzw. Quelle |
+|---|---|---|
+| **3.0.x** | aktuell, unterstützt | `V3.0.0/` |
+| 1.4.x | Entwicklungsstand, nie freigegeben | nur noch in der Git-Historie |
+| 1.3.x | letzte freigegebene Reihe der Version 1, veraltet | nur noch in der Git-Historie |
+| 0.1 – 1.1 | Vorversionen, veraltet | nur noch in der Git-Historie |
+
+Eine Version 2 gab es nicht: Nach 1.4.x folgte direkt die Neuentwicklung 3.0.
 
 ## [Unreleased]
 
+Noch keine Änderungen.
+
+## [3.0.2] - 2026-10-04
+
 ### Hinzugefügt
 
-- Installer `Install-easyONBOARDING.ps1` mit eigener WPF-Oberfläche (Modul `easyONB.Setup`): erstellt
-  `Config\easyONB.ini` aus der Vorlage. Auf einem Domänencontroller werden Domäne, UPN-Suffixe,
-  Domänencontroller, OUs sowie Entra Connect und Exchange aus dem AD vorbelegt; auf Clients werden die
-  Werte manuell eingetragen. Jedes Feld und jeder Bereich hat einen Hinweistext (Anzeige nach 250 ms).
-  Die erzeugte Datei wird wie in der Anwendung geprüft; vorhandene Dateien werden gesichert.
-
-- Exchange Hybrid: Verbindung zu Exchange Server **und** Exchange Online. Lokale Befehle werden mit dem
-  Präfix `EobOnPrem` importiert; Postfachaktionen ermitteln, ob das Postfach online oder lokal liegt.
-  Die Umwandlung in ein freigegebenes Postfach erfolgt bei Cloud-Postfächern nach dem
-  Microsoft-Verfahren (Exchange Online, danach `Set-RemoteMailbox -Type Shared` lokal).
-- Zertifikatsanmeldung (App-only) für Exchange Online (`[Exchange] AppId`, `CertificateThumbprint`,
-  `Organization`) und Microsoft Graph (`[Graph] ClientId`, `CertificateThumbprint`). Die geplante
-  Aufgabe verbindet damit Exchange Online und Graph unbeaufsichtigt; ohne Zertifikat bleiben diese
-  Phasen wie bisher manuell. Neue Schematypen `Guid` und `Thumbprint`, Befund
-  `CFG_CERTIFICATE_AUTH_INCOMPLETE` bei unvollständigen Angaben.
-- Entra Connect: Serverprüfung über `Get-ADSyncScheduler` (Erreichbarkeit, laufender Zyklus,
-  Stagingmodus), in der Oberfläche unter Tools › Entra Connect prüfen.
+- `Install-PS7_PDF.ps1` vollständig neu geschrieben, mit WPF-Oberfläche
+  (`GUI/Installer/PrerequisitesWindow.xaml`) und Konsolenbetrieb (`-CheckOnly`, `-Install`, `-WhatIf`).
+  Das Skript läuft auch unter Windows PowerShell 5.1, also bevor PowerShell 7 installiert ist.
+  - Es prüft PowerShell 7, das ActiveDirectory-Modul, die PDF-Erzeugung und die Ausführungsrichtlinie
+    und richtet Fehlendes nur auf Auswahl ein.
+  - PowerShell 7 wird per winget installiert, sonst als MSI. Das MSI wird nur über https geladen und
+    nur mit gültiger Microsoft-Signatur ausgeführt.
+  - RSAT wird auf Clients als Windows-Funktion installiert, auf Servern als Windows-Feature;
+    wkhtmltopdf nur per winget.
+  - Installationen nur in einer als Administrator gestarteten PowerShell; das Skript erhöht sich nie
+    selbst.
+  - Die Ausführungsrichtlinie ändert es nur nach Bestätigung und nur für den aktuellen Benutzer.
+  - Beim optionalen Kopieren der Anwendung bleibt eine vorhandene Konfiguration erhalten.
+- Tests für das Voraussetzungs-Skript (`Tests/Unit/Prerequisites.Tests.ps1`), einschließlich
+  Kompatibilität mit Windows PowerShell 5.1 und Laden des Fensters unter Windows.
 
 ### Geändert
 
-- Repository neu gegliedert: Die Versionen 1.x und die separaten Zusatzwerkzeuge sind entfernt.
-  `README.md`, `CHANGELOG.md`, `SECURITY.md`, `CONTRIBUTING.md` und `VERSION` liegen im
-  Repository-Stamm. Qualitätsprüfung, `Get-EobVersion` und CI berücksichtigen den Stamm; findet
-  `Get-EobVersion` keine `VERSION`-Datei, gilt die Modulversion. README vollständig überarbeitet.
-- `Install-PS7_PDF.ps1` neu geschrieben, läuft auch unter Windows PowerShell 5.1. Das Skript prüft
-  zuerst nur: PowerShell 7, ActiveDirectory-Modul, PDF-Erzeugung und Ausführungsrichtlinie.
-  Fehlendes wird nur auf Auswahl eingerichtet, über eine WPF-Oberfläche mit Hinweistexten oder
-  `-CheckOnly`/`-Install`.
-  - PowerShell 7 kommt per winget, sonst als MSI; das MSI nur über https und nur mit gültiger
-    Microsoft-Signatur.
-  - RSAT wird auf Clients als Windows-Funktion, auf Servern als Windows-Feature installiert.
-    wkhtmltopdf nur per winget.
-  - Installationen nur in einer Administrator-PowerShell; das Skript erhöht sich nie selbst.
-  - Die Ausführungsrichtlinie wird nur nach Bestätigung und nur für den aktuellen Benutzer geändert.
-  - Das optionale Kopieren der Anwendung überschreibt keine vorhandene Konfiguration. Tests:
-    `Tests/Unit/Prerequisites.Tests.ps1`.
-- Oberfläche auf 1400 x 900 ausgelegt: Navigation, Kopf, Abstände, Schriftgrößen und
-  Tabellenhöhen so angepasst, dass Assistenten und Ansichten ohne unnötiges Scrollen passen.
-  Das Dashboard zeigt die vier Kennzahlen in einer Zeile; in „Benutzer aktualisieren“ stehen die
-  Attribute zweispaltig. Hinweistexte in Ansichten, Dialogen und Banner sind gekürzt.
-- Auf kleineren Arbeitsflächen (z. B. 1366 x 768) wird das Fenster beim Start auf die
-  Arbeitsfläche begrenzt.
+- Repository neu gegliedert: `README.md`, `CHANGELOG.md`, `SECURITY.md`, `CONTRIBUTING.md` und
+  `VERSION` liegen im Repository-Stamm, die Anwendung im Ordner `V3.0.0`.
+- Qualitätsprüfung, `Get-EobVersion` und CI berücksichtigen die Dateien im Stamm. Findet
+  `Get-EobVersion` keine `VERSION`-Datei, gilt die Modulversion.
+- README vollständig überarbeitet; SECURITY, CONTRIBUTING, INSTALLATION und MIGRATION an den neuen
+  Aufbau angepasst.
+- CHANGELOG neu geordnet: Versionen 3.0.1 und 3.0.2 ausgewiesen, ältere Versionen aus der
+  Git-Historie nachgetragen.
+
+### Entfernt
+
+- Ordner der Versionen 1.3.10 und 1.4.x, das Archiv der Vorversionen sowie die separaten
+  Zusatzwerkzeuge (CSV-Generator, INI-Editor, HR-/AL-Werkzeug, Prüfskripte, Web-Prototyp). Sie sind
+  über die Git-Historie weiterhin erreichbar (letzter Stand: Commit `e395922`).
+- Umsetzungsplan `docs/PLAN.md` (abgeschlossen).
+
+## [3.0.1] - 2026-10-04
+
+### Hinzugefügt
+
+- Installer `Install-easyONBOARDING.ps1` mit eigener WPF-Oberfläche (Modul `easyONB.Setup`). Er
+  erstellt `Config\easyONB.ini` aus der Vorlage.
+  - Auf einem Domänencontroller werden Domäne, UPN-Suffixe, Domänencontroller, OUs sowie Entra
+    Connect und Exchange aus dem AD vorbelegt; auf Clients werden die Werte manuell eingetragen.
+  - Jedes Feld und jeder Bereich hat einen Hinweistext, der nach 250 ms erscheint.
+  - Die erzeugte Datei wird wie in der Anwendung geprüft; eine vorhandene Datei wird vorher als
+    `.bak` gesichert.
+- Exchange Hybrid: Verbindung zu Exchange Server **und** Exchange Online. Lokale Befehle werden mit
+  dem Präfix `EobOnPrem` importiert; Postfachaktionen ermitteln, ob das Postfach online oder lokal
+  liegt. Cloud-Postfächer werden nach dem Microsoft-Verfahren in freigegebene Postfächer umgewandelt
+  (Exchange Online, danach `Set-RemoteMailbox -Type Shared` lokal).
+- Zertifikatsanmeldung (App-only) für Exchange Online (`[Exchange] AppId`, `CertificateThumbprint`,
+  `Organization`) und Microsoft Graph (`[Graph] ClientId`, `CertificateThumbprint`).
+  - Die geplante Aufgabe verbindet damit Exchange Online und Graph unbeaufsichtigt; ohne Zertifikat
+    bleiben diese Phasen manuell.
+  - Neue Schematypen `Guid` und `Thumbprint`, Befund `CFG_CERTIFICATE_AUTH_INCOMPLETE` bei
+    unvollständigen Angaben.
+- Entra Connect: Serverprüfung über `Get-ADSyncScheduler` (Erreichbarkeit, laufender Zyklus,
+  Stagingmodus), in der Oberfläche unter *Tools › Entra Connect prüfen*.
+
+### Geändert
+
+- Oberfläche auf 1400 x 900 ausgelegt: Navigation, Kopf, Abstände, Schriftgrößen und Tabellenhöhen
+  so angepasst, dass Assistenten und Ansichten ohne unnötiges Scrollen passen.
+  - Das Dashboard zeigt die vier Kennzahlen in einer Zeile; in *Benutzer aktualisieren* stehen die
+    Attribute zweispaltig.
+  - Hinweistexte in Ansichten, Dialogen und Bannern sind gekürzt.
+  - Auf kleineren Arbeitsflächen (z. B. 1366 x 768) wird das Fenster beim Start auf die
+    Arbeitsfläche begrenzt.
+- Audit: `Get-EobAuditEntry` liest nur noch die Monatsdateien des angefragten Zeitraums (plus einen
+  Monat Puffer) und filtert eine Operation-ID vor dem JSON-Parsen. Das Dashboard las bisher bei jedem
+  Aufruf das gesamte Audit-Archiv.
 
 ### Behoben
 
-- Exchange Hybrid: Postfächer in Exchange Online wurden über die lokale Sitzung nicht gefunden; alle
-  Postfachaktionen des Offboardings entfielen dadurch („Kein Postfach gefunden“).
+- Exchange Hybrid: Postfächer in Exchange Online wurden über die lokale Sitzung nicht gefunden;
+  dadurch entfielen alle Postfachaktionen des Offboardings („Kein Postfach gefunden“).
 - Microsoft Graph: Der Status meldete „Verbunden“, obwohl `Microsoft.Graph.Users.Actions`
   (`Revoke-MgUserSignInSession`) fehlte; der Schritt scheiterte erst bei der Ausführung.
-
-- Bestätigungsdialog: Lange Detaillisten (z. B. vor der endgültigen Löschung) konnten das Feld für
-  die Tippbestätigung aus dem sichtbaren Bereich schieben; lange Zeilen wurden abgeschnitten. Die
+- Bestätigungsdialog: Lange Detaillisten, z. B. vor der endgültigen Löschung, konnten das Feld für
+  die Tippbestätigung aus dem sichtbaren Bereich schieben, lange Zeilen wurden abgeschnitten. Die
   Details scrollen jetzt in einem eigenen Bereich und brechen um.
-
 - Massenverarbeitung: Ein Fehler außerhalb der Zeilenverarbeitung (z. B. beim Aktualisieren der
   Ergebnistabelle) ließ die Ausführungssperre bestehen; Ansichtswechsel und Schließen des Fensters
-  waren danach blockiert. Der Stapel wird jetzt geordnet beendet; die Moduswahl ist während der
+  waren danach blockiert. Der Stapel wird jetzt geordnet beendet, die Moduswahl ist während der
   Ausführung gesperrt.
-- Massenverarbeitung: Kennwörter nicht ausgeführter Zeilen (Fehler, Abbruch, verworfener oder neu
-  importierter Stapel) blieben samt Klartext-Redaktionswert bis zum Programmende im Speicher. Sie
-  werden jetzt beim Abschluss, beim Moduswechsel, beim Neuimport und beim Beenden verworfen
-  (`Invoke-EobOnboardingBatch`: Fehlerzeilen sofort).
-- Audit: `Get-EobAuditEntry` liest nur noch die Monatsdateien des angefragten Zeitraums (plus ein
-  Monat Puffer) und filtert eine Operation-ID vor dem JSON-Parsen. Das Dashboard las bisher bei
-  jedem Aufruf das gesamte Audit-Archiv.
-- Audit-Ansicht: Filtertexte mit `[` oder `]` führten zu einem Fehler (Platzhaltermuster); gefiltert
+- Audit-Ansicht: Filtertexte mit `[` oder `]` führten zu einem Fehler (Platzhaltermuster). Gefiltert
   wird jetzt als Teilzeichenfolge ohne Beachtung der Groß-/Kleinschreibung.
 - Offboarding-Warteschlange: Eine leere oder unvollständige JSON-Datei brach das Lesen der gesamten
   Warteschlange ab (Dashboard, Offboarding-Ansicht, geplante Aufgabe). Defekte Einträge werden jetzt
   protokolliert und übersprungen.
 
+### Sicherheit
+
+- Massenverarbeitung: Kennwörter nicht ausgeführter Zeilen (Fehler, Abbruch, verworfener oder neu
+  importierter Stapel) blieben samt Klartext-Redaktionswert bis zum Programmende im Speicher. Sie
+  werden jetzt beim Abschluss, beim Moduswechsel, beim Neuimport und beim Beenden verworfen;
+  Fehlerzeilen in `Invoke-EobOnboardingBatch` sofort.
+
 ## [3.0.0] - 2026-09-27
 
-Vollständige Neuentwicklung im Ordner `V3.0.0`. Die Versionen 1.3.10 und 1.4.x bleiben unverändert
-in `V1.3.10` bzw. `V1.4.XX` erhalten und sind veraltet. Die Befund-IDs (C-xx, H-xx, M-xx) beziehen
-sich auf die Bestandsaufnahme in [docs/ANALYSIS.md](V3.0.0/docs/ANALYSIS.md).
+Vollständige Neuentwicklung im Ordner `V3.0.0`. Die Versionen 1.3.10 und 1.4.x lagen zu diesem
+Zeitpunkt unverändert in `V1.3.10` bzw. `V1.4.XX` (entfernt mit 3.0.2). Die Befund-IDs (C-xx, H-xx,
+M-xx, F-xx) beziehen sich auf die Bestandsaufnahme in [ANALYSIS.md](V3.0.0/docs/ANALYSIS.md).
 
 ### Hinzugefügt
 
 - Modulare Architektur mit zehn Modulen (Präfix `Eob`, Manifeste mit expliziten Exporten) und
-  Einstieg `Start-easyONBOARDING.ps1` inklusive `-CheckOnly` für Prüfungen ohne Oberfläche.
+  Einstieg `Start-easyONBOARDING.ps1`, inklusive `-CheckOnly` für Prüfungen ohne Oberfläche.
 - Plan-Engine: Jeder Vorgang wird als Plan mit Schritten, Risiken und Befunden erzeugt, in der
-  Vorschau angezeigt, simuliert (`-WhatIf`) oder nach Bestätigung ausgeführt; Handler nur aus
+  Vorschau angezeigt, simuliert (`-WhatIf`) oder nach Bestätigung ausgeführt. Handler kommen nur aus
   `easyONB.*`-Modulen, Kennwörter nur als Laufzeitverweis.
 - Neue WPF-Oberfläche: linke Navigation (Dashboard, Onboarding, Offboarding, Benutzer aktualisieren,
-  Massenverarbeitung, Reports und Audit, Tools, Einstellungen, Info), Onboarding-Assistent mit 8
-  Schritten, helles und dunkles Farbschema, Akzentfarbe, zentrale Dialoge, Tastenkürzel Strg+1…9,
+  Massenverarbeitung, Reports und Audit, Tools, Einstellungen, Info), Onboarding-Assistent mit
+  8 Schritten, helles und dunkles Farbschema, Akzentfarbe, zentrale Dialoge, Tastenkürzel Strg+1…9,
   schrittweise Ausführung mit Abbruch zwischen zwei Schritten.
 - Mehrstufiges Offboarding mit 7 Vorlagen, Phasen (Sofort, Zum Austritt, Aufbewahrung, Endgültige
   Löschung), Warteschlange, Zustandsberichten vorher/nachher, Dokumentation von
   Postfachberechtigungen, Archivierung von Home-Verzeichnissen und abgesicherter Löschung.
 - `Scripts/Invoke-DueOffboardingPhases.ps1` für fällige Phasen per geplanter Aufgabe (nie Löschung,
   nie privilegierte Konten).
-- Massenverarbeitung per CSV für Onboarding und Offboarding (alle Zeilen, Vorschau je Zeile,
-  Tippbestätigung ab `[Bulk] ConfirmationThreshold`).
+- Massenverarbeitung per CSV für Onboarding und Offboarding: alle Zeilen, Vorschau je Zeile,
+  Tippbestätigung ab `[Bulk] ConfirmationThreshold`.
 - Konfigurationsschema mit Typen, Standardwerten, Validierung und Hinweisen; kommentarerhaltendes
-  Schreiben; Migration von 1.x-Konfigurationen (Oberfläche und `Scripts/Convert-LegacyConfiguration.ps1`).
+  Schreiben; Migration von 1.x-Konfigurationen (Oberfläche und
+  `Scripts/Convert-LegacyConfiguration.ps1`).
 - Strukturiertes Logging mit Operation-ID, Akteur, Aktion, Ziel, Ergebnis und Dauer; Audit-Log als
   JSON Lines; Redaktion sensibler Werte vor jedem Schreibvorgang; Ausweichverzeichnis.
-- Berichte als HTML, JSON, CSV, TXT und PDF (Microsoft Edge headless, alternativ wkhtmltopdf,
-  sonst HTML); Willkommensdokument aus den bisherigen HTML-Vorlagen mit eingebetteten Bildern.
+- Berichte als HTML, JSON, CSV, TXT und PDF (Microsoft Edge headless, alternativ wkhtmltopdf, sonst
+  HTML); Willkommensdokument aus den bisherigen HTML-Vorlagen mit eingebetteten Bildern.
 - Integrationsstatus im Dashboard für AD, Exchange, Microsoft Graph, Entra Connect Sync, SMTP,
-  Dateiserver und PDF-Erzeugung (Exchange, Graph und Entra Connect: vorbereitet, nicht gegen reale
-  Umgebungen verifiziert).
-- Pester-Tests (Unit und Integration, externe Systeme ausschließlich über Stubs/Mocks),
-  `PSScriptAnalyzerSettings.psd1`, `Scripts/Invoke-EobQualityCheck.ps1` (Parser, Kodierung, XAML,
-  PSScriptAnalyzer, Secret-/Platzhalter-Scan, Doku, Version) und GitHub-Workflow
-  `.github/workflows/v3-ci.yml` (Windows und Linux, Actions per Commit-SHA, nur Lesezugriff).
-- Dokumentation: README, SECURITY, CONTRIBUTING, Installation, Konfiguration (inkl. aus dem Schema
-  erzeugter Referenz), Onboarding, Offboarding, Migration, Tests, Architektur.
+  Dateiserver und PDF-Erzeugung. Exchange, Graph und Entra Connect waren vorbereitet, aber nicht gegen
+  reale Umgebungen verifiziert.
+- Qualitätssicherung:
+  - Pester-Tests (Unit und Integration, externe Systeme ausschließlich über Stubs/Mocks) und
+    `PSScriptAnalyzerSettings.psd1`.
+  - `Scripts/Invoke-EobQualityCheck.ps1` mit den Prüfungen Parser, Kodierung, XAML,
+    PSScriptAnalyzer, Secret-/Platzhalter-Scan, Doku und Version.
+  - GitHub-Workflow `.github/workflows/v3-ci.yml` (Windows und Linux, Actions per Commit-SHA, nur
+    Lesezugriff).
+- Dokumentation: README, SECURITY, CONTRIBUTING, Installation, Konfiguration (inklusive aus dem
+  Schema erzeugter Referenz), Onboarding, Offboarding, Migration, Tests, Architektur.
 
 ### Geändert
 
@@ -127,8 +170,8 @@ sich auf die Bestandsaufnahme in [docs/ANALYSIS.md](V3.0.0/docs/ANALYSIS.md).
   `[Identity] CollisionStrategy` nummeriert oder als Fehler gemeldet (C-05).
 - UPN- und Anzeigenamen-Vorlagen werden korrekt ausgewertet; Legacy-Schlüsselwörter wie
   `FIRSTNAME.LASTNAME` bleiben gültig (F-09).
-- "Benutzer aktualisieren" ändert nur tatsächlich geänderte Werte und setzt nie nebenbei ein
-  Kennwort (C-04); der Kennwort-Reset ist eine eigene, bestätigte Aktion. Deaktiviert angelegte
+- *Benutzer aktualisieren* ändert nur tatsächlich geänderte Werte und setzt nie nebenbei ein
+  Kennwort (C-04). Der Kennwort-Reset ist eine eigene, bestätigte Aktion. Deaktiviert angelegte
   Konten werden dort bei der Übergabe aktiviert.
 - AD-Suchen und Filter werden maskiert (H-05); Führungskräfte werden eindeutig aufgelöst (H-12).
 - Welcome-Mail über `System.Net.Mail` statt `Send-MailMessage`, Absender einheitlich
@@ -147,7 +190,7 @@ sich auf die Bestandsaufnahme in [docs/ANALYSIS.md](V3.0.0/docs/ANALYSIS.md).
 - Live-Ausführungen verlangen eine Bestätigung (`ConfirmImpact High`), destruktive Aktionen eine
   Tippbestätigung; Simulation ist Standard.
 - Keine Selbst-Elevation und kein `-ExecutionPolicy Bypass` mehr (H-09); keine Downloads ohne
-  Prüfung (H-10, Installer nicht Bestandteil von 3.0).
+  Prüfung (H-10). Ein Installer war nicht Bestandteil von 3.0.0.
 - Graph mit minimalen Scopes `User.Read.All` und `User.RevokeSessions.All` statt
   `Directory.ReadWrite.All` (M-08).
 - PDF-Erzeugung ohne `--enable-local-file-access` (wkhtmltopdf); Microsoft Edge läuft headless mit
@@ -156,29 +199,104 @@ sich auf die Bestandsaufnahme in [docs/ANALYSIS.md](V3.0.0/docs/ANALYSIS.md).
 ### Entfernt
 
 - Fester Standardkennwortwert `fixPassword` (C-06) und Klartext-Secrets in der Konfiguration
-  (`CompanyVPNPassword`, `JiraToken`, SMTP-Kennwort, Webhooks; H-11): werden erkannt, gemeldet
+  (`CompanyVPNPassword`, `JiraToken`, SMTP-Kennwort, Webhooks; H-11). Sie werden erkannt, gemeldet
   und ignoriert.
 - Frei konfigurierbarer `SyncCommand` (Codeausführung über die Konfiguration, H-04); Entra Connect
   Sync startet nur noch `Start-ADSyncSyncCycle`.
-- Zusatzkennwörter `{{CustomPW1..5}}` und die Graph-Lizenzverwaltung (gruppenbasierte Lizenzierung
-  über `[LicensesGroups]`).
+- Zusatzkennwörter `{{CustomPW1..5}}` und die Graph-Lizenzverwaltung (stattdessen gruppenbasierte
+  Lizenzierung über `[LicensesGroups]`).
 
 ### Veraltet
 
-- Versionen 1.3.10 und 1.4.x (siehe `DEPRECATED.md` in den jeweiligen Ordnern).
+- Versionen 1.3.10 und 1.4.x.
 - Legacy-Konfigurationsschlüssel werden weiter gelesen und im Prüfbericht mit Ersatz genannt
-  (Übersicht: [docs/CONFIGURATION-REFERENCE.md](V3.0.0/docs/CONFIGURATION-REFERENCE.md)).
+  (Übersicht: [CONFIGURATION-REFERENCE.md](V3.0.0/docs/CONFIGURATION-REFERENCE.md)).
 
 ### Bekannte Einschränkungen
 
-- Die Oberfläche wurde automatisiert nur statisch (XAML-Prüfung, Abgleich Code/XAML) und in der CI
-  unter Windows ohne Anzeige geladen; ein manueller Test nach [docs/TESTING.md](V3.0.0/docs/TESTING.md) ist
-  vor dem produktiven Einsatz erforderlich.
+- Die Oberfläche wurde automatisiert nur statisch geprüft (XAML-Prüfung, Abgleich Code/XAML) und in
+  der CI unter Windows ohne Anzeige geladen. Vor dem produktiven Einsatz ist ein manueller Test nach
+  [TESTING.md](V3.0.0/docs/TESTING.md) erforderlich.
 - Exchange-, Graph- und Entra-Connect-Funktionen sind nicht gegen reale Umgebungen verifiziert.
-- Die Dateien der Version 3 sind nicht Authenticode-signiert (Zertifikat des Maintainers erforderlich).
+- Die Dateien der Version 3 sind nicht Authenticode-signiert (Zertifikat des Maintainers
+  erforderlich).
 
-## Frühere Versionen
+---
 
-- **1.4.x** (Entwicklungsstand 1.4.23, Ordner `V1.4.XX`): nicht als final freigegeben; der
-  GUI-Onboarding-Pfad ist defekt (siehe Bestandsaufnahme).
-- **1.3.10** (2025-03-30, Ordner `V1.3.10`): letzte als final markierte Version der Reihe 1.x.
+## Version 1 und Vorversionen (veraltet)
+
+Die folgenden Einträge sind aus der Git-Historie und den Dateinamen rekonstruiert. Für die Versionen
+1.x gab es kein Änderungsprotokoll, keine zentrale Versionsquelle und keine Git-Tags. Die Daten sind
+Commit-Daten; Vorversionen ohne eigenen Commit sind als undatiert gekennzeichnet. Die Versionen 1.x
+haben bekannte kritische Sicherheitsmängel (siehe [SECURITY.md](SECURITY.md)) und werden nicht mehr
+unterstützt.
+
+## [1.4.23] - 2025-07-12 (Entwicklungsstand, nicht freigegeben)
+
+Letzter Stand der Reihe 1.4 (`V1.4.XX/easyONBOARDING_V1.4.23.ps1`, Commit `e395922`). Begonnen am
+2025-03-20 als 1.4.1.
+
+- Aufteilung des Monolithen in PowerShell-Module (u. a. Prüfungen, Kernfunktionen, Validierung,
+  Benachrichtigung, Lizenzen, Reporting).
+- Geplante Erweiterungen wie Einstellungsoberfläche, Postfachanlage, Profilbild, Home-Verzeichnis und
+  Willkommens-E-Mail; laut Bestandsaufnahme war der GUI-Onboarding-Pfad nicht funktionsfähig.
+- 2025-04-05: neue Berichtsvorlagen, zusätzlich auf Englisch (`HTMLTemplateENG.txt`).
+- 2025-07-12: alle Skripte Authenticode-signiert.
+
+## [1.3.10] - 2025-03-30
+
+Letzte als final markierte Version der Reihe 1 (`V1.3.10`, Commit `bd6cef8`).
+
+- WPF-Oberfläche mit den Registerkarten *easyONBOARDING* und *easyADUserUpdate*, Konfiguration über
+  `easyONB.ini` (Design, Texte, Logos, UPN- und Anzeigenamen-Vorlagen).
+- AD-Benutzeranlage mit UPN-Logik, Gruppen, Berichten als HTML/TXT/PDF und CSV-Import.
+- Begleitwerkzeuge: INI-Editor, PDF-Erzeugung (`PDFCreator.ps1`), Installationsskript
+  `INSTALL-PS7_PDF.ps1` und CSV-Generator für die Personalabteilung.
+
+## [1.3.9] - 2025-03-22
+
+- Getestete Version mit überarbeiteter Oberfläche.
+- 2025-03-23: CSV-Generator für die Personalabteilung, Designkorrekturen, neues
+  Installationsskript `INSTALL-PS7_PDF.ps1` (PowerShell 7 und PDF-Komponenten), geändertes Öffnen
+  der PDF-Berichte.
+
+## [1.3.8] - 2025-03-20
+
+- Fehlerkorrekturen; parallel Beginn der Reihe 1.4 mit PowerShell-Modulen.
+
+## [1.3.7] - 2025-03-18
+
+- Registerkarten *easyONBOARDING* (Anlage) und *easyADUserUpdate* (Pflege bestehender Konten)
+  fertiggestellt.
+
+## [1.3.5] - 2025-03-18
+
+- Fehlerkorrekturen; Konfiguration als `easyONB.ini`, Textvorlage für Berichte.
+
+## [1.3.3] - 2025-03-17
+
+- Umstieg auf eine XAML-basierte WPF-Oberfläche (`MainGUI.xaml`); Fehlerkorrekturen und
+  Erweiterungen bei Benutzeranlage und Berichten.
+
+## [1.1.4] - undatiert
+
+- Erste WPF-Oberfläche; flexibler Log-Pfad, Ausweichwert für den Anzeigenamen; Berichte als HTML,
+  TXT und optional PDF.
+
+## [1.0.1] - 2025-03-15
+
+Erste Version im Repository (Commit `0bab756`, zusammen mit dem Paket `VERSION_1.0.0-FINAL.zip`).
+
+- Windows-Forms-Oberfläche mit drei Bereichen (Eingabe, Erweiterte Einstellungen, Info & Tools),
+  PowerShell 7, Prüfung der Windows-Version, Konfiguration per INI-Datei, HTML-Berichtsvorlage,
+  Installations- und PDF-Skript.
+
+## [0.9] - undatiert
+
+- 0.9 und 0.9.7: Umstieg auf PowerShell 7 (`#requires -Version 7.0`), Prüfung auf Windows 10 bzw.
+  Windows Server 2016 oder höher.
+
+## [0.1.0 – 0.8] - undatiert
+
+- Erste Skriptversionen für Windows PowerShell 5.1 mit Windows-Forms-Oberfläche,
+  INI-Konfiguration und HTML-/PDF-Berichten (0.1.0 bis 0.1.5, 0.5, 0.6, 0.7, 0.8).
