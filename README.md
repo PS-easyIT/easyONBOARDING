@@ -1,7 +1,5 @@
 # easyONBOARDING
 
-[![V3 CI](https://github.com/PS-easyIT/easyONBOARDING/actions/workflows/v3-ci.yml/badge.svg)](https://github.com/PS-easyIT/easyONBOARDING/actions/workflows/v3-ci.yml)
-
 Version **3.0.0** · PowerShell 7.2+ · Windows 10/11, Windows Server 2019+ · Autor: Andreas Hepp (PHINIT.DE)
 
 easyONBOARDING ist ein PowerShell-Werkzeug mit WPF-Oberfläche für den Lebenszyklus von
