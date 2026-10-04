@@ -1,4 +1,4 @@
-# CI für easyONBOARDING 3 (Ordner V3.0.0).
+# CI für easyONBOARDING 3 (Ordner V3.0.0; VERSION und Projektdokumente im Repository-Stamm).
 # - Statische Prüfungen: Parser, Kodierung, XAML, PSScriptAnalyzer, Secret-/Platzhalter-Scan, Doku, Version
 # - Pester (Unit + Integration) unter Windows und Linux; unter Windows zusätzlich echtes Laden der
 #   WPF-Oberfläche (ohne Anzeige) und PDF-Erzeugung mit Microsoft Edge
@@ -10,10 +10,20 @@ on:
   push:
     paths:
       - 'V3.0.0/**'
+      - 'README.md'
+      - 'CHANGELOG.md'
+      - 'SECURITY.md'
+      - 'CONTRIBUTING.md'
+      - 'VERSION'
       - '.github/workflows/v3-ci.yml'
   pull_request:
     paths:
       - 'V3.0.0/**'
+      - 'README.md'
+      - 'CHANGELOG.md'
+      - 'SECURITY.md'
+      - 'CONTRIBUTING.md'
+      - 'VERSION'
       - '.github/workflows/v3-ci.yml'
   workflow_dispatch:
 

@@ -28,6 +28,22 @@ Alle nennenswerten Änderungen an easyONBOARDING. Format angelehnt an
 
 ### Geändert
 
+- Repository neu gegliedert: Die Versionen 1.x und die separaten Zusatzwerkzeuge sind entfernt.
+  `README.md`, `CHANGELOG.md`, `SECURITY.md`, `CONTRIBUTING.md` und `VERSION` liegen im
+  Repository-Stamm. Qualitätsprüfung, `Get-EobVersion` und CI berücksichtigen den Stamm; findet
+  `Get-EobVersion` keine `VERSION`-Datei, gilt die Modulversion. README vollständig überarbeitet.
+- `Install-PS7_PDF.ps1` neu geschrieben, läuft auch unter Windows PowerShell 5.1. Das Skript prüft
+  zuerst nur: PowerShell 7, ActiveDirectory-Modul, PDF-Erzeugung und Ausführungsrichtlinie.
+  Fehlendes wird nur auf Auswahl eingerichtet, über eine WPF-Oberfläche mit Hinweistexten oder
+  `-CheckOnly`/`-Install`.
+  - PowerShell 7 kommt per winget, sonst als MSI; das MSI nur über https und nur mit gültiger
+    Microsoft-Signatur.
+  - RSAT wird auf Clients als Windows-Funktion, auf Servern als Windows-Feature installiert.
+    wkhtmltopdf nur per winget.
+  - Installationen nur in einer Administrator-PowerShell; das Skript erhöht sich nie selbst.
+  - Die Ausführungsrichtlinie wird nur nach Bestätigung und nur für den aktuellen Benutzer geändert.
+  - Das optionale Kopieren der Anwendung überschreibt keine vorhandene Konfiguration. Tests:
+    `Tests/Unit/Prerequisites.Tests.ps1`.
 - Oberfläche auf 1400 x 900 ausgelegt: Navigation, Kopf, Abstände, Schriftgrößen und
   Tabellenhöhen so angepasst, dass Assistenten und Ansichten ohne unnötiges Scrollen passen.
   Das Dashboard zeigt die vier Kennzahlen in einer Zeile; in „Benutzer aktualisieren“ stehen die
@@ -67,7 +83,7 @@ Alle nennenswerten Änderungen an easyONBOARDING. Format angelehnt an
 
 Vollständige Neuentwicklung im Ordner `V3.0.0`. Die Versionen 1.3.10 und 1.4.x bleiben unverändert
 in `V1.3.10` bzw. `V1.4.XX` erhalten und sind veraltet. Die Befund-IDs (C-xx, H-xx, M-xx) beziehen
-sich auf die Bestandsaufnahme in [docs/ANALYSIS.md](docs/ANALYSIS.md).
+sich auf die Bestandsaufnahme in [docs/ANALYSIS.md](V3.0.0/docs/ANALYSIS.md).
 
 ### Hinzugefügt
 
@@ -151,12 +167,12 @@ sich auf die Bestandsaufnahme in [docs/ANALYSIS.md](docs/ANALYSIS.md).
 
 - Versionen 1.3.10 und 1.4.x (siehe `DEPRECATED.md` in den jeweiligen Ordnern).
 - Legacy-Konfigurationsschlüssel werden weiter gelesen und im Prüfbericht mit Ersatz genannt
-  (Übersicht: [docs/CONFIGURATION-REFERENCE.md](docs/CONFIGURATION-REFERENCE.md)).
+  (Übersicht: [docs/CONFIGURATION-REFERENCE.md](V3.0.0/docs/CONFIGURATION-REFERENCE.md)).
 
 ### Bekannte Einschränkungen
 
 - Die Oberfläche wurde automatisiert nur statisch (XAML-Prüfung, Abgleich Code/XAML) und in der CI
-  unter Windows ohne Anzeige geladen; ein manueller Test nach [docs/TESTING.md](docs/TESTING.md) ist
+  unter Windows ohne Anzeige geladen; ein manueller Test nach [docs/TESTING.md](V3.0.0/docs/TESTING.md) ist
   vor dem produktiven Einsatz erforderlich.
 - Exchange-, Graph- und Entra-Connect-Funktionen sind nicht gegen reale Umgebungen verifiziert.
 - Die Dateien der Version 3 sind nicht Authenticode-signiert (Zertifikat des Maintainers erforderlich).
