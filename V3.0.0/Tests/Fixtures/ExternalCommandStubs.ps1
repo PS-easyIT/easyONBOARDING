@@ -31,8 +31,18 @@ function global:Get-ADDomain {
 }
 function global:Get-ADDomainController {
     [CmdletBinding()]
-    param([object]$Identity, [switch]$Discover, [switch]$Writable, [string]$DomainName, [string]$Server, [object]$Service)
+    param([object]$Identity, [switch]$Discover, [switch]$Writable, [string]$DomainName, [string]$Server, [object]$Service, [string]$Filter)
     Invoke-EobUnmockedStub -Name 'Get-ADDomainController'
+}
+function global:Get-ADForest {
+    [CmdletBinding()]
+    param([object]$Identity, [string]$Server)
+    Invoke-EobUnmockedStub -Name 'Get-ADForest'
+}
+function global:Get-ADRootDSE {
+    [CmdletBinding()]
+    param([string]$Server, [string[]]$Properties)
+    Invoke-EobUnmockedStub -Name 'Get-ADRootDSE'
 }
 function global:Get-ADUser {
     [CmdletBinding()]

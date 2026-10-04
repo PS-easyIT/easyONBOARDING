@@ -50,8 +50,10 @@ Details: [SECURITY.md](SECURITY.md).
 $PSVersionTable.PSVersion
 Get-Module -ListAvailable ActiveDirectory
 
-# 2. Konfiguration aus der Vorlage anlegen und anpassen
-Copy-Item .\Config\easyONB.ini.template .\Config\easyONB.ini
+# 2. Konfiguration mit dem Installer erstellen (Oberfläche; auf einem Domänencontroller
+#    werden Domäne, OUs, Entra Connect und Exchange aus dem AD vorbelegt)
+pwsh -STA -NoProfile -File .\Install-easyONBOARDING.ps1
+#    alternativ manuell: Copy-Item .\Config\easyONB.ini.template .\Config\easyONB.ini
 
 # 3. Konfiguration und Umgebung prüfen (ohne Oberfläche)
 pwsh -NoProfile -File .\Start-easyONBOARDING.ps1 -CheckOnly
