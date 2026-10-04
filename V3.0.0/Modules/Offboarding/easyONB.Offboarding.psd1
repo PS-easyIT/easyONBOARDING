@@ -1,6 +1,6 @@
 ﻿@{
     RootModule           = 'easyONB.Offboarding.psm1'
-    ModuleVersion        = '3.0.0'
+    ModuleVersion        = '3.0.2'
     GUID                 = '2211f256-7765-44d0-81ea-1d5ec3381a53'
     Author               = 'Andreas Hepp'
     CompanyName          = 'PHINIT.DE'

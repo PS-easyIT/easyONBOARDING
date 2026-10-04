@@ -1,6 +1,6 @@
 ﻿@{
     RootModule           = 'easyONB.Setup.psm1'
-    ModuleVersion        = '3.0.0'
+    ModuleVersion        = '3.0.2'
     GUID                 = '6f0b3b1e-8f2a-4c5e-9d7b-2a1c4e5f6a70'
     Author               = 'Andreas Hepp'
     CompanyName          = 'PHINIT.DE'
